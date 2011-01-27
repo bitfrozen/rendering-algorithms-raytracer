@@ -2,6 +2,7 @@
 #define CSE168_TRIANGLE_MESH_H_INCLUDED
 
 #include "Matrix4x4.h"
+#include "Ray.h"
 
 class TriangleMesh
 {
@@ -14,6 +15,7 @@ public:
 
     // for single triangles
     void createSingleTriangle();
+	void preCalc();
     inline void setV1(const Vector3& v) {m_vertices[0] = v;}
     inline void setV2(const Vector3& v) {m_vertices[1] = v;}
     inline void setV3(const Vector3& v) {m_vertices[2] = v;}
@@ -30,15 +32,37 @@ public:
     {
         float x, y;
     };
-
     Vector3* vertices()     {return m_vertices;}
     Vector3* normals()      {return m_normals;}
     TupleI3* vIndices()     {return m_vertexIndices;}
     TupleI3* nIndices()     {return m_normalIndices;}
     int numTris()           {return m_numTris;}
+	
+	bool intersect(HitInfo& result, const Ray& r, float tMin = 0.0f, float tMax = MIRO_TMAX);
 
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);
+	__declspec(align(16)) struct Ray2
+	{
+		float ox, oy, oz, ow;
+		float dx, dy, dz, dw;
+	};
+	__declspec(align(16)) struct Hit2
+	{
+		float px, py, pz, pw;
+		float t, u, v;
+	};
+	__declspec(align(16)) struct PrecomputedTriangle
+	{
+		float nx, ny, nz, nd;
+		float ux, uy, uz, ud;
+		float vx, vy, vz, vd;
+	};
+
+	PrecomputedTriangle* m_preCalcTris;
+
+	bool singleIntersect(Hit2& result, const Ray2& r, float tMin, float tMax, int index);
+	bool singleIntersect(HitInfo& result, const Ray& r, float tMin, float tMax, int index);
 
     Vector3* m_normals;
     Vector3* m_vertices;

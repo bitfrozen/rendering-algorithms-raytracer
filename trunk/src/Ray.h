@@ -2,6 +2,7 @@
 #define CSE168_RAY_H_INCLUDED
 
 #include "Vector3.h"
+#include "Material.h"
 
 class Ray
 {

@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Image.h"
 #include "Console.h"
+#include <omp.h>
 
 Scene * g_scene = 0;
 
@@ -45,27 +46,31 @@ Scene::raytraceImage(Camera *cam, Image *img)
     Ray ray;
     HitInfo hitInfo;
     Vector3 shadeResult;
-    
-    // loop over all pixels in the image
-    for (int j = 0; j < img->height(); ++j)
-    {
-        for (int i = 0; i < img->width(); ++i)
-        {
-            ray = cam->eyeRay(i, j, img->width(), img->height());
-            if (trace(hitInfo, ray))
-            {
-                shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
-                img->setPixel(i, j, shadeResult);
-            }
-        }
-        img->drawScanline(j);
-        glFinish();
-        printf("Rendering Progress: %.3f%%\r", j/float(img->height())*100.0f);
-        fflush(stdout);
-    }
-    
-    printf("Rendering Progress: 100.000%\n");
-    debug("done Raytracing!\n");
+
+#pragma omp parallel private(ray, hitInfo, shadeResult)
+	{
+		// loop over all pixels in the image
+		for (int j = 0; j < img->height(); ++j)
+		{
+#pragma omp for schedule(dynamic, 4)
+			for (int i = 0; i < img->width(); ++i)
+			{
+				ray = cam->eyeRay(i, j, img->width(), img->height());
+				if (trace(hitInfo, ray))
+				{
+					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
+					img->setPixel(i, j, shadeResult);
+				}
+			}
+			img->drawScanline(j);
+			glFinish();
+			printf("Rendering Progress: %.3f%%\r", j/float(img->height())*100.0f);
+			fflush(stdout);
+		}
+	}
+		    
+	printf("Rendering Progress: 100.000%\n");
+	debug("done Raytracing!\n");
 }
 
 bool

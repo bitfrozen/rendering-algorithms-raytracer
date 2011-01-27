@@ -4,7 +4,6 @@
 #include "Camera.h"
 #include "Image.h"
 #include "Console.h"
-
 #include "PointLight.h"
 #include "Sphere.h"
 #include "TriangleMesh.h"
@@ -58,13 +57,47 @@ makeSpiralScene()
     g_scene->preCalc();
 }
 
+void
+makeBunnyScene()
+{
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
 
+	g_image->resize(256, 256);
+
+	// set up the camera
+	g_camera->setBGColor(Vector3(1.0f, 1.0f, 1.0f));
+	g_camera->setEye(Vector3(-5, 2, 3));
+	g_camera->setLookAt(Vector3(0, 0, 0));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(45);
+
+	// create and place a point light source
+	PointLight * light = new PointLight;
+	light->setPosition(Vector3(-3, 15, 3));
+	light->setColor(Vector3(1, 1, 1));
+	light->setWattage(1000);
+	g_scene->addLight(light);
+
+	// create a spiral of spheres
+	Material* mat = new Lambert(Vector3(1.0f, 0.0f, 0.0f));
+	TriangleMesh *mesh = new TriangleMesh;
+	mesh->load("Models/bunny.obj");
+	Triangle *bunny = new Triangle;
+	bunny->setMesh(mesh);
+	bunny->setMaterial(mat);
+	g_scene->addObject(bunny);
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
+}
 
 int
 main(int argc, char*argv[])
 {
-    // create a scene
-    makeSpiralScene();
+	// create a scene
+    makeBunnyScene();
 
     MiroWindow miro(&argc, argv);
     miro.mainLoop();
