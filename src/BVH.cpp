@@ -18,7 +18,7 @@ BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin, float tMax) const
 
     bool hit = false;
     HitInfo tempMinHit;
-    minHit.t = MIRO_TMAX;
+    minHit.t = tempMinHit.t = MIRO_TMAX;
     
     for (size_t i = 0; i < m_objects->size(); ++i)
     {
