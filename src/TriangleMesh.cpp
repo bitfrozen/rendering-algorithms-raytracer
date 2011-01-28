@@ -4,6 +4,8 @@
 #include <xmmintrin.h>
 #include <smmintrin.h>
 
+#define NO_SSE
+
 TriangleMesh::TriangleMesh() :
     m_normals(0),
     m_vertices(0),
@@ -42,12 +44,13 @@ void TriangleMesh::preCalc()
 		AC = C-A;
 		AB = B-A;
 		N = cross(AB,AC);
-		float Nsq = N.length2();
-		d  = -dot(A,N);
-		N1 = cross(AC,N) / Nsq;
+		d = dot(A,N);
+		float Nsq = 1 / N.length2();
+		
+		N1 = cross(AC,N) * Nsq;
 		d1 = -dot(N1,A);
-		N2 = cross(N,AB) / Nsq;
-		d2 = -dot(N2,A);
+		N2 = cross(N,AB) * Nsq;
+		d2 = -dot(N2,A);		
 		m_preCalcTris[i].nx = N.x;
 		m_preCalcTris[i].ny = N.y;
 		m_preCalcTris[i].nz = N.z;
@@ -66,6 +69,7 @@ void TriangleMesh::preCalc()
 bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f */, float tMax /* = MIRO_TMAX */)
 {
 	Hit2 theHit;
+	theHit.t = MIRO_TMAX;
 	Ray2 theRay;
 	theRay.ox = r.o.x;
 	theRay.oy = r.o.y;
@@ -74,13 +78,14 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f
 	theRay.dx = r.d.x;
 	theRay.dy = r.d.y;
 	theRay.dz = r.d.z;
-	theRay.dw = 1.0;
+	theRay.dw = 0.0;
 	bool hit = false;
 	TriangleMesh::TupleI3 ti3;
 	HitInfo temp;
 	for (unsigned int i = 0; i < m_numTris; ++i)
 	{
-		/*if (singleIntersect(theHit, theRay, tMin, tMax, i))
+#ifndef NO_SSE
+		if (singleIntersect(theHit, theRay, tMin, tMax, i))
 		{
 			hit = true;
 			if (theHit.t < result.t)
@@ -88,9 +93,10 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f
 				ti3 = m_normalIndices[i];// [m_index]; 
 				result.t = theHit.t;
 				result.P = Vector3(theHit.px, theHit.py, theHit.pz);
-				result.N = m_normals[ti3.x]; //vertex a of triangle
+				result.N = (m_normals[ti3.x]*(1-theHit.u-theHit.v)+m_normals[ti3.y]*theHit.u+m_normals[ti3.z]*theHit.v).normalized();
 			}
-		}*/
+		}
+#else
 		if (singleIntersect(temp, r, tMin, tMax, i))
 		{
 			hit = true;
@@ -99,14 +105,14 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f
 				result = temp;
 			}
 		}
+#endif
 	}
 	return hit;
 }
 
-/*
 bool TriangleMesh::singleIntersect(Hit2& result, const Ray2& r,float tMin, float tMax, int index)
 {
-	const float arr[4] = {-1,-1,-1,1};
+	__declspec(align(16)) const float arr[4] = {-1,-1,-1,1};
 	const __m128 int_coef = _mm_load_ps(arr);
 
 	const __m128 o = _mm_load_ps(&r.ox);
@@ -137,7 +143,7 @@ bool TriangleMesh::singleIntersect(Hit2& result, const Ray2& r,float tMin, float
 		}
 	}
 	return false;
-}*/
+}
 
 bool
 TriangleMesh::singleIntersect(HitInfo& result, const Ray& r, float tMin, float tMax, int index)
@@ -146,7 +152,6 @@ TriangleMesh::singleIntersect(HitInfo& result, const Ray& r, float tMin, float t
 	float det, inv_det, u, v;
 	TriangleMesh::TupleI3 ti3;
 	ti3 = m_vertexIndices[index];
-
 	edge1 = m_vertices[ti3.y] - m_vertices[ti3.x];
 	edge2 = m_vertices[ti3.z] - m_vertices[ti3.x];
 
