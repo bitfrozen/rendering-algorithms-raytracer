@@ -202,7 +202,7 @@ TriangleMesh::loadObj(FILE* fp, const Matrix4x4& ctm)
                 Vector3 e2 = m_vertices[m_vertexIndices[m_numTris].z] -
                              m_vertices[m_vertexIndices[m_numTris].x];
 
-                m_normals[nn] = cross(e1, e2);
+                m_normals[nn] = cross(e1, e2).normalized();
                 m_normalIndices[nn].x = nn;
                 m_normalIndices[nn].y = nn;
                 m_normalIndices[nn].z = nn;

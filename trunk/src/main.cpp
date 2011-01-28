@@ -64,7 +64,7 @@ makeBunnyScene()
 	g_scene = new Scene;
 	g_image = new Image;
 
-	g_image->resize(256, 256);
+	g_image->resize(512, 512);
 
 	// set up the camera
 	g_camera->setBGColor(Vector3(1.0f, 1.0f, 1.0f));
@@ -83,7 +83,7 @@ makeBunnyScene()
 	// create a spiral of spheres
 	Material* mat = new Lambert(Vector3(1.0f, 0.0f, 0.0f));
 	TriangleMesh *mesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/teapot.obj");
 	Triangle *bunny = new Triangle;
 	bunny->setMesh(mesh);
 	bunny->setMaterial(mat);
