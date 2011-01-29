@@ -57,7 +57,7 @@ Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 		}	
 
 		Ls += m_ks*m_specAmt*pow(dot(rVec, l), m_specExp) * E;        
-		Ld += m_kd*E;
+		Ld += m_kd*E + Ls;
     }
 
 	float nDotV = dot(hit.N, viewDir); 

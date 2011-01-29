@@ -33,7 +33,7 @@ BVH::build(Objects * objs)
 	{
 		BVH_Node* newChild = new BVH_Node();
 		m_baseNode.Children.push_back(*newChild);
-		newChild->build(*objIter);
+		m_baseNode.Children.back().build(*objIter);
 	}	
 }
 
@@ -72,11 +72,11 @@ void BVH_Node::build(Object* obj, int first /* = 0 */, int last /* = -100 */)
 
 			BVH_Node* newChild = new BVH_Node();
 			Children.push_back(*newChild);
-			newChild->build(triMesh, 0, numFaces/2-1);
+			Children.back().build(triMesh, 0, numFaces/2-1);
 
 			newChild = new BVH_Node();
 			Children.push_back(*newChild);
-			newChild->build(triMesh, numFaces/2, numFaces-1);
+			Children.back().build(triMesh, numFaces/2, numFaces-1);
 
 			this->obj = NULL;
 		} 
@@ -88,11 +88,11 @@ void BVH_Node::build(Object* obj, int first /* = 0 */, int last /* = -100 */)
 
 			BVH_Node* newChild = new BVH_Node();
 			Children.push_back(*newChild);
-			newChild->build(triMesh, first, first+numFaces/2-1);
+			Children.back().build(triMesh, first, first+numFaces/2-1);
 
 			newChild = new BVH_Node();
 			Children.push_back(*newChild);
-			newChild->build(triMesh, first+numFaces/2, last);
+			Children.back().build(triMesh, first+numFaces/2, last);
 
 			this->obj = NULL;
 		}
@@ -101,6 +101,7 @@ void BVH_Node::build(Object* obj, int first /* = 0 */, int last /* = -100 */)
 			triMesh->getBounds(vMin, vMax, first, last);
 			isLeaf = true;
 			this->obj = new Triangle(triMesh->getMesh(), first);
+			this->obj->setMaterial(triMesh->getMaterial());
 		}		
 	} 
 	else

@@ -43,7 +43,7 @@ Triangle::renderGL()
 bool
 Triangle::intersect(HitInfo& result, const Ray& r,float tMin, float tMax)
 {
-	if (m_mesh->intersect(result, r, tMin, tMax))
+	if (m_mesh->intersect(result, r, tMin, tMax, m_index))
 	{
 		result.material = this->m_material;
 		return true;
