@@ -45,17 +45,17 @@ Scene::raytraceImage(Camera *cam, Image *img)
 {
     Ray ray;
     HitInfo hitInfo;
-	hitInfo.t = MIRO_TMAX;
     Vector3 shadeResult;
 
-//#pragma omp parallel private(ray, hitInfo, shadeResult)
+#pragma omp parallel private(ray, hitInfo, shadeResult)
 	{
 		// loop over all pixels in the image
 		for (int j = 0; j < img->height(); ++j)
 		{
-//#pragma omp for schedule(dynamic, 4)
+#pragma omp for schedule(dynamic, 4)
 			for (int i = 0; i < img->width(); ++i)
 			{
+				hitInfo.t = MIRO_TMAX;
 				ray = cam->eyeRay(i, j, img->width(), img->height());
 				if (trace(hitInfo, ray, 0.0001, MIRO_TMAX))
 				{

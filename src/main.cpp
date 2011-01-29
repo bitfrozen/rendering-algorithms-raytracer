@@ -65,7 +65,7 @@ makeBunnyScene()
 	g_scene = new Scene;
 	g_image = new Image;
 
-	g_image->resize(64, 64);
+	g_image->resize(256, 256);
 
 	// set up the camera
 	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
@@ -101,7 +101,7 @@ makeBunnyScene()
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/sphere2.obj");
-	planeMesh->load("Models/plane.obj");
+//	planeMesh->load("Models/plane.obj");
 	Triangle *bunny = new Triangle;
 	Triangle *plane = new Triangle;
 	bunny->setMesh(mesh);

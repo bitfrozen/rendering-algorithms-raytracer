@@ -4,7 +4,7 @@
 #include <xmmintrin.h>
 #include <smmintrin.h>
 
-#define NO_SSE
+//#define NO_SSE
 
 TriangleMesh::TriangleMesh() :
     m_normals(0),
@@ -171,7 +171,7 @@ TriangleMesh::singleIntersect(HitInfo& result, const Ray& r, float tMin, float t
 	v *= inv_det;
 
 	ti3 = m_normalIndices[index];
-	result.N = m_normals[ti3.x];//Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
+	result.N = Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
 	result.P = r.o + result.t*r.d;
 	return true;
 }
