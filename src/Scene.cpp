@@ -45,6 +45,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 {
     Ray ray;
     HitInfo hitInfo;
+	hitInfo.t = MIRO_TMAX;
     Vector3 shadeResult;
 
 //#pragma omp parallel private(ray, hitInfo, shadeResult)
@@ -56,12 +57,11 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			for (int i = 0; i < img->width(); ++i)
 			{
 				ray = cam->eyeRay(i, j, img->width(), img->height());
-				if (trace(hitInfo, ray))
+				if (trace(hitInfo, ray, 0.0001, MIRO_TMAX))
 				{
 					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
 					img->setPixel(i, j, shadeResult);
 				}
-				else img->setPixel(i, j, m_envColor);
 			}
 			img->drawScanline(j);
 			glFinish();

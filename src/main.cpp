@@ -64,13 +64,12 @@ makeBunnyScene()
 	g_camera = new Camera;
 	g_scene = new Scene;
 	g_image = new Image;
-	g_scene->setEnvColor(Vector3(0.6,0.6,0.85));
 
-	g_image->resize(256, 256);
+	g_image->resize(64, 64);
 
 	// set up the camera
-	g_camera->setBGColor(Vector3(1.0f, 1.0f, 1.0f));
-	g_camera->setEye(Vector3(-5, 2, 3));
+	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
+	g_camera->setEye(Vector3(-5, 4, 3));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(45);
@@ -80,21 +79,22 @@ makeBunnyScene()
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
 	light->setWattage(2000);
-	g_scene->addLight(light);
+//	g_scene->addLight(light);
 
 	PointLight * light2 = new PointLight;
-	light2->setPosition(Vector3(-15, 10, -6));
+	//light2->setPosition(Vector3(-15, 10, -6));
+	light2->setPosition(Vector3(-5, 2, 3));
 	light2->setColor(Vector3(1, 1, 1));
-	light2->setWattage(2000);
+	light2->setWattage(500);
 	g_scene->addLight(light2);
 
 	// create a spiral of spheres
 	Material* mat = new Blinn(Vector3(0.1f, 0.5f, 0.2f), Vector3(0.06,0.06,0.06));
-	((Blinn *)mat)->setSpecExp(10.0f);
-	((Blinn *)mat)->setReflectAmt(0.4f);
-	((Blinn *)mat)->setRefractAmt(0.6f);
+	//((Blinn *)mat)->setSpecExp(10.0f);
+	//((Blinn *)mat)->setReflectAmt(0.4f);
+	//((Blinn *)mat)->setRefractAmt(0.6f);
 	Material* planeMat = new Blinn(Vector3(0.4f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
-	((Blinn *)planeMat)->setSpecExp(1.0f);
+	((Blinn *)planeMat)->setSpecExp(20.0f);
 	((Blinn *)planeMat)->setSpecAmt(0.1f);
 	//((Blinn *)planeMat)->setReflectAmt(0.4f);
 	//((Blinn *)planeMat)->setRefractAmt(0.6f);
@@ -105,11 +105,11 @@ makeBunnyScene()
 	Triangle *bunny = new Triangle;
 	Triangle *plane = new Triangle;
 	bunny->setMesh(mesh);
-	bunny->setMaterial(mat);
+	bunny->setMaterial(planeMat);
 	plane->setMesh(planeMesh);
 	plane->setMaterial(planeMat);
 	g_scene->addObject(bunny);
-	g_scene->addObject(plane);
+//	g_scene->addObject(plane);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
