@@ -4,7 +4,7 @@
 #include <xmmintrin.h>
 #include <smmintrin.h>
 
-#define NO_SSE
+//#define NO_SSE
 
 TriangleMesh::TriangleMesh() :
     m_normals(0),
@@ -31,7 +31,7 @@ TriangleMesh::~TriangleMesh()
 
 void TriangleMesh::preCalc()
 {
-	m_preCalcTris = new PrecomputedTriangle[m_numTris];
+	m_preCalcTris = (PrecomputedTriangle*)_aligned_malloc(sizeof(PrecomputedTriangle)*m_numTris, 16); //new PrecomputedTriangle[m_numTris];
 	Vector3 A,B,C,N,N1,N2,AC,AB;
 	float d, d1, d2;
 	TriangleMesh::TupleI3 ti3;
@@ -66,7 +66,7 @@ void TriangleMesh::preCalc()
 	}
 }
 
-bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f */, float tMax /* = MIRO_TMAX */)
+bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f */, float tMax /* = MIRO_TMAX */, int index)
 {
 	Hit2 theHit;
 	theHit.t = MIRO_TMAX;
@@ -82,31 +82,28 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f
 	bool hit = false;
 	TriangleMesh::TupleI3 ti3;
 	HitInfo temp;
-	for (unsigned int i = 0; i < m_numTris; ++i)
-	{
 #ifndef NO_SSE
-		if (singleIntersect(theHit, theRay, tMin, tMax, i))
+		if (singleIntersect(theHit, theRay, tMin, tMax, index))
 		{
 			hit = true;
-			if (theHit.t < result.t)
+			if (theHit.t < result.t && theHit.t > tMin)
 			{
-				ti3 = m_normalIndices[i];// [m_index]; 
+				ti3 = m_normalIndices[index];// [m_index]; 
 				result.t = theHit.t;
 				result.P = Vector3(theHit.px, theHit.py, theHit.pz);
 				result.N = (m_normals[ti3.x]*(1-theHit.u-theHit.v)+m_normals[ti3.y]*theHit.u+m_normals[ti3.z]*theHit.v).normalized();
 			}
 		}
 #else
-		if (singleIntersect(temp, r, tMin, tMax, i))
+		if (singleIntersect(temp, r, tMin, tMax, index))
 		{
 			hit = true;
-			if (temp.t < result.t)
+			if (temp.t < result.t && temp.t > tMin)
 			{
 				result = temp;
 			}
 		}
 #endif
-	}
 	return hit;
 }
 
@@ -175,5 +172,6 @@ TriangleMesh::singleIntersect(HitInfo& result, const Ray& r, float tMin, float t
 
 	ti3 = m_normalIndices[index];
 	result.N = Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
+	result.P = r.o + result.t*r.d;
 	return true;
 }

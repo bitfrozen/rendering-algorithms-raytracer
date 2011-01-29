@@ -38,7 +38,7 @@ public:
     TupleI3* nIndices()     {return m_normalIndices;}
     int numTris()           {return m_numTris;}
 	
-	bool intersect(HitInfo& result, const Ray& r, float tMin = 0.0f, float tMax = MIRO_TMAX);
+	bool intersect(HitInfo& result, const Ray& r, float tMin = 0.0f, float tMax = MIRO_TMAX, int index = 0);
 
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);

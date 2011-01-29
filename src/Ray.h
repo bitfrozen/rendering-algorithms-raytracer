@@ -7,15 +7,16 @@
 class Ray
 {
 public:
-    Vector3 o,      //!< Origin of ray
-            d;      //!< Direction of ray
+    __declspec(align(16))Vector3 o,      //!< Origin of ray
+								 d;      //!< Direction of ray
+	int bounces;
 
-    Ray() : o(), d(Vector3(0.0f,0.0f,1.0f))
+    Ray() : o(), d(Vector3(0.0f,0.0f,1.0f)), bounces(0)
     {
         // empty
     }
 
-    Ray(const Vector3& o, const Vector3& d) : o(o), d(d)
+    Ray(const Vector3& o, const Vector3& d, int bounces = 0) : o(o), d(d), bounces(bounces)
     {
         // empty
     }

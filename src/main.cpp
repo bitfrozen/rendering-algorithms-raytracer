@@ -10,6 +10,7 @@
 #include "Triangle.h"
 #include "Lambert.h"
 #include "MiroWindow.h"
+#include "Blinn.h"
 
 void
 makeSpiralScene()
@@ -63,8 +64,9 @@ makeBunnyScene()
 	g_camera = new Camera;
 	g_scene = new Scene;
 	g_image = new Image;
+	g_scene->setEnvColor(Vector3(0.6,0.6,0.85));
 
-	g_image->resize(512, 512);
+	g_image->resize(256, 256);
 
 	// set up the camera
 	g_camera->setBGColor(Vector3(1.0f, 1.0f, 1.0f));
@@ -75,19 +77,39 @@ makeBunnyScene()
 
 	// create and place a point light source
 	PointLight * light = new PointLight;
-	light->setPosition(Vector3(-3, 15, 3));
+	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
-	light->setWattage(1000);
+	light->setWattage(2000);
 	g_scene->addLight(light);
 
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(-15, 10, -6));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setWattage(2000);
+	g_scene->addLight(light2);
+
 	// create a spiral of spheres
-	Material* mat = new Lambert(Vector3(1.0f, 0.0f, 0.0f));
+	Material* mat = new Blinn(Vector3(0.1f, 0.5f, 0.2f), Vector3(0.06,0.06,0.06));
+	((Blinn *)mat)->setSpecExp(10.0f);
+	((Blinn *)mat)->setReflectAmt(0.4f);
+	((Blinn *)mat)->setRefractAmt(0.6f);
+	Material* planeMat = new Blinn(Vector3(0.4f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
+	((Blinn *)planeMat)->setSpecExp(1.0f);
+	((Blinn *)planeMat)->setSpecAmt(0.1f);
+	//((Blinn *)planeMat)->setReflectAmt(0.4f);
+	//((Blinn *)planeMat)->setRefractAmt(0.6f);
 	TriangleMesh *mesh = new TriangleMesh;
-	mesh->load("Models/teapot.obj");
+	TriangleMesh *planeMesh = new TriangleMesh;
+	mesh->load("Models/sphere2.obj");
+	planeMesh->load("Models/plane.obj");
 	Triangle *bunny = new Triangle;
+	Triangle *plane = new Triangle;
 	bunny->setMesh(mesh);
 	bunny->setMaterial(mat);
+	plane->setMesh(planeMesh);
+	plane->setMaterial(planeMat);
 	g_scene->addObject(bunny);
+	g_scene->addObject(plane);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();

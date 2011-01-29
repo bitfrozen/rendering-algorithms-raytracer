@@ -16,9 +16,10 @@ public:
     virtual void renderGL() {}
     virtual void preCalc() {}
 
-
     virtual bool intersect(HitInfo& result, const Ray& ray,
                            float tMin = 0.0f, float tMax = MIRO_TMAX) = 0;
+
+	virtual void getBounds(Vector3& bMin, Vector3& bMax) = 0;
 
 protected:
     const Material* m_material;

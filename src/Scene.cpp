@@ -47,12 +47,12 @@ Scene::raytraceImage(Camera *cam, Image *img)
     HitInfo hitInfo;
     Vector3 shadeResult;
 
-#pragma omp parallel private(ray, hitInfo, shadeResult)
+//#pragma omp parallel private(ray, hitInfo, shadeResult)
 	{
 		// loop over all pixels in the image
 		for (int j = 0; j < img->height(); ++j)
 		{
-#pragma omp for schedule(dynamic, 4)
+//#pragma omp for schedule(dynamic, 4)
 			for (int i = 0; i < img->width(); ++i)
 			{
 				ray = cam->eyeRay(i, j, img->width(), img->height());
@@ -61,6 +61,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
 					img->setPixel(i, j, shadeResult);
 				}
+				else img->setPixel(i, j, m_envColor);
 			}
 			img->drawScanline(j);
 			glFinish();
