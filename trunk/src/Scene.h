@@ -25,10 +25,14 @@ public:
     bool trace(HitInfo& minHit, const Ray& ray,
                float tMin = 0.0f, float tMax = MIRO_TMAX) const;
 
+	void setEnvColor(Vector3& color = Vector3(0)) {m_envColor = color;}
+	const Vector3& envColor() const		{return m_envColor;}
+
 protected:
     Objects m_objects;
     BVH m_bvh;
     Lights m_lights;
+	Vector3 m_envColor;
 };
 
 extern Scene * g_scene;

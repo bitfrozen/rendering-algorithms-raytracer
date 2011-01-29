@@ -20,6 +20,8 @@ public:
     virtual bool intersect(HitInfo& result, const Ray& ray,
                            float tMin = 0.0f, float tMax = MIRO_TMAX);
 
+	virtual void getBounds(Vector3& bMin, Vector3& bMax) {};
+
 protected:
     Vector3 m_center;
     float m_radius;

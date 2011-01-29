@@ -16,10 +16,16 @@ public:
 	virtual void preCalc();
     void setIndex(unsigned int i) {m_index = i;}
     void setMesh(TriangleMesh* m) {m_mesh = m;}
+	TriangleMesh* getMesh()       {return m_mesh;}
+	int getNumTris()   {return m_mesh->numTris();}
 
     virtual void renderGL();
     virtual bool intersect(HitInfo& result, const Ray& ray,
-                           float tMin = 0.0f, float tMax = MIRO_TMAX);    
+                           float tMin = 0.0f, float tMax = MIRO_TMAX);
+
+	virtual void getBounds(Vector3& bMin, Vector3& bMax);
+	void getBounds(Vector3& bMin, Vector3& bMax, int iMin, int iMax);
+
 protected:
     TriangleMesh* m_mesh;
     unsigned int m_index;
