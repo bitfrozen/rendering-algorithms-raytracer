@@ -4,6 +4,7 @@
 #include "Vector4.h"
 #include "RawImage.h"
 
+
 class Texture {
 
 public:

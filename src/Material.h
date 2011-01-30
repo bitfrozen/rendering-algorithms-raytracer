@@ -15,7 +15,7 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
-	Texture* texture;
+	Texture* m_texture;
 
 };
 

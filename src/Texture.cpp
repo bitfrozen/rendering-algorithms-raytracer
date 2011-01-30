@@ -29,18 +29,22 @@ Vector4 Texture::getLookup(float u, float v) {
 }
 
 Vector4 Texture::getPixel(int x, int y) {
+	//tile
+	x = x % m_image->m_width;
+	y = y % m_image->m_height;
+	
 	if (m_image->m_imageType == GRAYSCALE) {
-		float g = m_image->m_rawData[x*m_image->m_height + y];
+		float g = m_image->m_rawData[y*m_image->m_width + x];
 		return Vector4(g, g, g, 1.0f);
 	} else if (m_image->m_imageType == RGB) {
-		int base = x*m_image->m_height*3 + y*3;
+		int base = y*m_image->m_width*3 + x*3;
 		return Vector4(m_image->m_rawData[base], m_image->m_rawData[base + 1], m_image->m_rawData[base + 2], 1.0f);
 	} else if (m_image->m_imageType == RGBA) {
-		int base = x*m_image->m_height*4 + y*4;
+		int base = y*m_image->m_width*4 + x*4;
 		return Vector4(m_image->m_rawData[base], m_image->m_rawData[base + 1], m_image->m_rawData[base + 2], m_image->m_rawData[base + 3]);
 	} else if (m_image->m_imageType == HDR) {
-        //TODO: How do I access HDR????
-		int base = x*m_image->m_height*4 + y*4;
+        //TODO: How do I access HDR???? is it the same as RGBA?
+		int base = y*m_image->m_width*4 + x*4;
 		return Vector4(m_image->m_rawData[base], m_image->m_rawData[base + 1], m_image->m_rawData[base + 2], m_image->m_rawData[base + 3]);
 	} else {
 		return Vector4(0.0f, 0.0f, 0.0f, 1.0f); 
