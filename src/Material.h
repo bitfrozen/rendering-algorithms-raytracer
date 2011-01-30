@@ -3,6 +3,7 @@
 
 #include "Miro.h"
 #include "Vector3.h"
+#include "Texture.h"
 
 class Material
 {
@@ -14,6 +15,8 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
+	Texture* texture;
+
 };
 
 #endif // CSE168_MATERIAL_H_INCLUDED

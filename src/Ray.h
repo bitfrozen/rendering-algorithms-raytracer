@@ -31,7 +31,7 @@ public:
 class HitInfo
 {
 public:
-    float t;                            //!< The hit distance
+    float t, u, v;                        //!< The hit distance
     Vector3 P;                          //!< The hit point
     Vector3 N;                          //!< Shading normal vector
     const Material* material;           //!< Material of the intersected object
