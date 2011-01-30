@@ -92,6 +92,9 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin /* = 0.0f
 				result.t = theHit.t;
 				result.P = Vector3(theHit.px, theHit.py, theHit.pz);
 				result.N = (m_normals[ti3.x]*(1-theHit.u-theHit.v)+m_normals[ti3.y]*theHit.u+m_normals[ti3.z]*theHit.v).normalized();
+				ti3 = m_texCoordIndices[index];
+				result.u = (m_texCoords[ti3.x].x*(1-theHit.u-theHit.v)+m_texCoords[ti3.y].x*theHit.u+m_texCoords[ti3.z].x*theHit.v);
+				result.v = (m_texCoords[ti3.x].y*(1-theHit.u-theHit.v)+m_texCoords[ti3.y].y*theHit.u+m_texCoords[ti3.z].y*theHit.v);
 			}
 		}
 #else
