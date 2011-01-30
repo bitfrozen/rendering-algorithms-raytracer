@@ -17,9 +17,12 @@ public:
 	int m_height;
 	ImageType m_imageType;
 
-	void loadPPM(char* filename);
-	void loadHDR(char* filename);
+	void loadImage(char* filename);
 
+private:
+	void loadHDR(char* filename);
+	void loadPPM(char* filename);
+    void loadTGA(char* filename);
 };
 
 #endif

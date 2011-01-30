@@ -27,7 +27,7 @@ Texture* const TextureGenerator::generateCellTexture(int width, int height, int 
 					min = dist;
 			}
 			min = sqrt(min);
-			rawData[w*height + h] = min;
+			rawData[h*width + w] = min;
 			if (min < minDist)
 				minDist = min;
 			if (min > maxDist)
