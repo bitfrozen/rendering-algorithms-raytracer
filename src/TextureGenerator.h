@@ -3,12 +3,14 @@
 
 #include "Vector3.h"
 #include "Texture.h"
+#include "Perlin.h"
 /**
  * Procedurally makes a stone texture using cellular texturing
  */
 const class TextureGenerator {
 public:
    Texture* const generateCellTexture(int width, int height, int numCells, Texture* noise);
+   Texture* const generateStoneTexture(int width, int height, int numCells, Texture* noise);
 
 };
 
