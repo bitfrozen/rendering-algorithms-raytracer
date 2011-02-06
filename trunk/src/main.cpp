@@ -11,6 +11,9 @@
 #include "Lambert.h"
 #include "MiroWindow.h"
 #include "Blinn.h"
+#include "RawImage.h"
+#include "TextureGenerator.h"
+#include "Texture.h"
 
 void
 makeSpiralScene()
@@ -100,7 +103,7 @@ makeBunnyScene()
 	//((Blinn *)planeMat)->setRefractAmt(0.6f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/sphere2.obj");
+	mesh->load("Models/plane.obj");
 //	planeMesh->load("Models/plane.obj");
 	Triangle *bunny = new Triangle;
 	Triangle *plane = new Triangle;
@@ -115,11 +118,62 @@ makeBunnyScene()
 	g_scene->preCalc();
 }
 
+
+void
+makeStoneFloorScene()
+{
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
+
+	g_image->resize(256, 256);
+
+	// set up the camera
+	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
+	g_camera->setEye(Vector3(0, 5, 10));
+	g_camera->setLookAt(Vector3(0, 0, 0));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(45);
+
+	// create and place a point light source
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(5, 5, 5));
+	//light2->setPosition(Vector3(-5, 2, 3));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setWattage(500);
+	g_scene->addLight(light2);
+
+	//some texture stuff
+	Material* cellMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	TextureGenerator* tg = new TextureGenerator();
+	Texture* cellTex = tg->generateStoneTexture(300, 300, 200);
+	delete tg;
+	cellMat->m_texture = cellTex;
+	//end
+
+	// create sphere
+	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *planeMesh = new TriangleMesh;
+	mesh->load("Models/sphere2.obj");
+	planeMesh->load("Models/plane.obj");
+	Triangle *bunny = new Triangle;
+	Triangle *plane = new Triangle;
+	bunny->setMesh(mesh);
+	bunny->setMaterial(cellMat);
+	plane->setMesh(planeMesh);
+	plane->setMaterial(cellMat);
+	g_scene->addObject(bunny);
+	g_scene->addObject(plane);
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
+}
 int
 main(int argc, char*argv[])
 {
 	// create a scene
-    makeBunnyScene();
+	makeBunnyScene()
+    //makeStoneFloorScene();
 
     MiroWindow miro(&argc, argv);
     miro.mainLoop();

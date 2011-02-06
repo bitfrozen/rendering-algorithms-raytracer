@@ -9,8 +9,8 @@
  */
 const class TextureGenerator {
 public:
-   Texture* const generateCellTexture(int width, int height, int numCells, Texture* noise);
-   Texture* const generateStoneTexture(int width, int height, int numCells, Texture* noise);
+   Texture* const generateCellTexture(int width, int height, int numCells);
+   Texture* const generateStoneTexture(int width, int height, int numCells);
 
 };
 
