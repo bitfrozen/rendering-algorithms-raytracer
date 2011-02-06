@@ -43,6 +43,10 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
         L += std::max(0.0f, nDotL/falloff * pLight->wattage() / PI) * result;
     }
     
+	if (m_texture != NULL) {
+		Vector4 texCol = m_texture->getLookup(hit.u, hit.v);
+		L = L*Vector3(texCol.x, texCol.y, texCol.z);
+	}
     // add the ambient component
     L += m_ka;
     

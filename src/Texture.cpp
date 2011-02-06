@@ -29,6 +29,10 @@ Vector4 Texture::getLookup(float u, float v) {
 }
 
 Vector4 Texture::getPixel(int x, int y) {
+	//clamp
+	//if (x > m_image->m_width) x = m_image->m_width;
+	//if (y > m_image->m_height) y = m_image->m_height;
+
 	//tile
 	x = x % m_image->m_width;
 	y = y % m_image->m_height;
