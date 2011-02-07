@@ -1,5 +1,6 @@
 
 #include "RawImage.h"
+#include "hdrloader.h"
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@ void RawImage::loadImage(char* filename) {
 	if ((ext == "ppm") || (ext == "PPM")) {
 		loadPPM(filename);
 	} else if ((ext == "hdr") || (ext == "HDR")) {
-
+		loadHDR(filename);
 	} else if ((ext == "tga") || (ext == "TGA")) {
 		loadTGA(filename);
 	}
@@ -26,7 +27,8 @@ void RawImage::loadImage(char* filename) {
 
 
 void RawImage::loadHDR(char* filename){
-
+	HDRLoader::load(filename, m_rawData, m_width, m_height);
+	m_imageType = RGB;
 }
 void RawImage::loadPPM(char* filename) {
 	const int BUFSIZE = 128;
