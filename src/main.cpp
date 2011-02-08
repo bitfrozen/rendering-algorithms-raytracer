@@ -16,9 +16,29 @@
 #include "Texture.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
+void makeSpiralScene();
+void makeBunnyScene();
+void makeBunny20Scene();
+void makeEnvironmentMapScene();
+void makeStoneFloorScene();
 
-void
-makeSpiralScene()
+
+int main(int argc, char*argv[])
+{
+	// create a scene
+	makeBunnyScene();
+	//makeBunny20Scene();
+	//makeStoneFloorScene();
+	//makeSponzaScene();
+	//makeEnvironmentMapScene();
+
+	MiroWindow miro(&argc, argv);
+	miro.mainLoop();
+
+	return 0; // never executed
+}
+
+void makeSpiralScene()
 {
     g_camera = new Camera;
     g_scene = new Scene;
@@ -63,8 +83,7 @@ makeSpiralScene()
     g_scene->preCalc();
 }
 
-void
-makeBunnyScene()
+void makeBunnyScene()
 {
 	g_camera = new Camera;
 	g_scene = new Scene;
@@ -92,12 +111,20 @@ makeBunnyScene()
 	light2->setWattage(2000);
 	g_scene->addLight(light2);
 
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Mono_Lake.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(2.0f);
+
 	// create a spiral of spheres
 	Blinn* mat = new Blinn(Vector3(0.1f, 0.5f, 0.2f), Vector3(0.06,0.06,0.06));
 	mat->setSpecExp(30.0f);
 	mat->setIor(3.0f);
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
+	mat->setEnvMap(hdrTex);
 	Blinn* planeMat = new Blinn(Vector3(0.6f, 0.1f, 0.1f), Vector3(0.06,0.06,0.06));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0.1f);
@@ -108,14 +135,6 @@ makeBunnyScene()
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/bunny.obj");
 	planeMesh->load("Models/plane.obj");
-	Triangle *bunny = new Triangle;
-	Triangle *plane = new Triangle;
-	bunny->setMesh(mesh);
-	bunny->setMaterial(mat);
-	plane->setMesh(planeMesh);
-	plane->setMaterial(planeMat);
-	g_scene->addObject(bunny);
-	g_scene->addObject(plane);
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
 
@@ -123,26 +142,24 @@ makeBunnyScene()
 	g_scene->preCalc();
 }
 
-void
-makeStoneFloorScene()
+void makeStoneFloorScene()
 {
 	g_camera = new Camera;
 	g_scene = new Scene;
 	g_image = new Image;
 
-	g_image->resize(256, 256);
+	g_image->resize(512, 512);
 
 	// set up the camera
-	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
+	g_scene->setBGColor(Vector3(0.6,0.6,0.85));
 	g_camera->setEye(Vector3(0, 5, 10));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(45);
+	g_camera->setFOV(90);
 
 	// create and place a point light source
 	PointLight * light2 = new PointLight;
 	light2->setPosition(Vector3(5, 5, 5));
-	//light2->setPosition(Vector3(-5, 2, 3));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setWattage(500);
 	g_scene->addLight(light2);
@@ -158,14 +175,8 @@ makeStoneFloorScene()
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/sphere2.obj");
 	planeMesh->load("Models/plane.obj");
-	Triangle *bunny = new Triangle;
-	Triangle *plane = new Triangle;
-	bunny->setMesh(mesh);
-	bunny->setMaterial(cellMat);
-	plane->setMesh(planeMesh);
-	plane->setMaterial(cellMat);
-	g_scene->addObject(bunny);
-	g_scene->addObject(plane);
+	makeMeshObjs(mesh, cellMat);
+	makeMeshObjs(planeMesh, cellMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
@@ -176,10 +187,10 @@ void makeEnvironmentMapScene() {
 	g_scene = new Scene;
 	g_image = new Image;
 
-	g_image->resize(256, 256);
+	g_image->resize(512, 512);
 
 	// set up the camera
-	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
+	g_scene->setBGColor(Vector3(0.6,0.6,0.85));
 	g_camera->setEye(Vector3(0, 5, -10));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
@@ -210,21 +221,14 @@ void makeEnvironmentMapScene() {
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/sphere2.obj");
 	planeMesh->load("Models/plane.obj");
-	Triangle *bunny = new Triangle;
-	Triangle *plane = new Triangle;
-	bunny->setMesh(mesh);
-	bunny->setMaterial(cellMat);
-	plane->setMesh(planeMesh);
-	plane->setMaterial(cellMat);
-	g_scene->addObject(bunny);
-	g_scene->addObject(plane);
+	makeMeshObjs(mesh, cellMat);
+	makeMeshObjs(planeMesh, cellMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
 }
 
-inline Matrix4x4
-	translate(float x, float y, float z)
+inline Matrix4x4 translate(float x, float y, float z)
 {
 	Matrix4x4 m;
 	m.setColumn4(Vector4(x, y, z, 1));
@@ -232,8 +236,7 @@ inline Matrix4x4
 }
 
 
-inline Matrix4x4
-	scale(float x, float y, float z)
+inline Matrix4x4 scale(float x, float y, float z)
 {
 	Matrix4x4 m;
 	m.m11 = x;
@@ -243,8 +246,7 @@ inline Matrix4x4
 }
 
 // angle is in degrees
-inline Matrix4x4
-	rotate(float angle, float x, float y, float z)
+inline Matrix4x4 rotate(float angle, float x, float y, float z)
 {
 	float rad = angle*(PI/180.);
 
@@ -490,7 +492,7 @@ makeBunny20Scene()
 }
 
 void
-	makeSponzaScene()
+makeSponzaScene()
 {
 	g_camera = new Camera;
 	g_scene = new Scene;
@@ -519,23 +521,6 @@ void
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
-}
-
-int
-main(int argc, char*argv[])
-{
-	// create a scene
-    makeBunnyScene();
-    //makeBunnyScene();
-	makeBunny20Scene();
-    //makeStoneFloorScene();
-	//makeSponzaScene();
-	makeEnvironmentMapScene();
-
-    MiroWindow miro(&argc, argv);
-    miro.mainLoop();
-
-    return 0; // never executed
 }
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat)

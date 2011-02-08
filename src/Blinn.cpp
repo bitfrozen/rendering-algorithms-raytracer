@@ -101,7 +101,33 @@ Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 			Vector3 reflection = rHit.material->shade(rRay, rHit, scene);				
 			Lr += m_ks*m_reflectAmt*Rs*reflection;
 		}
-		else Lr += m_ks*m_reflectAmt*Rs*g_scene->getBGColor();
+		else 
+		{
+			if (m_envMap != NULL || g_scene->getEnvMap() != NULL) 
+			{
+				//environment map lookup
+				float theta = atan2(rVec.z, rVec.x) + PI;
+				float phi = acosf(rVec.y);
+				float u = theta * 0.5 * piRecip;
+				float v = 1.0 - (phi * piRecip);
+				if (m_envMap != NULL)
+				{
+					Vector3 envColor = m_envMap->getLookup3(u,v);
+					envColor /= m_envExposure;
+					Lr += m_ks*m_reflectAmt*Rs*envColor;
+				} 
+				else
+				{
+					Vector3 envColor = g_scene->getEnvMap()->getLookup3(u,v);
+					envColor /= g_scene->getEnvExposure();
+					Lr += m_ks*m_reflectAmt*Rs*envColor;
+				}
+			}
+			else
+			{
+				Lr += m_ks*m_reflectAmt*Rs*g_scene->getBGColor();
+			}
+		}
 	}
 	else Lr += m_ks*m_reflectAmt*Rs*g_scene->getBGColor();
 
@@ -126,7 +152,33 @@ Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 			Vector3 refraction = tHit.material->shade(tRay, tHit, scene);				
 			Lt += m_ks*m_refractAmt*Ts*refraction;
 		}
-		else Lt += m_ks*m_refractAmt*Ts*g_scene->getBGColor();
+		else 
+		{
+			if (m_envMap != NULL || g_scene->getEnvMap() != NULL) 
+			{
+				//environment map lookup
+				float theta = atan2(tVec.z, tVec.x) + PI;
+				float phi = acosf(tVec.y);
+				float u = theta * 0.5 * piRecip;
+				float v = 1.0 - (phi * piRecip);
+				if (m_envMap != NULL)
+				{
+					Vector3 envColor = m_envMap->getLookup3(u,v);
+					envColor /= m_envExposure;
+					Lt += m_ks*m_refractAmt*Ts*envColor;
+				} 
+				else
+				{
+					Vector3 envColor = g_scene->getEnvMap()->getLookup3(u,v);
+					envColor /= g_scene->getEnvExposure();
+					Lt += m_ks*m_refractAmt*Ts*envColor;
+				}
+			}
+			else
+			{
+				Lt += m_ks*m_refractAmt*Ts*g_scene->getBGColor();
+			}
+		}
 	}
 	else Lt += m_ks*m_refractAmt*Ts*g_scene->getBGColor();
     

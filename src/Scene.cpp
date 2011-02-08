@@ -68,21 +68,24 @@ Scene::raytraceImage(Camera *cam, Image *img)
 				{
 					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
 					img->setPixel(i, j, shadeResult);
-				} else {
-					if (m_envMap != NULL) {
+				} 
+				else 
+				{
+					if (m_envMap != NULL) 
+					{
 						//environment map lookup
-						float r = ray.d.length();
-						float theta = asin(ray.d[1]) + PI/2;
-						float phi = atan2(ray.d[0], ray.d[2]) + PI;
-						float v = theta / PI;
-						float u = phi / (2*PI);
+						Vector3 rayD = Vector3(ray.dx, ray.dy, ray.dz);
+						float theta = atan2(rayD.z, rayD.x) + PI;
+						float phi = acos(rayD.y);
+						float u = theta * 0.5 * piRecip;
+						float v = 1.0 - (phi * piRecip);
 
 						Vector3 envColor = m_envMap->getLookup3(u,v);
 						envColor /= m_envExposure;
 						img->setPixel(i,j,envColor);
 					}
+					else img->setPixel(i, j, g_scene->getBGColor());
 				}
-				else img->setPixel(i, j, m_envColor);
 			}
 			img->drawScanline(j);
 			glFinish();

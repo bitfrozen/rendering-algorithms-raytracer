@@ -14,6 +14,7 @@ const int MAX_LEAF_SIZE = 8;
 const int NODE_SIZE = 2;
 const float epsilon   = 0.001f; 
 const float PI = 3.1415926f;
+const float piRecip = 1.0f / PI;
 const float DegToRad = PI/180.0f;
 const float RadToDeg = 180.0f/PI;
 const float Ttri = 1.0f;
