@@ -216,6 +216,8 @@ void makeEnvironmentMapScene() {
 	cellMat->m_texture = cellTex;
 	//end
 
+
+
 	// create sphere
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
