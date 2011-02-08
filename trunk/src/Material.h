@@ -15,7 +15,11 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
+	void setEnvMap(Texture* map)	{m_envMap = map;}
+	void setEnvExposure(float exp)	{m_envExposure = exp;}
 	Texture* m_texture;
+	Texture* m_envMap;
+	float m_envExposure;
 
 	static float fresnel(float n1, float n2, float cosThetaI) {		// Fn to compute fresnel coefficients.
 		float n1CosTh = n1*cosThetaI;

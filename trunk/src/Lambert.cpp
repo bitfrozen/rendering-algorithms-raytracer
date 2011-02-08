@@ -45,7 +45,7 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
     }
     
 	if (m_texture != NULL) {
-		Vector4 texCol = m_texture->getLookup(hit.u, hit.v);
+		Vector4 texCol = m_texture->getLookup(hit.a, hit.b);
 		L = L*Vector3(texCol.x, texCol.y, texCol.z);
 	}
     // add the ambient component

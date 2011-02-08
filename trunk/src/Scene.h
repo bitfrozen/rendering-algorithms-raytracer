@@ -20,7 +20,8 @@ public:
     const Lights* lights() const        {return &m_lights;}
 
 	void setEnvMap(Texture* envMap)		{m_envMap = envMap; }
-	void setEnvExposure(float exposure)	{m_envExposure = exposure; }
+	void setEnvExposure(float exposure)	{m_envExposure = exposure;}
+	float getEnvExposure()				{return m_envExposure;}
 
     void preCalc();
     void openGL(Camera *cam);
@@ -29,14 +30,16 @@ public:
     bool trace(HitInfo& minHit, const Ray& ray,
                float tMin = 0.0f, float tMax = MIRO_TMAX) const;
 
-	void setBGColor(Vector3& color)		{BGColor = color;}
-	Vector3& getBGColor()				{return BGColor;}
+	void setBGColor(Vector3& color)		{m_BGColor = color;}
+	Vector3& getBGColor()				{return m_BGColor;}
+
+	Texture* getEnvMap()				{return m_envMap;}
 
 protected:
     Objects m_objects;
     BVH m_bvh;
     Lights m_lights;
-	Vector3 BGColor;
+	Vector3 m_BGColor;
 	Texture* m_envMap;
 	float m_envExposure;
 };
