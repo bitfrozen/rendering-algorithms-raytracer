@@ -6,11 +6,11 @@
 class Blinn : public Material
 {
 public:
-    Blinn(const Vector3 & kd = Vector3(1),
-			const Vector3 & ka = Vector3(0),
-			const Vector3 & ks = Vector3(1),
-			const Vector3 & kt = Vector3(0),
-			float ior = 1.5,
+    Blinn(const Vector3 & kd = Vector3(1.f),
+			const Vector3 & ka = Vector3(0.f),
+			const Vector3 & ks = Vector3(1.f),
+			const Vector3 & kt = Vector3(0.f),
+			float ior = 1.5f,
 			float specExp = 1.0,
 			float specAmt = 1.0,
 			float reflectAmt = 0.0,
@@ -42,15 +42,15 @@ public:
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
 protected:
-    Vector3 m_kd;
-    Vector3 m_ka;
-	Vector3 m_ks;
-	Vector3 m_kt;
-	float m_ior;
-	float m_specExp;
-	float m_specAmt;
-	float m_reflectAmt;
-	float m_refractAmt;
+    Vector3 m_kd;			// Diffuse Color
+    Vector3 m_ka;			// Ambient Color
+	Vector3 m_ks;			// Specular / Reflection Color
+	Vector3 m_kt;			// Transmittance (Refraction) Color
+	float m_ior;			// Index of Refraction
+	float m_specExp;		// Specular exponent
+	float m_specAmt;		// Specular component weight (only for "hilights")
+	float m_reflectAmt;		// Reflection amount. 1.0 -> 100% reflectve. Weighted using fresnel approximation.
+	float m_refractAmt;		// Refraction amount. This weights the refraction amount prescribed by the fresnel approximation.
 };
 
 #endif // CSE168_LAMBERT_H_INCLUDED

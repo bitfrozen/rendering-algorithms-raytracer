@@ -5,26 +5,34 @@
 #include "Object.h"
 #include <vector>
 
-class BVH_Node
+#define GET_NUMCHILD(a) (a)>>1
+
+ALIGN_SSE class BVH_Node
 {
 public:
-	bool intersect(HitInfo& result, const Ray& ray, float tMin = 0.0f, float tMax = MIRO_TMAX) const;
-	void build(Object* obj, int first = 0, int last = -100);
-	Vector3 vMin, vMax;
-	std::vector<BVH_Node> Children;
-	bool isLeaf;
-	Object* obj;
+	AABB* bBox;
+	union {
+		u_int numChildren;
+		u_int isLeaf;
+	};
+	union {
+		BVH_Node* Children;
+		Object** objs;
+	};
+	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon, float tMax = MIRO_TMAX) const;
+	void build(Object** objs, u_int numObjs);
+	bool partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float bbSAInv);
 };
 
 class BVH
 {
 public:
-    void build(Objects * objs);
+    void build(Objects* objs);
 
     bool intersect(HitInfo& result, const Ray& ray,
-                   float tMin = 0.0f, float tMax = MIRO_TMAX) const;
+                   float tMin = epsilon, float tMax = MIRO_TMAX) const;
 protected:
-    Objects * m_objects;
+    Objects* m_objects;
 	BVH_Node m_baseNode;
 };
 

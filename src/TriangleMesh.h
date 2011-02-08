@@ -4,6 +4,8 @@
 #include "Matrix4x4.h"
 #include "Ray.h"
 
+class AABB; 
+
 class TriangleMesh
 {
 public:
@@ -25,54 +27,40 @@ public:
 
     struct TupleI3
     {
-        unsigned int x, y, z;
+        u_int x, y, z;
     };
 
     struct VectorR2
     {
         float x, y;
     };
-    Vector3* vertices()     {return m_vertices;}
-    Vector3* normals()      {return m_normals;}
-    TupleI3* vIndices()     {return m_vertexIndices;}
-    TupleI3* nIndices()     {return m_normalIndices;}
-    int numTris()           {return m_numTris;}
 	
-	bool intersect(HitInfo& result, const Ray& r, float tMin = 0.0f, float tMax = MIRO_TMAX, int index = 0);
+	bool intersect(HitInfo& result, const Ray& r, float tMin = epsilon, float tMax = MIRO_TMAX, u_int index = 0);
+
+	Vector3* m_normals;
+	Vector3* m_vertices;
+	VectorR2* m_texCoords;
+
+	TupleI3* m_normalIndices;
+	TupleI3* m_vertexIndices;
+	TupleI3* m_texCoordIndices;
+	u_int m_numTris;
+
+	AABB* AABB_PreCalc;				// Precalced AABB's for all triangles, to speed up BVH build.
+	void cleanBVHMem();				// Clear the AABB's to save memory (don't need them after build).
 
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);
-	__declspec(align(16)) struct Ray2
-	{
-		float ox, oy, oz, ow;
-		float dx, dy, dz, dw;
-	};
-	__declspec(align(16)) struct Hit2
-	{
-		float px, py, pz, pw;
-		float t, u, v;
-	};
-	__declspec(align(16)) struct PrecomputedTriangle
+
+	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine which currently doesn't work...
 	{
 		float nx, ny, nz, nd;
 		float ux, uy, uz, ud;
 		float vx, vy, vz, vd;
 	};
 
-	PrecomputedTriangle* m_preCalcTris;
-
-	bool singleIntersect(Hit2& result, const Ray2& r, float tMin, float tMax, int index);
-	bool singleIntersect(HitInfo& result, const Ray& r, float tMin, float tMax, int index);
-
-    Vector3* m_normals;
-    Vector3* m_vertices;
-    VectorR2* m_texCoords;
-
-    TupleI3* m_normalIndices;
-    TupleI3* m_vertexIndices;
-    TupleI3* m_texCoordIndices;
-    unsigned int m_numTris;
+	PrecomputedTriangle* m_preCalcTris;			// Holds precomputed triangle data for intersection routine.
+	bool doPreCalc;
 };
-
 
 #endif // CSE168_TRIANGLE_MESH_H_INCLUDED

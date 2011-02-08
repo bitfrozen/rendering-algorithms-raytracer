@@ -29,10 +29,14 @@ public:
     bool trace(HitInfo& minHit, const Ray& ray,
                float tMin = 0.0f, float tMax = MIRO_TMAX) const;
 
+	void setBGColor(Vector3& color)		{BGColor = color;}
+	Vector3& getBGColor()				{return BGColor;}
+
 protected:
     Objects m_objects;
     BVH m_bvh;
     Lights m_lights;
+	Vector3 BGColor;
 	Texture* m_envMap;
 	float m_envExposure;
 };

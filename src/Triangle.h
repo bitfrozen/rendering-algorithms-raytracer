@@ -10,25 +10,24 @@
 class Triangle : public Object
 {
 public:
-    Triangle(TriangleMesh * m = 0, unsigned int i = 0);
+    Triangle(TriangleMesh* m = 0, u_int i = 0);
     virtual ~Triangle();
 
 	virtual void preCalc();
-    void setIndex(unsigned int i) {m_index = i;}
+    void setIndex(u_int i) {m_index = i;}
     void setMesh(TriangleMesh* m) {m_mesh = m;}
-	TriangleMesh* getMesh()       {return m_mesh;}
-	int getNumTris()   {return m_mesh->numTris();}
 
     virtual void renderGL();
     virtual bool intersect(HitInfo& result, const Ray& ray,
-                           float tMin = 0.0f, float tMax = MIRO_TMAX);
+                           float tMin = epsilon, float tMax = MIRO_TMAX);
 
-	virtual void getBounds(Vector3& bMin, Vector3& bMax);
-	void getBounds(Vector3& bMin, Vector3& bMax, int iMin, int iMax);
+	virtual void getAABB(AABB& bBox);
+	virtual void getCentroid(Vector3& centroid);
+	void cleanBVHMem();
 
 protected:
     TriangleMesh* m_mesh;
-    unsigned int m_index;
+    u_int m_index;
 };
 
 #endif // CSE168_TRIANGLE_H_INCLUDED

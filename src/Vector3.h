@@ -38,7 +38,7 @@ public:
     const Vector3 & operator=(float a) {x = y = z = a; return *this;}
 
     void set(float a) {x = y = z = a;}
-    void set(float a, float b, float c) {x = a; y = b; z = c;}
+    void set(float a, float b, float c, float d = 0.0) {x = a; y = b; z = c;}
     void set(const Vector3 & v) {x = v.x; y = v.y; z = v.z;}
     
     
@@ -91,7 +91,7 @@ public:
     const Vector3 & operator-=(float a) {x -= a; y -= a; z -= a; return *this;}
 
 
-    //! Scalar multiplication operator.
+    //! Sxcalar multiplication operator.
     Vector3 operator*(float a) const {return Vector3(x * a, y * a, z * a);}
     
     //! Component-wise vector multiplication operator.
