@@ -17,7 +17,7 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 {
     Vector3 L = Vector3(0.0f, 0.0f, 0.0f);
     
-    const Vector3 viewDir = -ray.d; // d is a unit vector
+	Vector3 rayD = Vector3(ray.dx, ray.dy, ray.dz);
     
     const Lights *lightlist = scene.lights();
     
@@ -27,7 +27,8 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
     {
         PointLight* pLight = *lightIter;
     
-        Vector3 l = pLight->position() - hit.P;
+		Vector3 P = Vector3(hit.px, hit.py, hit.pz);
+        Vector3 l = pLight->position() - P;
         
         // the inverse-squared falloff
         float falloff = l.length2();

@@ -4,6 +4,7 @@
 
 Sphere::Sphere()
 {
+	bBox = new AABB(Vector3(0), Vector3(0));
 }
 
 Sphere::~Sphere()
@@ -24,10 +25,12 @@ bool
 Sphere::intersect(HitInfo& result, const Ray& ray,
                   float tMin, float tMax)
 {
-    const Vector3 toO = ray.o - m_center; 
+    static Vector3 rayO = Vector3(ray.ox, ray.oy, ray.oz);
+	const Vector3 toO = rayO - m_center; 
 
-    const float a = ray.d.length2(); 
-    const float b = dot(2*ray.d, toO);
+    static Vector3 rayD = Vector3(ray.dx, ray.dy, ray.dz);
+	const float a = rayD.length2(); 
+    const float b = dot(2*rayD, toO);
     const float c = toO.length2() - m_radius*m_radius;
 
     const float discrim = b*b-4.0f*a*c; 
@@ -55,9 +58,10 @@ Sphere::intersect(HitInfo& result, const Ray& ray,
         // neither of the solutions are in the required range
         return false; 
     }
-
-    result.P = ray.o + result.t*ray.d; 
-    result.N = (result.P-m_center); 
+ 
+    Vector3 P = rayO + result.t*rayD;
+	result.px = P.x; result.py = P.y; result.pz = P.z;
+	result.N = (P-m_center); 
     result.N.normalize(); 
     result.material = this->m_material; 
 

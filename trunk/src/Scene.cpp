@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Image.h"
 #include "Console.h"
+#include <time.h>
 #include <omp.h>
 
 Scene * g_scene = 0;
@@ -48,6 +49,7 @@ Scene::preCalc()
 void
 Scene::raytraceImage(Camera *cam, Image *img)
 {
+	clock_t start = clock();		// Added a clock here to time the rendering.
     Ray ray;
     HitInfo hitInfo;
     Vector3 shadeResult;
@@ -80,6 +82,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 						img->setPixel(i,j,envColor);
 					}
 				}
+				else img->setPixel(i, j, m_envColor);
 			}
 			img->drawScanline(j);
 			glFinish();
@@ -87,9 +90,10 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			fflush(stdout);
 		}
 	}
-		    
+	clock_t end = clock();
 	printf("Rendering Progress: 100.000%\n");
 	debug("done Raytracing!\n");
+	printf("Rendering time: %.4fs...\n", (end-start)/1000.f);
 }
 
 bool
