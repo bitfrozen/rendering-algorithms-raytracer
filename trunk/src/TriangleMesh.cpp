@@ -158,7 +158,7 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 	det = dot(edge1, pvec);
 
 	tvec = ro - m_vertices[ti3.x];
-	u = dot(tvec, pvec);
+	u = dot(tvec, pvec);	
 	if (u < 0.0 || u > det) return false;
 
 	qvec = cross(tvec, edge1);
@@ -176,6 +176,17 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 		result.geoN = cross(edge1, edge2).normalized();
 		ti3 = m_normalIndices[index];
 		result.N = Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
+		if (m_texCoordIndices)
+		{
+			ti3 = m_texCoordIndices[index];
+			result.a = m_texCoords[ti3.x].x*(1-u-v)+m_texCoords[ti3.y].x*u+m_texCoords[ti3.z].x*v;
+			result.b = m_texCoords[ti3.x].y*(1-u-v)+m_texCoords[ti3.y].y*u+m_texCoords[ti3.z].y*v;
+		}
+		else
+		{
+			result.a = u;
+			result.b = v;
+		}
 		Vector3 P = ro + result.t*rd;
 		result.px = P.x; result.py = P.y; result.pz = P.z;
 		hit = true;
