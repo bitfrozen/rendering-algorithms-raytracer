@@ -7,10 +7,10 @@
 /**
  * Procedurally makes a stone texture using cellular texturing
  */
-const class TextureGenerator {
+class TextureGenerator {
 public:
-   Texture* const generateCellTexture(int width, int height, int numCells);
-   Texture* const generateStoneTexture(int width, int height, int numCells);
+   static Texture* generateCellTexture(int width, int height, int numCells);
+   static Texture* generateStoneTexture(int width, int height, int numCells);
 
 };
 

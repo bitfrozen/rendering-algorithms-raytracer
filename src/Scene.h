@@ -12,11 +12,15 @@ class Image;
 class Scene
 {
 public:
+	Scene();
     void addObject(Object* pObj)        {m_objects.push_back(pObj);}
     const Objects* objects() const      {return &m_objects;}
 
     void addLight(PointLight* pObj)     {m_lights.push_back(pObj);}
     const Lights* lights() const        {return &m_lights;}
+
+	void setEnvMap(Texture* envMap)		{m_envMap = envMap; }
+	void setEnvExposure(float exposure)	{m_envExposure = exposure; }
 
     void preCalc();
     void openGL(Camera *cam);
@@ -29,6 +33,8 @@ protected:
     Objects m_objects;
     BVH m_bvh;
     Lights m_lights;
+	Texture* m_envMap;
+	float m_envExposure;
 };
 
 extern Scene * g_scene;
