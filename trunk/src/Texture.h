@@ -2,6 +2,7 @@
 #define CSE168_TEXTURE_INCLUDED
 
 #include "Vector4.h"
+#include "Vector3.h"
 #include "RawImage.h"
 
 
@@ -12,6 +13,7 @@ public:
 	Texture(RawImage* image) { m_image = image; }
 	~Texture();
 	Vector4 getLookup(float u, float v);
+	Vector3 getLookup3(float u, float v);
 
 private:
 	Vector4 getPixel(int x, int y);

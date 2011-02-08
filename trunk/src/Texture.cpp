@@ -10,6 +10,17 @@ Texture::~Texture() {
 }
 
 Vector4 Texture::getLookup(float u, float v) {
+	//force to be between 0 and 1
+	u = u - float(int(u));
+	v = v - float(int(v));
+	if (u < 0.0f)
+		u = u + 1.0f;
+	if (v < 0.0f)
+		v = v + 1.0f;
+
+	//textures start with v = 0 at the top, so reverse our v:
+	v = 1.0f - v;
+
     //use bilinear lookup
 	float px = u*m_image->m_width;
 	float py = v*m_image->m_height;
@@ -26,6 +37,11 @@ Vector4 Texture::getLookup(float u, float v) {
 
 	//interpolate those two points
 	return q1*(1 - dy) + q2*dy;
+}
+
+Vector3 Texture::getLookup3(float u, float v) {
+	Vector4 temp = getLookup(u,v);
+	return Vector3(temp[0], temp[1], temp[2]);
 }
 
 Vector4 Texture::getPixel(int x, int y) {

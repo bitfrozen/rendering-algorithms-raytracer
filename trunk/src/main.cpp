@@ -145,9 +145,7 @@ makeStoneFloorScene()
 
 	//some texture stuff
 	Material* cellMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
-	TextureGenerator* tg = new TextureGenerator();
-	Texture* cellTex = tg->generateStoneTexture(300, 300, 200);
-	delete tg;
+	Texture* cellTex = TextureGenerator::generateStoneTexture(300, 300, 200);
 	cellMat->m_texture = cellTex;
 	//end
 
@@ -168,12 +166,67 @@ makeStoneFloorScene()
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
 }
+
+void makeEnvironmentMapScene() {
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
+
+	g_image->resize(256, 256);
+
+	// set up the camera
+	g_camera->setBGColor(Vector3(0.6,0.6,0.85));
+	g_camera->setEye(Vector3(0, 5, -10));
+	g_camera->setLookAt(Vector3(0, 0, 0));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(90);
+
+	// create and place a point light source
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(-5, 10, -5));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setWattage(500);
+	g_scene->addLight(light2);
+
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Mono_Lake.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(2.0f);
+
+	//generate stone texture
+	Material* cellMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	Texture* cellTex = TextureGenerator::generateStoneTexture(300, 300, 200);
+	cellMat->m_texture = cellTex;
+	//end
+
+	// create sphere
+	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *planeMesh = new TriangleMesh;
+	mesh->load("Models/sphere2.obj");
+	planeMesh->load("Models/plane.obj");
+	Triangle *bunny = new Triangle;
+	Triangle *plane = new Triangle;
+	bunny->setMesh(mesh);
+	bunny->setMaterial(cellMat);
+	plane->setMesh(planeMesh);
+	plane->setMaterial(cellMat);
+	g_scene->addObject(bunny);
+	g_scene->addObject(plane);
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
+}
+
+
 int
 main(int argc, char*argv[])
 {
 	// create a scene
-	makeBunnyScene()
+	//makeBunnyScene()
     //makeStoneFloorScene();
+	makeEnvironmentMapScene();
 
     MiroWindow miro(&argc, argv);
     miro.mainLoop();

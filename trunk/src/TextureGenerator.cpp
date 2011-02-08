@@ -4,7 +4,7 @@
 #include "Texture.h"
 
 
-Texture* const TextureGenerator::generateCellTexture(int width, int height, int numCells) {
+Texture* TextureGenerator::generateCellTexture(int width, int height, int numCells) {
 	float* rawData = new float[width*height];
 	int (*xPts) = new int[numCells];
 	int (*yPts) = new int[numCells];
@@ -55,7 +55,7 @@ Texture* const TextureGenerator::generateCellTexture(int width, int height, int 
 }
 
 
-Texture* const TextureGenerator::generateStoneTexture(int width, int height, int numCells) {
+Texture* TextureGenerator::generateStoneTexture(int width, int height, int numCells) {
 	float* stoneMask = new float[width*height];
 	int (*xPts) = new int[numCells];
 	int (*yPts) = new int[numCells];

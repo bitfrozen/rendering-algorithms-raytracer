@@ -7,6 +7,11 @@
 
 Scene * g_scene = 0;
 
+Scene::Scene() {
+  m_envMap = NULL;
+  m_envExposure = 1.0f;
+}
+
 void
 Scene::openGL(Camera *cam)
 {
@@ -61,6 +66,19 @@ Scene::raytraceImage(Camera *cam, Image *img)
 				{
 					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
 					img->setPixel(i, j, shadeResult);
+				} else {
+					if (m_envMap != NULL) {
+						//environment map lookup
+						float r = ray.d.length();
+						float theta = asin(ray.d[1]) + PI/2;
+						float phi = atan2(ray.d[0], ray.d[2]) + PI;
+						float v = theta / PI;
+						float u = phi / (2*PI);
+
+						Vector3 envColor = m_envMap->getLookup3(u,v);
+						envColor /= m_envExposure;
+						img->setPixel(i,j,envColor);
+					}
 				}
 			}
 			img->drawScanline(j);
