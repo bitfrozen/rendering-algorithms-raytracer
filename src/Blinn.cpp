@@ -96,7 +96,7 @@ Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 	int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);						// Find out how many bounces we've taken
 	bool doEnv = true;
 
-	if (m_reflectAmt*Rs > 0.0f && bounces < 2)											// Do two bounces of reflection rays.
+	if (m_reflectAmt*Rs > 0.0f && bounces < 3)											// Do two bounces of reflection rays.
 	{
 		Ray rRay = Ray(P, rVec, ray.r_IOR, bounces+1, IS_REFLECT_RAY);
 		HitInfo rHit;
@@ -140,7 +140,7 @@ Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 	Vector3 tVec = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();  // Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 	doEnv = true;
 
-	if (m_refractAmt*Ts > 0.0f && bounces < 2)											// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+	if (m_refractAmt*Ts > 0.0f && bounces < 3)											// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 	{		
 		IORHistory.push_back(outIOR);
 		Ray tRay = Ray(P, tVec, IORHistory, bounces+1, IS_REFRACT_RAY);					// Make a new refraction ray.

@@ -14,7 +14,6 @@ TriangleMesh::TriangleMesh() :
 	m_preCalcTris(0),
 	doPreCalc(true)
 {
-
 }
 
 TriangleMesh::~TriangleMesh()
@@ -30,16 +29,14 @@ TriangleMesh::~TriangleMesh()
 
 void TriangleMesh::preCalc()
 {
+#ifndef NO_SSE
 	if (doPreCalc)			// Precalc a few values to speed up BVH build. The rest of the data was for SSE but it's not working, so...
 	{
-/*#ifndef NO_SSE
 		delete[] m_preCalcTris;
 		m_preCalcTris = (PrecomputedTriangle*)_aligned_malloc(sizeof(PrecomputedTriangle)*m_numTris, 16); //new PrecomputedTriangle[m_numTris];
-#endif*/
-		AABB_PreCalc = (AABB*)_aligned_malloc(sizeof(AABB)*m_numTris, 16);
 
-		Vector3 A, B, C, bbMin, bbMax;// N,N1,N2,AC,AB;
-		//float d, d1, d2;
+		Vector3 A, B, C, N,N1,N2,AC,AB;
+		float d, d1, d2;
 		TriangleMesh::TupleI3 ti3;
 		for (u_int i = 0; i < m_numTris; i++)
 		{
@@ -47,7 +44,6 @@ void TriangleMesh::preCalc()
 			A = m_vertices[ti3.x]; //vertex a of triangle
 			B = m_vertices[ti3.y]; //vertex b of triangle
 			C = m_vertices[ti3.z]; //vertex c of triangle
-/*#ifndef NO_SSE
 			AC = C-A;
 			AB = B-A;
 			N = cross(AB,AC);
@@ -70,32 +66,16 @@ void TriangleMesh::preCalc()
 			m_preCalcTris[i].vy = N2.y;
 			m_preCalcTris[i].vz = N2.z;
 			m_preCalcTris[i].vd = d2;
-#endif*/
-			bbMin.x = std::min(A.x, std::min(B.x, C.x));
-			bbMin.y = std::min(A.y, std::min(B.y, C.y));
-			bbMin.z = std::min(A.z, std::min(B.z, C.z));
-			bbMax.x = std::max(A.x, std::max(B.x, C.x));
-			bbMax.y = std::max(A.y, std::max(B.y, C.y));
-			bbMax.z = std::max(A.z, std::max(B.z, C.z));
-			AABB_PreCalc[i] = AABB(bbMin, bbMax);
 		}
 		doPreCalc = false;
 	}
-}
-
-void TriangleMesh::cleanBVHMem()
-{
-	if (!doPreCalc)
-	{
-		_aligned_free(AABB_PreCalc);
-		doPreCalc = true;
-	}
+#endif
 }
 
 bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tMax, u_int index)
 {
 	bool hit = false;
-/*#ifndef NO_SSE													// Implementation of Havel-Herout(2010), works fine for diffuse shading but breaks up for reflection/refraction
+#ifndef NO_SSE													// Implementation of Havel-Herout(2010), works fine for diffuse shading but breaks up for reflection/refraction
 	__declspec(align(16)) const float arr[4] = {-1,-1,-1,1};
 	__declspec(align(16)) const float arr2[4] = {2,2,2,2};
 	const __m128 int_coef = _mm_load_ps(arr);
@@ -143,7 +123,7 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 		result.N = (m_normals[ti3.x]*(1-result.a-result.b)+m_normals[ti3.y]*result.a+m_normals[ti3.z]*result.b).normalized();
 		result.geoN = Vector3(m_preCalcTris[index].nx, m_preCalcTris[index].ny, m_preCalcTris[index].nz).normalized();
 	}
-#else*/
+#else
 	Vector3 edge[2], tvec, pvec, qvec,rd,ro;				// Implementation of Moller-Trumbore
 	rd = Vector3(r.dx,r.dy,r.dz);
 	ro = Vector3(r.ox,r.oy,r.oz);
@@ -205,5 +185,6 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 		result.px = P.x; result.py = P.y; result.pz = P.z;
 		hit = true;
 	}
+#endif
 	return hit;
 }

@@ -5,10 +5,29 @@
 Triangle::Triangle(TriangleMesh* m, u_int i) :
     m_mesh(m), m_index(i)
 {
+	updateAABB();
 }
 	
 Triangle::~Triangle()
 {
+}
+
+void Triangle::updateAABB()
+{
+	if (m_mesh)
+	{
+		Vector3 A, B, C;
+		TriangleMesh::TupleI3 ti3 = m_mesh->m_vertexIndices[m_index];// [m_index];
+		A = m_mesh->m_vertices[ti3.x]; //vertex a of triangle
+		B = m_mesh->m_vertices[ti3.y]; //vertex b of triangle
+		C = m_mesh->m_vertices[ti3.z]; //vertex c of triangle
+		*m_bBox = AABB(Vector3(std::min(A.x, std::min(B.x, C.x)),
+			std::min(A.y, std::min(B.y, C.y)),
+			std::min(A.z, std::min(B.z, C.z))),
+			Vector3(std::max(A.x, std::max(B.x, C.x)),
+			std::max(A.y, std::max(B.y, C.y)),
+			std::max(A.z, std::max(B.z, C.z))));
+	}
 }
 
 void
@@ -42,19 +61,4 @@ Triangle::intersect(HitInfo& result, const Ray& r,float tMin, float tMax)
 		return true;	
 	}
 	return false;
-}
-
-void Triangle::getAABB(AABB& bBox)
-{
-	bBox = m_mesh->AABB_PreCalc[m_index];
-}
-
-void Triangle::getCentroid(Vector3& centroid)
-{
-	centroid = m_mesh->AABB_PreCalc[m_index].getCentroid();
-}
-
-void Triangle::cleanBVHMem()
-{
-	m_mesh->cleanBVHMem();
 }

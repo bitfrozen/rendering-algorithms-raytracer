@@ -7,7 +7,7 @@
 
 #define GET_NUMCHILD(a) (a)>>1
 
-ALIGN_SSE class BVH_Node
+class BVH_Node
 {
 public:
 	AABB* bBox;

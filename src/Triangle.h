@@ -10,20 +10,17 @@
 class Triangle : public Object
 {
 public:
-    Triangle(TriangleMesh* m = 0, u_int i = 0);
+    Triangle(TriangleMesh* m = NULL, u_int i = 0);
     virtual ~Triangle();
 
 	virtual void preCalc();
-    void setIndex(u_int i) {m_index = i;}
-    void setMesh(TriangleMesh* m) {m_mesh = m;}
+    void setIndex(u_int i) {m_index = i; updateAABB();}
+    void setMesh(TriangleMesh* m) {m_mesh = m; updateAABB();}
+	void updateAABB();
 
     virtual void renderGL();
     virtual bool intersect(HitInfo& result, const Ray& ray,
                            float tMin = epsilon, float tMax = MIRO_TMAX);
-
-	virtual void getAABB(AABB& bBox);
-	virtual void getCentroid(Vector3& centroid);
-	void cleanBVHMem();
 
 protected:
     TriangleMesh* m_mesh;

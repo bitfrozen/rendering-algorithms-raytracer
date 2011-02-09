@@ -46,13 +46,10 @@ public:
 	TupleI3* m_texCoordIndices;
 	u_int m_numTris;
 
-	AABB* AABB_PreCalc;				// Precalced AABB's for all triangles, to speed up BVH build.
-	void cleanBVHMem();				// Clear the AABB's to save memory (don't need them after build).
-
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);
 
-	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine which currently doesn't work...
+	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine
 	{
 		float nx, ny, nz, nd;
 		float ux, uy, uz, ud;
