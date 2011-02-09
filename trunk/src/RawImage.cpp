@@ -28,7 +28,7 @@ void RawImage::loadImage(char* filename) {
 
 void RawImage::loadHDR(char* filename){
 	HDRLoader::load(filename, m_rawData, m_width, m_height);
-	m_imageType = RGB;
+	m_imageType = HDR;
 }
 void RawImage::loadPPM(char* filename) {
 	const int BUFSIZE = 128;

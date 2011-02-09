@@ -12,8 +12,10 @@ public:
 	Texture();
 	Texture(RawImage* image) { m_image = image; }
 	~Texture();
-	Vector4 getLookup(float u, float v);
-	Vector3 getLookup3(float u, float v);
+	virtual Vector4 getLookup(float u, float v);
+	virtual Vector3 getLookup3(float u, float v);
+	/* Lookup for environment map. assumes texture is latitue-longitude map. */
+	virtual Vector3 getLookupXYZ3(float x, float y, float z);
 
 private:
 	Vector4 getPixel(int x, int y);
