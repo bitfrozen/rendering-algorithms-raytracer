@@ -36,7 +36,7 @@ public:
 		dx = dy = dw = 0.0f; dz = 1.0f;
 		idx = idy = idw = 0.0f; idz = 1.0f;
 		bounces_flags = IS_PRIMARY_RAY;
-		r_IOR.push_back(1.001f);
+		r_IOR.push_back(1.0f);
     }
 
     Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)

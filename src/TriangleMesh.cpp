@@ -125,7 +125,7 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 				_mm_store_ss(&newT, _mm_mul_ss(dett, inv_det));
 				_mm_store_ss(&u, _mm_mul_ss(detu, inv_det));
 				_mm_store_ss(&v, _mm_mul_ss(detv, inv_det));
-				if (newT >= tMin && newT < result.t)// && u >= 0.0f && v >= 0.0f && u+v <= 1.0f)
+				if (newT >= tMin && newT < result.t && u >= 0.0f && v >= 0.0f && u+v <= 1.0f)
 				{
 					result.t = newT;
 					result.a = u;
@@ -144,36 +144,50 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 		result.geoN = Vector3(m_preCalcTris[index].nx, m_preCalcTris[index].ny, m_preCalcTris[index].nz).normalized();
 	}
 #else*/
-	Vector3 edge1, edge2, tvec, pvec, qvec,rd,ro;				// Implementation of Moller-Trumbore
+	Vector3 edge[2], tvec, pvec, qvec,rd,ro;				// Implementation of Moller-Trumbore
 	rd = Vector3(r.dx,r.dy,r.dz);
 	ro = Vector3(r.ox,r.oy,r.oz);
 	float det, inv_det, u, v;
 	TriangleMesh::TupleI3 ti3;
 	ti3 = m_vertexIndices[index];
-	edge1 = m_vertices[ti3.y] - m_vertices[ti3.x];
-	edge2 = m_vertices[ti3.z] - m_vertices[ti3.x];
+	edge[0] = m_vertices[ti3.y] - m_vertices[ti3.x];
+	edge[1] = m_vertices[ti3.z] - m_vertices[ti3.x];
 
-	pvec = cross(rd, edge2);
+	pvec = cross(rd, edge[1]);
 
-	det = dot(edge1, pvec);
+	det = dot(edge[0], pvec);
 
+#ifdef TEST_CULL
 	tvec = ro - m_vertices[ti3.x];
 	u = dot(tvec, pvec);	
 	if (u < 0.0 || u > det) return false;
 
-	qvec = cross(tvec, edge1);
+	qvec = cross(tvec, edge[0]);
 	v = dot(rd, qvec);
 	if (v < 0.0 || u + v > det) return false;
 
 	inv_det = 1.0 / det;
-	float newT = dot(edge2, qvec)*inv_det;
+	float newT = dot(edge[1], qvec)*inv_det;
+	u *= inv_det;
+	v *= inv_det;
+#else
+	inv_det = 1.0 / det;
+
+	tvec = ro - m_vertices[ti3.x];
+	u = dot(tvec, pvec) * inv_det;
+	if (u < 0.0 || u > 1.0) return false;
+
+	qvec = cross(tvec, edge[0]);
+	v = dot(rd, qvec) * inv_det;
+	if (v < 0.0 || u + v > 1.0) return false;
+
+	float newT = dot(edge[1], qvec)*inv_det;
+#endif
 	if (newT >= tMin && newT < result.t)
 	{		
 		result.t = newT;
-		u *= inv_det;
-		v *= inv_det;
 
-		result.geoN = cross(edge1, edge2).normalized();
+		result.geoN = cross(edge[0], edge[1]).normalized();
 		ti3 = m_normalIndices[index];
 		result.N = Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
 		if (m_texCoordIndices)
@@ -191,6 +205,5 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 		result.px = P.x; result.py = P.y; result.pz = P.z;
 		hit = true;
 	}
-//#endif
 	return hit;
 }
