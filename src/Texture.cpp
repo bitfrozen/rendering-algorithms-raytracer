@@ -1,5 +1,6 @@
 
 #include "Texture.h"
+#include "Miro.h"
 
 
 Texture::Texture() {
@@ -39,9 +40,21 @@ Vector4 Texture::getLookup(float u, float v) {
 	return q1*(1 - dy) + q2*dy;
 }
 
+
+
 Vector3 Texture::getLookup3(float u, float v) {
 	Vector4 temp = getLookup(u,v);
 	return Vector3(temp[0], temp[1], temp[2]);
+}
+
+Vector3 Texture::getLookupXYZ3(float x, float y, float z) {
+	float theta = atan2(z, x) + PI;
+	float phi = acos(y);
+	float u = theta * 0.5 * piRecip;
+	float v = 1.0 - (phi * piRecip);
+
+	return getLookup3(u,v);
+
 }
 
 Vector4 Texture::getPixel(int x, int y) {
@@ -63,8 +76,7 @@ Vector4 Texture::getPixel(int x, int y) {
 		int base = y*m_image->m_width*4 + x*4;
 		return Vector4(m_image->m_rawData[base], m_image->m_rawData[base + 1], m_image->m_rawData[base + 2], m_image->m_rawData[base + 3]);
 	} else if (m_image->m_imageType == HDR) {
-        //TODO: How do I access HDR???? is it the same as RGBA?
-		int base = y*m_image->m_width*4 + x*4;
+		int base = y*m_image->m_width*3 + x*3;
 		return Vector4(m_image->m_rawData[base], m_image->m_rawData[base + 1], m_image->m_rawData[base + 2], m_image->m_rawData[base + 3]);
 	} else {
 		return Vector4(0.0f, 0.0f, 0.0f, 1.0f); 

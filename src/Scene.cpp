@@ -74,13 +74,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 					if (m_envMap != NULL) 
 					{
 						//environment map lookup
-						Vector3 rayD = Vector3(ray.dx, ray.dy, ray.dz);
-						float theta = atan2(rayD.z, rayD.x) + PI;
-						float phi = acos(rayD.y);
-						float u = theta * 0.5 * piRecip;
-						float v = 1.0 - (phi * piRecip);
-
-						Vector3 envColor = m_envMap->getLookup3(u,v);
+						Vector3 envColor = m_envMap->getLookupXYZ3(ray.dx, ray.dy, ray.dz);
 						envColor /= m_envExposure;
 						img->setPixel(i,j,envColor);
 					}

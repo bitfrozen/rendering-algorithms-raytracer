@@ -8,8 +8,7 @@ Texture* TextureGenerator::generateCellTexture(int width, int height, int numCel
 	float* rawData = new float[width*height];
 	int (*xPts) = new int[numCells];
 	int (*yPts) = new int[numCells];
-	//int xPts[numCells];
-	//int yPts[numCells];
+
 	float minDist = FLT_MAX;
 	float maxDist = 0;
 	//initialize the random points on the grid
