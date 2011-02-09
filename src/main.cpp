@@ -12,8 +12,8 @@
 #include "MiroWindow.h"
 #include "Blinn.h"
 #include "RawImage.h"
-#include "TextureGenerator.h"
 #include "Texture.h"
+#include "StoneTexture.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 void makeSpiralScene();
@@ -26,11 +26,11 @@ void makeStoneFloorScene();
 int main(int argc, char*argv[])
 {
 	// create a scene
-	makeBunnyScene();
+	//makeBunnyScene();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
-	//makeEnvironmentMapScene();
+	makeEnvironmentMapScene();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
@@ -165,9 +165,9 @@ void makeStoneFloorScene()
 	g_scene->addLight(light2);
 
 	//some texture stuff
-	Material* cellMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
-	Texture* cellTex = TextureGenerator::generateStoneTexture(300, 300, 200);
-	cellMat->m_texture = cellTex;
+	Material* stoneMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	StoneTexture* stoneTex = new StoneTexture(100);
+	stoneMat->m_texture = stoneTex;
 	//end
 
 	// create sphere
@@ -175,8 +175,8 @@ void makeStoneFloorScene()
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/sphere2.obj");
 	planeMesh->load("Models/plane.obj");
-	makeMeshObjs(mesh, cellMat);
-	makeMeshObjs(planeMesh, cellMat);
+	makeMeshObjs(mesh, stoneMat);
+	makeMeshObjs(planeMesh, stoneMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
@@ -211,20 +211,18 @@ void makeEnvironmentMapScene() {
 	g_scene->setEnvExposure(2.0f);
 
 	//generate stone texture
-	Material* cellMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
-	Texture* cellTex = TextureGenerator::generateStoneTexture(300, 300, 200);
-	cellMat->m_texture = cellTex;
+	Material* stoneMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	StoneTexture* stoneTex = new StoneTexture(150);
+	stoneMat->m_texture = stoneTex;
 	//end
-
-
 
 	// create sphere
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
 	mesh->load("Models/sphere2.obj");
 	planeMesh->load("Models/plane.obj");
-	makeMeshObjs(mesh, cellMat);
-	makeMeshObjs(planeMesh, cellMat);
+	makeMeshObjs(mesh, stoneMat);
+	makeMeshObjs(planeMesh, stoneMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
