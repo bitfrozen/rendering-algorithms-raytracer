@@ -4,7 +4,6 @@
 
 Sphere::Sphere()
 {
-	bBox = new AABB(Vector3(0), Vector3(0));
 }
 
 Sphere::~Sphere()

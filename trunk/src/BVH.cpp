@@ -6,6 +6,7 @@
 #include <xmmintrin.h>
 #include <smmintrin.h>
 #include <algorithm>
+#include <time.h>
 
 void
 BVH::build(Objects* objs)
@@ -15,6 +16,8 @@ BVH::build(Objects* objs)
 		m_objects = objs;
 		return;
 	}
+	clock_t start = clock();
+
 	u_int numObjs = objs->size();
 
 	Object** BVHObjs = new Object*[numObjs];		// I use a double pointer to conserve memory.
@@ -24,16 +27,8 @@ BVH::build(Objects* objs)
 	}
 	m_baseNode.build(BVHObjs, numObjs);
 
-	// Clean up BVH Precalc memory used by meshes
-	Objects::const_iterator objIter;
-	Triangle* triMesh;
-	for (objIter = objs->begin(); objIter != objs->end(); objIter++)
-	{
-		if (triMesh = dynamic_cast<Triangle*>(*objIter))
-		{
-			triMesh->cleanBVHMem();
-		}
-	}
+	clock_t end = clock();
+	printf("BVH Build time: %.4fs...\n", (end-start)/1000.f);
 }
 
 bool
@@ -64,7 +59,7 @@ void BVH_Node::build(Object** objs, u_int numObjs)//, centroidMap* partitionMap)
 
 	for (u_int i = 0; i < numObjs; i++)						// Get the AABB for this node
 	{
-		objs[i]->getAABB(tempBox);
+		tempBox = *objs[i]->m_bBox;
 		nodeMin.x = std::min(nodeMin.x, tempBox.bbMin.x);
 		nodeMin.y = std::min(nodeMin.y, tempBox.bbMin.y);
 		nodeMin.z = std::min(nodeMin.z, tempBox.bbMin.z);
@@ -82,7 +77,7 @@ void BVH_Node::build(Object** objs, u_int numObjs)//, centroidMap* partitionMap)
 	}
 	else
 	{
-		partitionSweep(objs, numObjs, partPt, 1.0f/bBox->getArea());	// Find the best place to split the node
+		partitionSweep(objs, numObjs, partPt, 1.0f / bBox->area);		// Find the best place to split the node
 		numChildren = NODE_SIZE<<1;										// Check out BVH.h, the first of numChildren is used by isLeaf.
 		isLeaf |= false;
 
@@ -115,19 +110,19 @@ bool BVH_Node::partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float
 	leftArea[0] = MIRO_TMAX;
 	for (int i = 1; i < numObjs; i++)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.getArea();		// Surface area of AABB for left side of node.
+		leftArea[i] = tempBBox.area;		// Surface area of AABB for left side of node.
 	}
 
 	// sweep from right
 	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.getArea();
+	rightArea[numObjs-1] = tempBBox.area;
 	for (int i = numObjs-2; i >= 0; i--)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.getArea();														// Surface area of AABB for right side of node.
+		rightArea[i] = tempBBox.area;														// Surface area of AABB for right side of node.
 		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);		// Calculate the cost of this partition.
 		if (thisCost < bestCost)																// If this is better than before, use this partition.
 		{
@@ -145,19 +140,19 @@ bool BVH_Node::partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float
 	leftArea[0] = MIRO_TMAX;
 	for (int i = 1; i < numObjs; i++)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.getArea();
+		leftArea[i] = tempBBox.area;
 	}
 
 	// sweep from right
 	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.getArea();
+	rightArea[numObjs-1] = tempBBox.area;
 	for (int i = numObjs-2; i >= 0; i--)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.getArea();
+		rightArea[i] = tempBBox.area;
 		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);
 		if (thisCost < bestCost)
 		{
@@ -175,19 +170,19 @@ bool BVH_Node::partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float
 	leftArea[0] = MIRO_TMAX;
 	for (int i = 1; i < numObjs; i++)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.getArea();
+		leftArea[i] = tempBBox.area;
 	}
 
 	// sweep from right
 	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.getArea();
+	rightArea[numObjs-1] = tempBBox.area;
 	for (int i = numObjs-2; i >= 0; i--)
 	{
-		objs[i]->getAABB(newBBox);
+		newBBox = *objs[i]->m_bBox;
 		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.getArea();
+		rightArea[i] = tempBBox.area;
 		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);
 		if (thisCost < bestCost)
 		{
@@ -219,8 +214,8 @@ bool BVH_Node::partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float
 int Object::sortByXComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	(*(Object**)s1)->getCentroid(left);
-	(*(Object**)s2)->getCentroid(right);
+	left = (*(Object**)s1)->m_bBox->centroid;
+	right = (*(Object**)s2)->m_bBox->centroid;
 
 	if (left.x < right.x)
 	{
@@ -236,8 +231,8 @@ int Object::sortByXComponent(const void* s1, const void* s2)
 int Object::sortByYComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	(*(Object**)s1)->getCentroid(left);
-	(*(Object**)s2)->getCentroid(right);
+	left = (*(Object**)s1)->m_bBox->centroid;
+	right = (*(Object**)s2)->m_bBox->centroid;
 
 	if (left.y < right.y)
 	{
@@ -253,8 +248,8 @@ int Object::sortByYComponent(const void* s1, const void* s2)
 int Object::sortByZComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	(*(Object**)s1)->getCentroid(left);
-	(*(Object**)s2)->getCentroid(right);
+	left = (*(Object**)s1)->m_bBox->centroid;
+	right = (*(Object**)s2)->m_bBox->centroid;
 
 	if (left.z < right.z)
 	{
@@ -272,7 +267,8 @@ bool BVH_Node::intersect(HitInfo& result, const Ray& ray, float tMin /* = epsilo
 	bool hit = false;
 
 #ifndef NO_SSE														// Implementation of Manny Ko's algorithm, from http://tog.acm.org/resources/RTNews/html/rtnv23n1.html#art7
-	const __m128 rayorig = _mm_load_ps(&ray.ox);					// Had to guess as to a few details, but works great.
+																	// Had to guess as to a few details, but works great.
+	const __m128 rayorig = _mm_load_ps(&ray.ox);					
 	const __m128 rayinvdir = _mm_load_ps(&ray.idx);
 	const __m128 minPoint = _mm_load_ps(&bBox->bbMin.x);
 	const __m128 maxPoint = _mm_load_ps(&bBox->bbMax.x);

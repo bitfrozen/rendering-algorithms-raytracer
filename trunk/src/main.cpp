@@ -22,21 +22,73 @@ void makeBunny20Scene();
 void makeEnvironmentMapScene();
 void makeStoneFloorScene();
 void makeSponzaScene();
-
+void makeTestScene();
 
 int main(int argc, char*argv[])
 {
 	// create a scene
-	//makeBunnyScene();
+	makeBunnyScene();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
-	makeEnvironmentMapScene();
+	//makeEnvironmentMapScene();
+	//makeTestScene();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
 
 	return 0; // never executed
+}
+
+void makeTestScene()
+{
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
+
+	g_image->resize(512, 512);
+
+	// set up the camera
+	g_scene->setBGColor(Vector3(0.0,0.0,0.0));
+	g_camera->setEye(Vector3(-1.622, 1.361, -1.566));
+	g_camera->setLookAt(Vector3(-0.933, 1.57, -0.148));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(45);
+
+	// create and place a point light source
+	/*PointLight * light = new PointLight;
+	light->setPosition(Vector3(-3, 15, 6));
+	light->setColor(Vector3(1, 1, 1));
+	light->setWattage(2000);
+	g_scene->addLight(light);
+
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(-15, 10, -6));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setWattage(2000);
+	g_scene->addLight(light2);*/
+
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Mono_Lake.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(0.5f);
+
+	// create a spiral of spheres
+	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	mat->setSpecExp(30.0f);
+	mat->setIor(1.58f);
+	mat->setReflectAmt(1.0f);
+	mat->setRefractAmt(1.0f);
+	mat->setEnvMap(hdrTex);
+	mat->setEnvExposure(0.5f);
+	TriangleMesh *mesh = new TriangleMesh;
+	mesh->load("Models/bunny.obj");
+	makeMeshObjs(mesh, mat);
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
 }
 
 void makeSpiralScene()
@@ -117,7 +169,7 @@ void makeBunnyScene()
 	hdrImage->loadImage("Images/Mono_Lake.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
-	g_scene->setEnvExposure(2.0f);
+	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
 	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
@@ -126,7 +178,7 @@ void makeBunnyScene()
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
 	mat->setEnvMap(hdrTex);
-	mat->setEnvExposure(2.0f);
+	mat->setEnvExposure(1.0f);
 	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0.1f);
@@ -135,7 +187,7 @@ void makeBunnyScene()
 	planeMat->setRefractAmt(0.0f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/buddha_smooth.obj");
+	mesh->load("Models/bunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);

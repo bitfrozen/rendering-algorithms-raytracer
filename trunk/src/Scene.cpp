@@ -64,7 +64,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			{
 				hitInfo.t = MIRO_TMAX;
 				ray = cam->eyeRay(i, j, img->width(), img->height());
-				if (trace(hitInfo, ray, 0.0001, MIRO_TMAX))
+				if (trace(hitInfo, ray, epsilon, MIRO_TMAX))
 				{
 					shadeResult = hitInfo.material->shade(ray, hitInfo, *this);
 					img->setPixel(i, j, shadeResult);
