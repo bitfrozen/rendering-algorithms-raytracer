@@ -21,6 +21,7 @@ void makeBunnyScene();
 void makeBunny20Scene();
 void makeEnvironmentMapScene();
 void makeStoneFloorScene();
+void makeSponzaScene();
 
 
 int main(int argc, char*argv[])
@@ -96,7 +97,7 @@ void makeBunnyScene()
 	g_camera->setEye(Vector3(-5, 4, 3));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(45);
+	g_camera->setFOV(60);
 
 	// create and place a point light source
 	PointLight * light = new PointLight;
@@ -119,13 +120,14 @@ void makeBunnyScene()
 	g_scene->setEnvExposure(2.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.1f, 0.5f, 0.2f), Vector3(0.06,0.06,0.06));
+	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
 	mat->setSpecExp(30.0f);
-	mat->setIor(3.0f);
+	mat->setIor(1.56f);
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
 	mat->setEnvMap(hdrTex);
-	Blinn* planeMat = new Blinn(Vector3(0.6f, 0.1f, 0.1f), Vector3(0.06,0.06,0.06));
+	mat->setEnvExposure(2.0f);
+	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0.1f);
 	planeMat->setIor(2.2f);
@@ -133,7 +135,7 @@ void makeBunnyScene()
 	planeMat->setRefractAmt(0.0f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/buddha_smooth.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
