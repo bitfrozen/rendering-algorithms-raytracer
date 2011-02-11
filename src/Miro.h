@@ -1,7 +1,7 @@
 #ifndef __MIRO_H__
 #define __MIRO_H__
 
-//#define NO_SSE
+#define NO_SSE
 #define ALIGN_SSE __declspec(align(16))			// Use this to align variables for SSE use (they need to be 16 byte aligned).
 typedef unsigned int u_int;
 
