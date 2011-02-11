@@ -14,10 +14,11 @@
 #include "RawImage.h"
 #include "Texture.h"
 #include "StoneTexture.h"
+#include "Assignment1.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 void makeSpiralScene();
-void makeBunnyScene();
+void makeBunnyScene2();
 void makeBunny20Scene();
 void makeEnvironmentMapScene();
 void makeStoneFloorScene();
@@ -27,11 +28,17 @@ void makeTestScene();
 int main(int argc, char*argv[])
 {
 	// create a scene
-	makeBunnyScene();
+	//scenes for assignment 1
+	//makeBunnyScene();
+	//makeTeapotScene();
+	//makeSphereScene();
+
+	//scenes that show other functionality
+	//makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
-	//makeEnvironmentMapScene();
+	makeEnvironmentMapScene();
 	//makeTestScene();
 
 	MiroWindow miro(&argc, argv);
@@ -136,7 +143,7 @@ void makeSpiralScene()
     g_scene->preCalc();
 }
 
-void makeBunnyScene()
+void makeBunnyScene2()
 {
 	g_camera = new Camera;
 	g_scene = new Scene;

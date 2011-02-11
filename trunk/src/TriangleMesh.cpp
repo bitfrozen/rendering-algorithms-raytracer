@@ -75,7 +75,9 @@ void TriangleMesh::preCalc()
 bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tMax, u_int index)
 {
 	bool hit = false;
+	TriangleMesh::TupleI3 ti3;
 #ifndef NO_SSE													// Implementation of Havel-Herout(2010), works fine for diffuse shading but breaks up for reflection/refraction
+	ALIGN_SSE float newT, u, v;
 	__declspec(align(16)) const float arr[4] = {-1,-1,-1,1};
 	__declspec(align(16)) const float arr2[4] = {2,2,2,2};
 	const __m128 int_coef = _mm_load_ps(arr);
@@ -101,15 +103,12 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 			{
 				__m128 inv_det = _mm_rcp_ss(det);
 				inv_det = _mm_sub_ss(_mm_mul_ss(coef_2, inv_det), _mm_mul_ss(det, _mm_mul_ss(inv_det, inv_det)));		// One step of Newton-Raphson, otherwise accuracy is too low.
-				ALIGN_SSE float newT, u, v;
 				_mm_store_ss(&newT, _mm_mul_ss(dett, inv_det));
 				_mm_store_ss(&u, _mm_mul_ss(detu, inv_det));
 				_mm_store_ss(&v, _mm_mul_ss(detv, inv_det));
 				if (newT >= tMin && newT < result.t && u >= 0.0f && v >= 0.0f && u+v <= 1.0f)
 				{
 					result.t = newT;
-					result.a = u;
-					result.b = v;
 					_mm_store_ps(&result.px, _mm_mul_ps(detp, _mm_shuffle_ps(inv_det, inv_det, 0)));
 					hit = true;
 				}
@@ -119,16 +118,26 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 	
 	if (hit)
 	{
-		TriangleMesh::TupleI3 ti3 = m_normalIndices[index];
-		result.N = (m_normals[ti3.x]*(1-result.a-result.b)+m_normals[ti3.y]*result.a+m_normals[ti3.z]*result.b).normalized();
+		ti3 = m_normalIndices[index];
+		result.N = (m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized();
 		result.geoN = Vector3(m_preCalcTris[index].nx, m_preCalcTris[index].ny, m_preCalcTris[index].nz).normalized();
+		if (m_texCoordIndices)
+		{
+			ti3 = m_texCoordIndices[index];
+			result.a = m_texCoords[ti3.x].x*(1-u-v)+m_texCoords[ti3.y].x*u+m_texCoords[ti3.z].x*v;
+			result.b = m_texCoords[ti3.x].y*(1-u-v)+m_texCoords[ti3.y].y*u+m_texCoords[ti3.z].y*v;
+		}
+		else
+		{
+			result.a = u;
+			result.b = v;
+		}
 	}
 #else
 	Vector3 edge[2], tvec, pvec, qvec,rd,ro;				// Implementation of Moller-Trumbore
 	rd = Vector3(r.dx,r.dy,r.dz);
 	ro = Vector3(r.ox,r.oy,r.oz);
 	float det, inv_det, u, v;
-	TriangleMesh::TupleI3 ti3;
 	ti3 = m_vertexIndices[index];
 	edge[0] = m_vertices[ti3.y] - m_vertices[ti3.x];
 	edge[1] = m_vertices[ti3.z] - m_vertices[ti3.x];
