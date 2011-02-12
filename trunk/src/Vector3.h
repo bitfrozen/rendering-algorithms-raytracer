@@ -29,17 +29,17 @@ public:
     /*!
         Assigns the values from \a a to this Vec3.
     */
-    const Vector3 & operator=(const Vector3& a) {x = a.x; y = a.y; z = a.z; return *this;}
+    inline const Vector3 & operator=(const Vector3& a) {x = a.x; y = a.y; z = a.z; return *this;}
     
     //! Assignment operator.
     /*!
         Sets all components of this Vec3 to \a a.
     */
-    const Vector3 & operator=(float a) {x = y = z = a; return *this;}
+    inline const Vector3 & operator=(float a) {x = y = z = a; return *this;}
 
-    void set(float a) {x = y = z = a;}
-    void set(float a, float b, float c, float d = 0.0) {x = a; y = b; z = c;}
-    void set(const Vector3 & v) {x = v.x; y = v.y; z = v.z;}
+    inline void set(float a) {x = y = z = a;}
+    inline void set(float a, float b, float c, float d = 0.0) {x = a; y = b; z = c;}
+    inline void set(const Vector3 & v) {x = v.x; y = v.y; z = v.z;}
     
     
     //! Access operator.        
@@ -48,7 +48,7 @@ public:
         \param i The component to return.
         \warning i must be either 0, 1, or 2 in order to get expected results.
     */
-    float & operator[](int i) {return (&x)[i];}
+    inline float & operator[](int i) {return (&x)[i];}
     
     //! Constant access operator.
     /*!
@@ -56,79 +56,79 @@ public:
         \param i The component to return.
         \warning i must be either 0, 1, or 2 in order to get expected results.
     */
-    const float & operator[](int i) const {return (&x)[i];}
+    inline const float & operator[](int i) const {return (&x)[i];}
 
 
     //! Component-wise vector addition operator.
-    Vector3 operator+(const Vector3& v) const
+    inline Vector3 operator+(const Vector3& v) const
     {
         return Vector3(x + v.x, y + v.y, z + v.z);
     }
     
     //! Component-wise vector addition-assignment operator.
-    const Vector3 & operator+=(const Vector3& v)
+    inline const Vector3 & operator+=(const Vector3& v)
     {
         x += v.x; y += v.y; z += v.z; return *this;
     }
 
     //! Scalar addition-assignment operator.
-    const Vector3 & operator+=(float a) {x += a; y += a; z += a; return *this;}
+    inline const Vector3 & operator+=(float a) {x += a; y += a; z += a; return *this;}
 
 
     //! Component-wise vector subtraction operator.
-    Vector3 operator-(const Vector3& v) const
+    inline Vector3 operator-(const Vector3& v) const
     {
         return Vector3(x - v.x, y - v.y, z - v.z);
     }
     
     //! Component-wise vector subtraction-assignment operator.
-    const Vector3 & operator-=(const Vector3& v)
+    inline const Vector3 & operator-=(const Vector3& v)
     {
         x -= v.x; y -= v.y; z -= v.z; return *this;
     }
     
     //! Component-wise scalar subtraction assignment operator.
-    const Vector3 & operator-=(float a) {x -= a; y -= a; z -= a; return *this;}
+    inline const Vector3 & operator-=(float a) {x -= a; y -= a; z -= a; return *this;}
 
 
     //! Sxcalar multiplication operator.
-    Vector3 operator*(float a) const {return Vector3(x * a, y * a, z * a);}
+    inline Vector3 operator*(float a) const {return Vector3(x * a, y * a, z * a);}
     
     //! Component-wise vector multiplication operator.
-    Vector3 operator*(const Vector3& v) const
+    inline Vector3 operator*(const Vector3& v) const
     {
         return Vector3(x * v.x, y * v.y, z * v.z);
     }
     
     //! Scalar multiplication-assignment operator.
-    const Vector3 & operator*=(float a) {x *= a; y *= a; z *= a; return *this;}
+    inline const Vector3 & operator*=(float a) {x *= a; y *= a; z *= a; return *this;}
     
     //! Component-wise vector multiplication-assignment operator.
-    const Vector3 & operator*=(const Vector3& v)
+    inline const Vector3 & operator*=(const Vector3& v)
     {
         x *= v.x; y *= v.y; z *= v.z; return *this;
     }
     
     //! Negation operator.
-    Vector3 operator-() const {return Vector3(-x, -y, -z);}
-    const Vector3 & negate() {x = -x; y = -y; z = -z; return *this;}
+    inline Vector3 operator-() const {return Vector3(-x, -y, -z);}
+    inline const Vector3 & negate() {x = -x; y = -y; z = -z; return *this;}
 
 
     //! Scalar division operator.
-    Vector3 operator/(float a) const
+    inline Vector3 operator/(float a) const
     {
         float inv = float(1) / a;
         return Vector3(x * inv, y * inv, z * inv);
     }
     
     //! Component-wise vector division operator.
-    Vector3 operator/(const Vector3 & v) const
+    inline Vector3 operator/(const Vector3 & v) const
     {
         return Vector3(x / v.x, y / v.y, z / v.z);
     }
     
     //! Scalar division-assignment operator.
-    const Vector3 & operator/=(float a)
+    inline const Vector3 & operator/=(float a)
     {
         float inv = float(1) / a;
         x *= inv; y *= inv; z *= inv;
@@ -136,7 +136,7 @@ public:
     }
     
     //! Component-wise vector division-assignment operator.
-    const Vector3 & operator/=(const Vector3 & v)
+    inline const Vector3 & operator/=(const Vector3 & v)
     {
         x /= v.x; y /= v.y; z /= v.z; return *this;
     }
@@ -147,7 +147,7 @@ public:
         Tests to see if each component of \a v is equal to each component of
         this Vector3.
     */
-    bool operator==(const Vector3 & v) const
+    inline bool operator==(const Vector3 & v) const
     {
         return(v.x == x && v.y == y && v.z == z);
     }
@@ -156,7 +156,7 @@ public:
     /*!
         Tests to see if any component is different between the two Vec3s.
     */
-    bool operator!=(const Vector3 & v) const
+    inline bool operator!=(const Vector3 & v) const
     {
         return(v.x != x || v.y != y || v.z != z);
     }
@@ -166,13 +166,13 @@ public:
     /*!
         Returns the geometric length<sup>2</sup> of the vector.
     */
-    float length2() const;
+    inline float length2() const;
     
     //! Length.
     /*!
         Returns the geometric length of the vector.
     */
-    float length() const {return sqrtf(length2());}
+    inline float length() const {return sqrtf(length2());}
     
     //! Normalizes the vector and return its length.
     /*!
@@ -181,7 +181,7 @@ public:
     
         \return The length of the vector prior to normalization.
     */
-    float unitize()
+    inline float unitize()
     {
         float l = length();
         *this /= l;
@@ -195,19 +195,19 @@ public:
     
         \return A reference to the vector.
     */
-    const Vector3 & normalize()
+    inline const Vector3 & normalize()
     {
         return (*this /= length());
     }
     
     //! Return a normalized copy of the vector.
-    Vector3 normalized() const
+    inline Vector3 normalized() const
     {
         return( *this / length());
     }
     
     //! Return a rotated copy of the vector
-    Vector3 rotated(float theta, const Vector3 & w) const;
+    inline Vector3 rotated(float theta, const Vector3 & w) const;
     
     //! Rotate this vector about another vector, w, by theta radians.
     const Vector3 & rotate(float theta, const Vector3 & w)

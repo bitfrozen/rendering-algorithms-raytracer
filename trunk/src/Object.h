@@ -8,12 +8,12 @@
 ALIGN_SSE class AABB
 {
 public:
-	AABB() : bbMin(1), bbMax(-1), area(MIRO_TMAX), centroid(0) {}
-	AABB(const Vector3& bbMin, const Vector3& bbMax) : bbMin(bbMin), bbMax(bbMax) {
+	inline AABB() : bbMin(1), bbMax(-1), area(MIRO_TMAX), centroid(0) {}
+	inline AABB(const Vector3& bbMin, const Vector3& bbMax) : bbMin(bbMin), bbMax(bbMax) {
 		area = 2*((bbMax.x-bbMin.x + bbMax.z-bbMin.z)*(bbMax.y-bbMin.y) + (bbMax.x-bbMin.x)*(bbMax.z-bbMin.z));
 		centroid =  0.5f * (bbMin+bbMax);
 	}
-	AABB(const AABB& bb1, const AABB& bb2) {
+	inline AABB(const AABB& bb1, const AABB& bb2) {
 		bbMin.x = std::min(bb1.bbMin.x, bb2.bbMin.x);
 		bbMin.y = std::min(bb1.bbMin.y, bb2.bbMin.y);
 		bbMin.z = std::min(bb1.bbMin.z, bb2.bbMin.z);

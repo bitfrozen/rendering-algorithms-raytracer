@@ -43,16 +43,17 @@ public:
     {
 		ox = o.x; oy = o.y; oz = o.z; ow = 1.0f;
 		dx = d.x; dy = d.y; dz = d.z; dw = 0.0f;
-		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = dw;
+		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = 0.0f;
 		bounces_flags = bounces<<7 | (idz < 0)<<2 | (idy < 0)<< 1 | (idx < 0) | flags;
-		r_IOR.push_back(IOR);
+		if (!(flags & IS_SHADOW_RAY))
+			r_IOR.push_back(IOR);
     }
 
 	Ray(const Vector3& o, const Vector3& d, const IORList& IOR, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		ox = o.x; oy = o.y; oz = o.z; ow = 1.0f;
 		dx = d.x; dy = d.y; dz = d.z; dw = 0.0f;
-		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = dw;
+		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = 0.0f;
 		bounces_flags = bounces<<7 | (idz < 0)<<2 | (idy < 0)<< 1 | (idx < 0) | flags;
 		r_IOR = IOR;
 	}

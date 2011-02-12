@@ -50,16 +50,16 @@ void
 Scene::raytraceImage(Camera *cam, Image *img)
 {
 	clock_t start = clock();		// Added a clock here to time the rendering.
-    Ray ray;
-    HitInfo hitInfo;
-    Vector3 shadeResult;
+    static Ray ray;
+    static HitInfo hitInfo;
+    static Vector3 shadeResult;
 
 #pragma omp parallel private(ray, hitInfo, shadeResult)
 	{
 		// loop over all pixels in the image
 		for (int j = 0; j < img->height(); ++j)
 		{
-#pragma omp for schedule(dynamic, 4)
+#pragma omp for schedule(dynamic, 16)
 			for (int i = 0; i < img->width(); ++i)
 			{
 				hitInfo.t = MIRO_TMAX;

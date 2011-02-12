@@ -76,8 +76,9 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 {
 	bool hit = false;
 	TriangleMesh::TupleI3 ti3;
+	ALIGN_SSE float newT, a, b;
+	bool shadow = r.bounces_flags & IS_SHADOW_RAY;
 #ifndef NO_SSE													// Implementation of Havel-Herout(2010), works fine for diffuse shading but breaks up for reflection/refraction
-	ALIGN_SSE float newT, u, v;
 	__declspec(align(16)) const float arr[4] = {-1,-1,-1,1};
 	__declspec(align(16)) const float arr2[4] = {2,2,2,2};
 	const __m128 int_coef = _mm_load_ps(arr);
@@ -104,40 +105,26 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 				__m128 inv_det = _mm_rcp_ss(det);
 				inv_det = _mm_sub_ss(_mm_mul_ss(coef_2, inv_det), _mm_mul_ss(det, _mm_mul_ss(inv_det, inv_det)));		// One step of Newton-Raphson, otherwise accuracy is too low.
 				_mm_store_ss(&newT, _mm_mul_ss(dett, inv_det));
-				_mm_store_ss(&u, _mm_mul_ss(detu, inv_det));
-				_mm_store_ss(&v, _mm_mul_ss(detv, inv_det));
-				if (newT >= tMin && newT < result.t && u >= 0.0f && v >= 0.0f && u+v <= 1.0f)
+				if (newT >= tMin && newT < result.t)
 				{
 					result.t = newT;
-					_mm_store_ps(&result.px, _mm_mul_ps(detp, _mm_shuffle_ps(inv_det, inv_det, 0)));
+					if (!shadow)
+					{
+						_mm_store_ss(&a, _mm_mul_ss(detu, inv_det));
+						_mm_store_ss(&b, _mm_mul_ss(detv, inv_det));
+						_mm_store_ps(&result.px, _mm_mul_ps(detp, _mm_shuffle_ps(inv_det, inv_det, 0)));
+						result.geoN = Vector3(m_preCalcTris[index].nx, m_preCalcTris[index].ny, m_preCalcTris[index].nz).normalized();
+					}
 					hit = true;
 				}
 			}
-		}
-	}
-	
-	if (hit)
-	{
-		ti3 = m_normalIndices[index];
-		result.N = (m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized();
-		result.geoN = Vector3(m_preCalcTris[index].nx, m_preCalcTris[index].ny, m_preCalcTris[index].nz).normalized();
-		if (m_texCoordIndices)
-		{
-			ti3 = m_texCoordIndices[index];
-			result.a = m_texCoords[ti3.x].x*(1-u-v)+m_texCoords[ti3.y].x*u+m_texCoords[ti3.z].x*v;
-			result.b = m_texCoords[ti3.x].y*(1-u-v)+m_texCoords[ti3.y].y*u+m_texCoords[ti3.z].y*v;
-		}
-		else
-		{
-			result.a = u;
-			result.b = v;
 		}
 	}
 #else
 	Vector3 edge[2], tvec, pvec, qvec,rd,ro;				// Implementation of Moller-Trumbore
 	rd = Vector3(r.dx,r.dy,r.dz);
 	ro = Vector3(r.ox,r.oy,r.oz);
-	float det, inv_det, u, v;
+	float det, inv_det;
 	ti3 = m_vertexIndices[index];
 	edge[0] = m_vertices[ti3.y] - m_vertices[ti3.x];
 	edge[1] = m_vertices[ti3.z] - m_vertices[ti3.x];
@@ -148,52 +135,57 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 
 #ifdef TEST_CULL
 	tvec = ro - m_vertices[ti3.x];
-	u = dot(tvec, pvec);	
-	if (u < 0.0 || u > det) return false;
+	a = dot(tvec, pvec);	
+	if (a < 0.0 || a > det) return false;
 
 	qvec = cross(tvec, edge[0]);
-	v = dot(rd, qvec);
-	if (v < 0.0 || u + v > det) return false;
+	b = dot(rd, qvec);
+	if (b < 0.0 || a + b > det) return false;
 
 	inv_det = 1.0 / det;
 	float newT = dot(edge[1], qvec)*inv_det;
-	u *= inv_det;
-	v *= inv_det;
+	a *= inv_det;
+	b *= inv_det;
 #else
 	inv_det = 1.0 / det;
 
 	tvec = ro - m_vertices[ti3.x];
-	u = dot(tvec, pvec) * inv_det;
-	if (u < 0.0 || u > 1.0) return false;
+	a = dot(tvec, pvec) * inv_det;
+	if (a < 0.0 || a > 1.0) return false;
 
 	qvec = cross(tvec, edge[0]);
-	v = dot(rd, qvec) * inv_det;
-	if (v < 0.0 || u + v > 1.0) return false;
+	b = dot(rd, qvec) * inv_det;
+	if (b < 0.0 || a + b > 1.0) return false;
 
 	float newT = dot(edge[1], qvec)*inv_det;
 #endif
 	if (newT >= tMin && newT < result.t)
 	{		
 		result.t = newT;
-
-		result.geoN = cross(edge[0], edge[1]).normalized();
-		ti3 = m_normalIndices[index];
-		result.N = Vector3((m_normals[ti3.x]*(1-u-v)+m_normals[ti3.y]*u+m_normals[ti3.z]*v).normalized());
-		if (m_texCoordIndices)
+		if (!shadow)
 		{
-			ti3 = m_texCoordIndices[index];
-			result.a = m_texCoords[ti3.x].x*(1-u-v)+m_texCoords[ti3.y].x*u+m_texCoords[ti3.z].x*v;
-			result.b = m_texCoords[ti3.x].y*(1-u-v)+m_texCoords[ti3.y].y*u+m_texCoords[ti3.z].y*v;
+			result.px = ro.x + newT*rd.x; result.py = ro.y + newT*rd.y; result.pz = ro.z + newT*rd.z;
+			result.geoN = cross(edge[0], edge[1]).normalized();
 		}
-		else
-		{
-			result.a = u;
-			result.b = v;
-		}
-		Vector3 P = ro + result.t*rd;
-		result.px = P.x; result.py = P.y; result.pz = P.z;
 		hit = true;
 	}
 #endif
+	if (hit && !shadow)
+	{
+		ti3 = m_normalIndices[index];
+		float c = 1.0f-a-b;
+		result.N = Vector3((m_normals[ti3.x]*c+m_normals[ti3.y]*a+m_normals[ti3.z]*b).normalized());
+		if (m_texCoordIndices)
+		{
+			ti3 = m_texCoordIndices[index];
+			result.a = m_texCoords[ti3.x].x*c+m_texCoords[ti3.y].x*a+m_texCoords[ti3.z].x*b;
+			result.b = m_texCoords[ti3.x].y*c+m_texCoords[ti3.y].y*a+m_texCoords[ti3.z].y*b;
+		}
+		else
+		{
+			result.a = a;
+			result.b = b;
+		}
+	}	
 	return hit;
 }

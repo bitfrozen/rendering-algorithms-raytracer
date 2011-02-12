@@ -20,6 +20,8 @@ const float RadToDeg = 180.0f/PI;
 const float Ttri = 1.0f;
 const float Tbox = 1.0f;
 const bool use_BVH = true;
+const bool use_Schlick = false;
+const u_int num_samples = 512;
 
 #include <stdlib.h>
 #include "OpenGL.h"
