@@ -18,6 +18,7 @@
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 void makeSpiralScene();
+void makeBunnyScene();
 void makeBunnyScene2();
 void makeBunny20Scene();
 void makeEnvironmentMapScene();
@@ -56,14 +57,14 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	// set up the camera
-	g_scene->setBGColor(Vector3(0.0,0.0,0.0));
-	g_camera->setEye(Vector3(-1.622, 1.361, -1.566));
-	g_camera->setLookAt(Vector3(-0.933, 1.57, -0.148));
+	g_scene->setBGColor(Vector3(0.6,0.6,0.85));
+	g_camera->setEye(Vector3(-5, 4, 3));
+	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(45);
 
 	// create and place a point light source
-	/*PointLight * light = new PointLight;
+	PointLight * light = new PointLight;
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
 	light->setWattage(2000);
@@ -73,26 +74,35 @@ void makeTestScene()
 	light2->setPosition(Vector3(-15, 10, -6));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setWattage(2000);
-	g_scene->addLight(light2);*/
+	g_scene->addLight(light2);
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Mono_Lake.hdr");
+	hdrImage->loadImage("Images/Arches_E_PineTree_3k.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
-	g_scene->setEnvExposure(0.5f);
+	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	Blinn* mat = new Blinn(Vector3(1.0), Vector3(0.06));
 	mat->setSpecExp(30.0f);
 	mat->setIor(1.58f);
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
-	mat->setEnvMap(hdrTex);
-	mat->setEnvExposure(0.5f);
+
+	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
+	planeMat->setSpecExp(20.0f);
+	planeMat->setSpecAmt(0.1f);
+	planeMat->setIor(2.2f);
+	planeMat->setReflectAmt(1.0f);
+	planeMat->setRefractAmt(0.0f);
+
 	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *plane = new TriangleMesh;
 	mesh->load("Models/bunny.obj");
+	plane->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
+	makeMeshObjs(plane, planeMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();

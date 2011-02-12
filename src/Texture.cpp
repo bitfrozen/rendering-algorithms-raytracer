@@ -26,18 +26,18 @@ Vector4 Texture::getLookup(float u, float v) {
 	float px = u*m_image->m_width;
 	float py = v*m_image->m_height;
 	float x1 = floor(px);
-    float x2 = x1 + 1;
+    float x2 = x1 + 1.0f;
 	float dx = px - x1;
 	float y1 = floor(py);
-	float y2 = y1 + 1;
+	float y2 = y1 + 1.0f;
 	float dy = py - y1;
 
 	//interpolate in the x direction:
-	Vector4 q1 = getPixel(x1, y1)*(1 - dx) + getPixel(x2, y1)*dx;
-	Vector4 q2 = getPixel(x1, y2)*(1 - dx) + getPixel(x2, y2)*dx;
+	Vector4 q1 = getPixel(x1, y1)*(1.0f - dx) + getPixel(x2, y1)*dx;
+	Vector4 q2 = getPixel(x1, y2)*(1.0f - dx) + getPixel(x2, y2)*dx;
 
 	//interpolate those two points
-	return q1*(1 - dy) + q2*dy;
+	return q1*(1.0f - dy) + q2*dy;
 }
 
 

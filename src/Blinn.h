@@ -2,6 +2,7 @@
 #define CSE168_BLINN_H_INCLUDED
 
 #include "Material.h"
+#include "mtrand.h"
 
 class Blinn : public Material
 {
@@ -41,6 +42,7 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
+	//static int num;
 protected:
     Vector3 m_kd;			// Diffuse Color
     Vector3 m_ka;			// Ambient Color

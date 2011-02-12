@@ -20,6 +20,6 @@ public:
 private:
 	Vector4 getPixel(int x, int y);
 	//pixels stored in column major format
-	RawImage* m_image;
+	RawImage* m_image;	
 };
 #endif
