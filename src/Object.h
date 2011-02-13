@@ -5,10 +5,10 @@
 #include "Miro.h"
 #include "Material.h"
 
-ALIGN_SSE class AABB
+class AABB
 {
 public:
-	inline AABB() : bbMin(MIRO_TMAX), bbMax(-MIRO_TMAX), area(MIRO_TMAX), centroid(0) {}
+	inline AABB() : bbMin(MIRO_TMAX), bbMax(-MIRO_TMAX) {}
 	inline AABB(const Vector3& bbMin, const Vector3& bbMax) : bbMin(bbMin), bbMax(bbMax) {
 	}
 	inline AABB(const AABB& bb1, const AABB& bb2) {
@@ -27,9 +27,11 @@ public:
 		bbMax.y = std::max(bbMax.y, newPt.y);
 		bbMax.z = std::max(bbMax.z, newPt.z);
 	}
-	inline void doAC() {
-		area = 2*((bbMax.x-bbMin.x + bbMax.z-bbMin.z)*(bbMax.y-bbMin.y) + (bbMax.x-bbMin.x)*(bbMax.z-bbMin.z));
-		centroid =  0.5f * (bbMin+bbMax);
+	inline float getArea() {
+		return 2*((bbMax.x-bbMin.x + bbMax.z-bbMin.z)*(bbMax.y-bbMin.y) + (bbMax.x-bbMin.x)*(bbMax.z-bbMin.z));
+	}
+	inline Vector3 getCentroid() {
+		return 0.5f * (bbMin+bbMax);
 	}
 
 #ifndef NO_SSE
@@ -38,8 +40,6 @@ public:
 #else
 	Vector3 bbMin, bbMax;
 #endif
-	float area;
-	Vector3 centroid;
 };
 
 class Object
@@ -60,6 +60,7 @@ public:
 	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort (defined in BVH.cpp)
 	static int sortByYComponent(const void* s1, const void* s2);
 	static int sortByZComponent(const void* s1, const void* s2);
+	static int sortByArea(const void* s1, const void* s2);
 	virtual void getAABB(AABB* outBox) = 0;
 	virtual AABB getAABB() = 0;
 

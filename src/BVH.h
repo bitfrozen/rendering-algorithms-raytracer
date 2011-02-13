@@ -10,6 +10,8 @@
 class BVH_Node
 {
 public:
+	BVH_Node() {};
+	~BVH_Node();
 	AABB* bBox;
 	union {
 		u_int numChildren;
@@ -20,8 +22,8 @@ public:
 		Object** objs;
 	};
 	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon, float tMax = MIRO_TMAX) const;
-	void build(Object** objs, AABB* preCalcAABB, u_int numObjs, float* leftArea, float* rightArea, int* binIds);
-	void partitionSweep(Object** objs, AABB* preCalcAABB, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds);
+	void build(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, float* leftArea, float* rightArea, int* binIds);
+	void partitionSweep(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds);
 };
 
 class BVH
