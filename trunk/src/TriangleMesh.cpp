@@ -90,7 +90,6 @@ void TriangleMesh::getAABB(u_int index, AABB* outBox)
 	bbMax.z = std::max(A.z, std::max(B.z, C.z));
 
 	*outBox = AABB(bbMin, bbMax);
-	outBox->doAC();
 }
 
 AABB TriangleMesh::getAABB(u_int index)
@@ -111,7 +110,6 @@ AABB TriangleMesh::getAABB(u_int index)
 	bbMax.z = std::max(A.z, std::max(B.z, C.z));
 
 	AABB outBox = AABB(bbMin, bbMax);
-	outBox.doAC();
 	return outBox;
 }
 
@@ -200,7 +198,7 @@ bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tM
 	b = dot(rd, qvec) * inv_det;
 	if (b < 0.0 || a + b > 1.0) return false;
 
-	float newT = dot(edge[1], qvec)*inv_det;
+	newT = dot(edge[1], qvec)*inv_det;
 #endif
 	if (newT >= tMin && newT < result.t)
 	{		
