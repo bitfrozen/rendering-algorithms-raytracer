@@ -36,10 +36,10 @@ int main(int argc, char*argv[])
 
 	//scenes that show other functionality
 	//makeBunnyScene2();
-	//makeBunny20Scene();
+	makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
-	makeEnvironmentMapScene();
+	//makeEnvironmentMapScene();
 	//makeTestScene();
 
 	MiroWindow miro(&argc, argv);

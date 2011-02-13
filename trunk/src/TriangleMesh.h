@@ -3,8 +3,7 @@
 
 #include "Matrix4x4.h"
 #include "Ray.h"
-
-class AABB; 
+#include "Object.h"
 
 class TriangleMesh
 {
@@ -36,6 +35,8 @@ public:
     };
 	
 	bool intersect(HitInfo& result, const Ray& r, float tMin = epsilon, float tMax = MIRO_TMAX, u_int index = 0);
+	void getAABB(u_int index, AABB* outBox);
+	AABB getAABB(u_int index);
 
 	Vector3* m_normals;
 	Vector3* m_vertices;

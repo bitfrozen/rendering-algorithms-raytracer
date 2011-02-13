@@ -8,10 +8,8 @@
 ALIGN_SSE class AABB
 {
 public:
-	inline AABB() : bbMin(1), bbMax(-1), area(MIRO_TMAX), centroid(0) {}
+	inline AABB() : bbMin(MIRO_TMAX), bbMax(-MIRO_TMAX), area(MIRO_TMAX), centroid(0) {}
 	inline AABB(const Vector3& bbMin, const Vector3& bbMax) : bbMin(bbMin), bbMax(bbMax) {
-		area = 2*((bbMax.x-bbMin.x + bbMax.z-bbMin.z)*(bbMax.y-bbMin.y) + (bbMax.x-bbMin.x)*(bbMax.z-bbMin.z));
-		centroid =  0.5f * (bbMin+bbMax);
 	}
 	inline AABB(const AABB& bb1, const AABB& bb2) {
 		bbMin.x = std::min(bb1.bbMin.x, bb2.bbMin.x);
@@ -20,6 +18,16 @@ public:
 		bbMax.x = std::max(bb1.bbMax.x, bb2.bbMax.x);
 		bbMax.y = std::max(bb1.bbMax.y, bb2.bbMax.y);
 		bbMax.z = std::max(bb1.bbMax.z, bb2.bbMax.z);
+	}
+	inline void grow(const Vector3& newPt) {
+		bbMin.x = std::min(bbMin.x, newPt.x);
+		bbMin.y = std::min(bbMin.y, newPt.y);
+		bbMin.z = std::min(bbMin.z, newPt.z);
+		bbMax.x = std::max(bbMax.x, newPt.x);
+		bbMax.y = std::max(bbMax.y, newPt.y);
+		bbMax.z = std::max(bbMax.z, newPt.z);
+	}
+	inline void doAC() {
 		area = 2*((bbMax.x-bbMin.x + bbMax.z-bbMin.z)*(bbMax.y-bbMin.y) + (bbMax.x-bbMin.x)*(bbMax.z-bbMin.z));
 		centroid =  0.5f * (bbMin+bbMax);
 	}
@@ -37,8 +45,8 @@ public:
 class Object
 {
 public:
-    Object() {m_bBox = new AABB;}
-    virtual ~Object() {delete m_bBox;}
+    Object() {}
+    virtual ~Object() {}
 
     void setMaterial(const Material* m) {m_material = m;}
 	const Material* getMaterial() const	{return m_material;}
@@ -52,7 +60,8 @@ public:
 	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort (defined in BVH.cpp)
 	static int sortByYComponent(const void* s1, const void* s2);
 	static int sortByZComponent(const void* s1, const void* s2);
-	AABB* m_bBox;
+	virtual void getAABB(AABB* outBox) = 0;
+	virtual AABB getAABB() = 0;
 
 protected:
     const Material* m_material;

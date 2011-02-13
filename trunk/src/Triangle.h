@@ -14,13 +14,15 @@ public:
     virtual ~Triangle();
 
 	virtual void preCalc();
-    void setIndex(u_int i) {m_index = i; updateAABB();}
-    void setMesh(TriangleMesh* m) {m_mesh = m; updateAABB();}
-	void updateAABB();
+    void setIndex(u_int i) {m_index = i;}
+    void setMesh(TriangleMesh* m) {m_mesh = m;}
 
     virtual void renderGL();
     virtual bool intersect(HitInfo& result, const Ray& ray,
                            float tMin = epsilon, float tMax = MIRO_TMAX);
+
+	virtual void getAABB(AABB* outBox);
+	virtual AABB getAABB();
 
 protected:
     TriangleMesh* m_mesh;

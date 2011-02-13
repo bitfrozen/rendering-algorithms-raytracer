@@ -20,8 +20,8 @@ public:
 		Object** objs;
 	};
 	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon, float tMax = MIRO_TMAX) const;
-	void build(Object** objs, u_int numObjs);
-	bool partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float bbSAInv);
+	void build(Object** objs, AABB* preCalcAABB, u_int numObjs, float* leftArea, float* rightArea, int* binIds);
+	void partitionSweep(Object** objs, AABB* preCalcAABB, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds);
 };
 
 class BVH
