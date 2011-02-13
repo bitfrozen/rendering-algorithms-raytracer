@@ -24,18 +24,18 @@ TriangleMesh::~TriangleMesh()
     delete [] m_normalIndices;
     delete [] m_vertexIndices;
     delete [] m_texCoordIndices;
-	delete [] m_preCalcTris;
+	_aligned_free(m_preCalcTris);
 }
 
 void TriangleMesh::preCalc()
 {
 #ifndef NO_SSE
-	if (doPreCalc)			// Precalc a few values to speed up BVH build. The rest of the data was for SSE but it's not working, so...
+	if (doPreCalc)
 	{
-		delete[] m_preCalcTris;
+		if (m_preCalcTris) _aligned_free(m_preCalcTris);
 		m_preCalcTris = (PrecomputedTriangle*)_aligned_malloc(sizeof(PrecomputedTriangle)*m_numTris, 16); //new PrecomputedTriangle[m_numTris];
 
-		Vector3 A, B, C, N,N1,N2,AC,AB;
+		Vector3 A, B, C, N, N1, N2, AC, AB;
 		float d, d1, d2;
 		TriangleMesh::TupleI3 ti3;
 		for (u_int i = 0; i < m_numTris; i++)
@@ -70,6 +70,49 @@ void TriangleMesh::preCalc()
 		doPreCalc = false;
 	}
 #endif
+}
+
+void TriangleMesh::getAABB(u_int index, AABB* outBox)
+{
+	Vector3 A, B, C, bbMin, bbMax;
+	TriangleMesh::TupleI3 ti3;
+
+	ti3 = m_vertexIndices[index];// [m_index];
+	A = m_vertices[ti3.x]; //vertex a of triangle
+	B = m_vertices[ti3.y]; //vertex b of triangle
+	C = m_vertices[ti3.z]; //vertex c of triangle
+
+	bbMin.x = std::min(A.x, std::min(B.x, C.x));
+	bbMin.y = std::min(A.y, std::min(B.y, C.y));
+	bbMin.z = std::min(A.z, std::min(B.z, C.z));
+	bbMax.x = std::max(A.x, std::max(B.x, C.x));
+	bbMax.y = std::max(A.y, std::max(B.y, C.y));
+	bbMax.z = std::max(A.z, std::max(B.z, C.z));
+
+	*outBox = AABB(bbMin, bbMax);
+	outBox->doAC();
+}
+
+AABB TriangleMesh::getAABB(u_int index)
+{
+	Vector3 A, B, C, bbMin, bbMax;
+	TriangleMesh::TupleI3 ti3;
+
+	ti3 = m_vertexIndices[index];// [m_index];
+	A = m_vertices[ti3.x]; //vertex a of triangle
+	B = m_vertices[ti3.y]; //vertex b of triangle
+	C = m_vertices[ti3.z]; //vertex c of triangle
+
+	bbMin.x = std::min(A.x, std::min(B.x, C.x));
+	bbMin.y = std::min(A.y, std::min(B.y, C.y));
+	bbMin.z = std::min(A.z, std::min(B.z, C.z));
+	bbMax.x = std::max(A.x, std::max(B.x, C.x));
+	bbMax.y = std::max(A.y, std::max(B.y, C.y));
+	bbMax.z = std::max(A.z, std::max(B.z, C.z));
+
+	AABB outBox = AABB(bbMin, bbMax);
+	outBox.doAC();
+	return outBox;
 }
 
 bool TriangleMesh::intersect(HitInfo& result, const Ray& r, float tMin, float tMax, u_int index)

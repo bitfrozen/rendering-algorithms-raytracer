@@ -16,18 +16,28 @@ BVH::build(Objects* objs)
 		m_objects = objs;
 		return;
 	}
-	clock_t start = clock();
-
 	u_int numObjs = objs->size();
 
 	Object** BVHObjs = new Object*[numObjs];		// I use a double pointer to conserve memory.
+	AABB* preCalcAABB = new AABB[numObjs];			// Precalculate all the AABBs to speed up BVH build.
 	for (int i = 0; i < numObjs; i++)				// This is used for the whole build, everything is done in place.
 	{
 		BVHObjs[i] = (*objs)[i];
+		BVHObjs[i]->getAABB(&preCalcAABB[i]);
 	}
-	m_baseNode.build(BVHObjs, numObjs);
-
+	float* leftArea = new float[num_bins];			// Scratch memory for the build
+	float* rightArea = new float[num_bins];			// This way we prevent alloc/dealloc during build
+	int* binIds = new int[numObjs];
+	
+	clock_t start = clock();
+	m_baseNode.build(BVHObjs, preCalcAABB, numObjs, leftArea, rightArea, binIds);
 	clock_t end = clock();
+
+	delete[] leftArea;								// Clean up after ourselves...
+	delete[] rightArea;
+	delete[] binIds;
+	delete[] preCalcAABB;
+	
 	printf("BVH Build time: %.4fs...\n", (end-start)/1000.f);
 }
 
@@ -50,24 +60,23 @@ BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin, float tMax) const
 	return m_baseNode.intersect(minHit, ray, tMin, tMax);
 }
 
-void BVH_Node::build(Object** objs, u_int numObjs)//, centroidMap* partitionMap)
+void BVH_Node::build(Object** objs, AABB* preCalcAABB, u_int numObjs, float* leftArea, float* rightArea, int* binIds)
 {
 	Vector3 nodeMin = Vector3(MIRO_TMAX);
 	Vector3 nodeMax = Vector3(-MIRO_TMAX);	
-	AABB tempBox;
 	bBox = (AABB*)_aligned_malloc(sizeof(AABB), 16);
 
 	for (u_int i = 0; i < numObjs; i++)						// Get the AABB for this node
 	{
-		tempBox = *objs[i]->m_bBox;
-		nodeMin.x = std::min(nodeMin.x, tempBox.bbMin.x);
-		nodeMin.y = std::min(nodeMin.y, tempBox.bbMin.y);
-		nodeMin.z = std::min(nodeMin.z, tempBox.bbMin.z);
-		nodeMax.x = std::max(nodeMax.x, tempBox.bbMax.x);
-		nodeMax.y = std::max(nodeMax.y, tempBox.bbMax.y);
-		nodeMax.z = std::max(nodeMax.z, tempBox.bbMax.z);
+		nodeMin.x = std::min(nodeMin.x, preCalcAABB[i].bbMin.x);
+		nodeMin.y = std::min(nodeMin.y, preCalcAABB[i].bbMin.y);
+		nodeMin.z = std::min(nodeMin.z, preCalcAABB[i].bbMin.z);
+		nodeMax.x = std::max(nodeMax.x, preCalcAABB[i].bbMax.x);
+		nodeMax.y = std::max(nodeMax.y, preCalcAABB[i].bbMax.y);
+		nodeMax.z = std::max(nodeMax.z, preCalcAABB[i].bbMax.z);
 	}
 	*bBox = AABB(nodeMin, nodeMax);
+	bBox->doAC();
 
 	u_int partPt = 0;
 	if (GET_NUMCHILD(numChildren = numObjs<<1) <= MAX_LEAF_SIZE)		// Make a leaf...
@@ -77,145 +86,258 @@ void BVH_Node::build(Object** objs, u_int numObjs)//, centroidMap* partitionMap)
 	}
 	else
 	{
-		partitionSweep(objs, numObjs, partPt, 1.0f / bBox->area);		// Find the best place to split the node
+		partitionSweep(objs, preCalcAABB, numObjs, partPt, leftArea, rightArea, binIds);		// Find the best place to split the node
 		numChildren = NODE_SIZE<<1;										// Check out BVH.h, the first of numChildren is used by isLeaf.
 		isLeaf |= false;
 
 		Children = new BVH_Node[2];
 		Object** leftObjs = objs;				// Get a new pointer so we don't have to do so much pointer arithmetic inside partitionSweep
+		AABB* leftAABB = preCalcAABB;			//
 		u_int leftNum = partPt+1;				// [0 .. partPt]
 		Object** rightObjs = objs+(partPt+1);	// Same as before
+		AABB* rightAABB = preCalcAABB+(partPt+1);
 		u_int rightNum = numObjs-partPt-1;		// [partPt+1 .. numObjs-1]
 
-		Children[0].build(leftObjs, leftNum);	// Build left and right child nodes.
-		Children[1].build(rightObjs, rightNum);
+		Children[0].build(leftObjs, leftAABB, leftNum, leftArea, rightArea, binIds);	// Build left and right child nodes.
+		Children[1].build(rightObjs, rightAABB, rightNum, leftArea, rightArea, binIds);
 		return;
 	}
 }
 
-bool BVH_Node::partitionSweep(Object** objs, u_int numObjs, u_int& partPt, float bbSAInv)
+void BVH_Node::partitionSweep(Object** objs, AABB* preCalcAABB, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds)
 {
 	float bestCost  = MIRO_TMAX;
 	float thisCost  = 0;
 	int bestAxis	= -1;
-	float* leftArea = new float[numObjs];
-	float* rightArea = new float[numObjs];
+	int binPart	= 0;
 
-	// sweep in the x direction. First we sort (note we only sort the range we need).
-	qsort(objs, numObjs, sizeof(Object*), Object::sortByXComponent);
+	if (use_Bins)		// Do a binned build. Loosely following some guidelines from Wald's 2007 paper http://www.sci.utah.edu/~wald/Publications/2007/fastBuild/download/fastbuild.pdf
+	{									
+		AABB binBounds = AABB();
 
-	// sweep from left
-	AABB tempBBox = AABB();
-	AABB newBBox;
-	leftArea[0] = MIRO_TMAX;
-	for (int i = 1; i < numObjs; i++)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.area;		// Surface area of AABB for left side of node.
-	}
-
-	// sweep from right
-	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.area;
-	for (int i = numObjs-2; i >= 0; i--)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.area;														// Surface area of AABB for right side of node.
-		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);		// Calculate the cost of this partition.
-		if (thisCost < bestCost)																// If this is better than before, use this partition.
+		for (int i = 0; i < numObjs; i++)		// Find the bounds defined by the objects' centroids
 		{
-			bestCost = thisCost;
-			partPt = i;
-			bestAxis = 1;
+			binBounds.grow(preCalcAABB[i].centroid);
+		}
+		binBounds.doAC();
+		float length[3] = {binBounds.bbMax.x - binBounds.bbMin.x,		// Get dimensions of the bounds.
+						   binBounds.bbMax.y - binBounds.bbMin.y,		// We only test along the longest axis
+						   binBounds.bbMax.z - binBounds.bbMin.z};
+		int axis[3];
+		if (length[0] > length[1])										// Check for longest axis.
+		{																// We store the order of lengths in case we
+			if (length[0] > length[2])									// want to test all axis' at some point.
+			{
+				axis[0] = 0;
+				axis[1] = (length[1] > length[2]) ? 1 : 2;
+				axis[2] = (length[1] > length[2]) ? 2 : 1;
+			}
+			else
+			{
+				axis[0] = 2;
+				axis[1] = 0;
+				axis[2] = 1;
+			}
+		}
+		else
+		{
+			if (length[1] > length[2])
+			{
+				axis[0] = 1;
+				axis[1] = (length[0] > length[2]) ? 0 : 2;
+				axis[2] = (length[0] > length[2]) ? 2 : 0;
+			}
+			else
+			{
+				axis[0] = 2;
+				axis[1] = 1;
+				axis[2] = 0;
+			}
+		}
+
+		float kl = (float)num_bins*(1.0f-epsilon) / length[axis[0]];		// Coefficients for binning the objects
+		float ko = binBounds.bbMin[axis[0]];								// Bin(centroid[i]) = num_bins*(centroid[i][axis] - bounds.min[axis]) / length[axis]
+
+		AABB binBBs[num_bins];
+		int numTris[num_bins];
+		for (int i = 0; i < num_bins; i++)
+		{
+			numTris[i] = 0;
+		}
+
+		float newCentroid;
+		for (int i = 0; i < numObjs; i++)		// Bin the objects. Store the number of objects in each bin.
+		{
+			newCentroid = preCalcAABB[i].centroid[axis[0]];
+			binIds[i] = kl*(newCentroid - ko);
+
+			binBBs[binIds[i]] = AABB(binBBs[binIds[i]], preCalcAABB[i]);
+			numTris[binIds[i]]++;
+		}
+
+		// sweep from left
+		AABB tempBBox;
+		for (int i = 0; i < num_bins-1; i++)
+		{
+			tempBBox = AABB(tempBBox, binBBs[i]);
+			tempBBox.doAC();
+			leftArea[i] = tempBBox.area;		// Surface area of AABB for the left i bins.
+		}
+
+		// sweep from right
+		tempBBox = AABB();
+		int tempNum = 0;
+		for (int i = num_bins-1; i > 0; i--)	
+		{
+			tempNum += numTris[i];
+			tempBBox = AABB(tempBBox, binBBs[i]);
+			tempBBox.doAC();
+			rightArea[i] = tempBBox.area;											// Surface area of AABB for right bins.
+			thisCost = (numObjs-tempNum)*leftArea[i-1] + tempNum*rightArea[i];		// Calculate the cost of this partition.
+			if (thisCost < bestCost)												// If this is better than before, use this partition.
+			{
+				bestCost = thisCost;
+				binPart = i;
+			}
+		}
+		int revIdx = numObjs-1;				
+		for (int i = 0; i < numObjs; i++)		// Loose sorting. We just ensure that all objects from the left bins are first in the objs pointer.
+		{
+			if (binIds[i] >= binPart)
+			{
+				while (binIds[revIdx] >= binPart) {revIdx--;}
+				if (revIdx <= i)
+				{
+					partPt = i-1;
+					return;
+				}
+				AABB tmpBox = preCalcAABB[i];
+				preCalcAABB[i] = preCalcAABB[revIdx];
+				preCalcAABB[revIdx] = tmpBox;
+				Object* tmp = objs[i];
+				objs[i] = objs[revIdx];
+				objs[revIdx--] = tmp;
+			}
 		}
 	}
-
-	// sweep in the y direction
-	qsort(objs, numObjs, sizeof(Object*), Object::sortByYComponent);
-
-	// sweep from left
-	tempBBox = AABB();
-	leftArea[0] = MIRO_TMAX;
-	for (int i = 1; i < numObjs; i++)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.area;
-	}
-
-	// sweep from right
-	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.area;
-	for (int i = numObjs-2; i >= 0; i--)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.area;
-		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);
-		if (thisCost < bestCost)
-		{
-			bestCost = thisCost;
-			partPt = i;
-			bestAxis = 2;
-		}
-	}
-
-	// sweep in the z direction
-	qsort(objs, numObjs, sizeof(Object*), Object::sortByZComponent);
-
-	// sweep from left
-	tempBBox = AABB();
-	leftArea[0] = MIRO_TMAX;
-	for (int i = 1; i < numObjs; i++)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		leftArea[i] = tempBBox.area;
-	}
-
-	// sweep from right
-	tempBBox = AABB();
-	rightArea[numObjs-1] = tempBBox.area;
-	for (int i = numObjs-2; i >= 0; i--)
-	{
-		newBBox = *objs[i]->m_bBox;
-		tempBBox = AABB(tempBBox, newBBox);
-		rightArea[i] = tempBBox.area;
-		thisCost = 2*Tbox + bbSAInv*Ttri*((i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i]);
-		if (thisCost < bestCost)
-		{
-			bestCost = thisCost;
-			partPt = i;
-			bestAxis = 3;
-		}
-	}
-	delete[] leftArea;	// Clean up...
-	delete[] rightArea;
-
-	if (bestAxis == -1) 
-	{
-		return true; // make leaf node, no better partition found
-	}
-
-	switch (bestAxis)
-	{
-	case 1 :
+	else		// If there's fewer objects than bins, we just do full sweeps. 
+	{			// Using ideas from Wald's "Ray Tracing Deformable Scenes Using Dynamic Bounding Volume Hierarchies" (Siggraph, 2007).
+		
+		// sweep in the x direction. First we sort (note we only sort the range we need).
 		qsort(objs, numObjs, sizeof(Object*), Object::sortByXComponent);
-		break;
-	case 2 :
+
+		// sweep from left
+		AABB tempBBox;
+		AABB newBBox;
+
+		leftArea[0] = MIRO_TMAX;
+		for (int i = 1; i < numObjs; i++)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			leftArea[i] = tempBBox.area;		// Surface area of AABB for left side of node.
+		}
+
+		// sweep from right
+		tempBBox = AABB();
+		rightArea[numObjs-1] = MIRO_TMAX;
+		for (int i = numObjs-2; i >= 0; i--)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			rightArea[i] = tempBBox.area;									// Surface area of AABB for right side of node.
+			thisCost = (i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i];		// Calculate the cost of this partition.
+			if (thisCost < bestCost)										// If this is better than before, use this partition.
+			{
+				bestCost = thisCost;
+				partPt = i;
+				bestAxis = 1;
+			}
+		}
+
+		// sweep in the y direction
 		qsort(objs, numObjs, sizeof(Object*), Object::sortByYComponent);
-		break;
+
+		// sweep from left
+		tempBBox = AABB();
+		leftArea[0] = MIRO_TMAX;
+		for (int i = 1; i < numObjs; i++)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			leftArea[i] = tempBBox.area;
+		}
+
+		// sweep from right
+		tempBBox = AABB();
+		rightArea[numObjs-1] = MIRO_TMAX;
+		for (int i = numObjs-2; i >= 0; i--)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			rightArea[i] = tempBBox.area;
+			thisCost = (i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i];
+			if (thisCost < bestCost)
+			{
+				bestCost = thisCost;
+				partPt = i;
+				bestAxis = 2;
+			}
+		}
+
+		// sweep in the z direction
+		qsort(objs, numObjs, sizeof(Object*), Object::sortByZComponent);
+
+		// sweep from left
+		tempBBox = AABB();
+		leftArea[0] = MIRO_TMAX;
+		for (int i = 1; i < numObjs; i++)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			leftArea[i] = tempBBox.area;
+		}
+
+		// sweep from right
+		tempBBox = AABB();
+		rightArea[numObjs-1] = MIRO_TMAX;
+		for (int i = numObjs-2; i >= 0; i--)
+		{
+			objs[i]->getAABB(&newBBox);
+			tempBBox = AABB(tempBBox, newBBox);
+			tempBBox.doAC();
+			rightArea[i] = tempBBox.area;
+			thisCost = (i+1)*leftArea[i] + (numObjs-i-1)*rightArea[i];
+			if (thisCost < bestCost)
+			{
+				bestCost = thisCost;
+				partPt = i;
+				bestAxis = 3;
+			}
+		}
+
+		switch (bestAxis)
+		{
+		case 1 :
+			qsort(objs, numObjs, sizeof(Object*), Object::sortByXComponent);
+			break;
+		case 2 :
+			qsort(objs, numObjs, sizeof(Object*), Object::sortByYComponent);
+			break;
+		}
 	}
-	return false; // make child nodes
 }
 
 int Object::sortByXComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	left = (*(Object**)s1)->m_bBox->centroid;
-	right = (*(Object**)s2)->m_bBox->centroid;
+	left = (*(Object**)s1)->getAABB().centroid;
+	right = (*(Object**)s2)->getAABB().centroid;
 
 	if (left.x < right.x)
 	{
@@ -231,8 +353,8 @@ int Object::sortByXComponent(const void* s1, const void* s2)
 int Object::sortByYComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	left = (*(Object**)s1)->m_bBox->centroid;
-	right = (*(Object**)s2)->m_bBox->centroid;
+	left = (*(Object**)s1)->getAABB().centroid;
+	right = (*(Object**)s2)->getAABB().centroid;
 
 	if (left.y < right.y)
 	{
@@ -248,8 +370,8 @@ int Object::sortByYComponent(const void* s1, const void* s2)
 int Object::sortByZComponent(const void* s1, const void* s2)
 {
 	Vector3 left, right;
-	left = (*(Object**)s1)->m_bBox->centroid;
-	right = (*(Object**)s2)->m_bBox->centroid;
+	left = (*(Object**)s1)->getAABB().centroid;
+	right = (*(Object**)s2)->getAABB().centroid;
 
 	if (left.z < right.z)
 	{

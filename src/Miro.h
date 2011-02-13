@@ -1,7 +1,7 @@
 #ifndef __MIRO_H__
 #define __MIRO_H__
 
-#define NO_SSE
+//#define NO_SSE
 #define ALIGN_SSE __declspec(align(16))			// Use this to align variables for SSE use (they need to be 16 byte aligned).
 typedef unsigned int u_int;
 
@@ -17,11 +17,11 @@ const float PI = 3.1415926f;
 const float piRecip = 1.0f / PI;
 const float DegToRad = PI/180.0f;
 const float RadToDeg = 180.0f/PI;
-const float Ttri = 1.0f;
-const float Tbox = 1.0f;
 const bool use_BVH = true;
 const bool use_Schlick = false;
 const u_int num_samples = 512;
+const int num_bins = 16;
+const bool use_Bins = true;
 
 #include <stdlib.h>
 #include "OpenGL.h"

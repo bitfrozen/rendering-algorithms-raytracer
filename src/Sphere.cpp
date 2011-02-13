@@ -4,6 +4,7 @@
 
 Sphere::Sphere()
 {
+	m_AABB = AABB();
 }
 
 Sphere::~Sphere()
