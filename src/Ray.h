@@ -3,7 +3,8 @@
 
 #include <vector>
 #include "Vector3.h"
-#include "Material.h"
+#include "SSE.h"
+#include <omp.h>
 
 // Bitfield flags
 #define SIGN_X_FLAG			0x1
@@ -23,42 +24,79 @@
 ALIGN_SSE class Ray
 {
 public:
-    float ox, oy, oz, ow;      //!< Origin of ray
-	float dx, dy, dz, dw;      //!< Direction of ray
-	float idx, idy, idz, idw;  // Reciprocal of direction, used for slabs test (AABB intersection)
+	union {float  o[4]; __m128  _o;};	//!< Origin of ray
+	union {float  d[4]; __m128  _d;};	//!< Direction of ray
+	union {float id[4]; __m128 _id;};	// Reciprocal of direction, used for slabs test (AABB intersection)
+#ifdef USE_TRI_PACKETS
+	__m128  ox4,  oy4,  oz4;
+	__m128  dx4,  dy4,  dz4;
+	__m128 idx4, idy4, idz4;
+#endif
+	static unsigned long int counter, rayTriangleIntersections;
 	unsigned int bounces_flags;
 	typedef std::vector<float> IORList;		
 	IORList r_IOR;							// History of IOR this ray has traversed..
 
     Ray()
     {
-		ox = oy = oz = 0.0f; ow = 1.0f;
-		dx = dy = dw = 0.0f; dz = 1.0f;
-		idx = idy = idw = 0.0f; idz = 1.0f;
+		//#pragma omp atomic
+		counter++;
+
+		 o[0] =  o[1] =  o[2] = o[3] = 0.0f;
+		 d[0] =  d[1] =  d[3] = 0.0f;  d[2] = 1.0f;
+		id[0] = id[1] = id[3] = 0.0f; id[2] = 1.0f;
+#ifdef USE_TRI_PACKETS
+		 ox4 = setZero;  oy4 = setZero;  oz4 = setZero;
+		 dx4 = setZero;  dy4 = setZero;  dz4 = setZero;
+		idx4 = setZero; idy4 = setZero; idz4 = setZero;
+#endif
 		bounces_flags = IS_PRIMARY_RAY;
 		r_IOR.push_back(1.001f);
     }
 
     Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
     {
-		ox = o.x; oy = o.y; oz = o.z; ow = 1.0f;
-		dx = d.x; dy = d.y; dz = d.z; dw = 0.0f;
-		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = 0.0f;
-		bounces_flags = bounces<<7 | (idz < 0)<<2 | (idy < 0)<< 1 | (idx < 0) | flags;
+		//#pragma omp atomic
+		counter++;
+
+		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
+		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
+#ifndef NO_SSE
+		_id = recipps(_d);		// This is faster if we have SSE...
+#else
+		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
+#endif
+#ifdef USE_TRI_PACKETS
+		 ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
+		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
+		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
+#endif
+		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		if (!(flags & IS_SHADOW_RAY))
 			r_IOR.push_back(IOR);
     }
 
 	Ray(const Vector3& o, const Vector3& d, const IORList& IOR, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
-		ox = o.x; oy = o.y; oz = o.z; ow = 1.0f;
-		dx = d.x; dy = d.y; dz = d.z; dw = 0.0f;
-		idx = 1.0f/dx; idy = 1.0f/dy; idz = 1.0f/dz; idw = 0.0f;
-		bounces_flags = bounces<<7 | (idz < 0)<<2 | (idy < 0)<< 1 | (idx < 0) | flags;
+		//#pragma omp atomic
+		counter++;
+
+		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
+		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
+#ifndef NO_SSE
+		_id = recipps(_d);		// This is faster if we have SSE...
+#else
+		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
+#endif
+#ifdef USE_TRI_PACKETS
+		 ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
+		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
+		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
+#endif
+		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		r_IOR = IOR;
 	}
 };
-
 
 //! Contains information about a ray hit with a surface.
 /*!
@@ -68,19 +106,11 @@ public:
 ALIGN_SSE class HitInfo
 {
 public:
-	float px, py, pz, pw;
-    float t, a, b;                      //!< The hit distance, u and v barycentric coordinates
-    Vector3 N, geoN;                    //!< Shading(interpolated) and geometric normal vector
-    const Material* material;           //!< Material of the intersected object
+	Object* obj;						//!< Pointer to intersected object
+    float t, a, b;                      //!< The hit distance, a and b barycentric coordinates
 
     //! Default constructor.
-    explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f,
-                     float px = 0.0f, float py = 0.0f, float pz = 0.0f, float pw = 0.0f,
-                     const Vector3& N = Vector3(0.0f, 1.0f, 0.0f)) :
-        t(t), a(a), b(b), px(px), py(py), pz(pz), pw(pw), N(N), geoN(N), material (0)
-    {
-        // empty
-    }
+    explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f, Object* obj = NULL) : t(t), a(a), b(b), obj(obj) {};
 };
 
 #endif // CSE168_RAY_H_INCLUDED

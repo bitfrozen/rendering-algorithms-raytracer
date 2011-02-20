@@ -12,7 +12,7 @@ public:
     void setWattage(float f)            {m_wattage = f;}
     
     float wattage() const               {return m_wattage;}
-    const Vector3 & color() const       {return m_color;}
+    const Vector3& color() const        {return m_color;}
     const Vector3& position() const     {return m_position;}
 
     void preCalc() {} // use this if you need to

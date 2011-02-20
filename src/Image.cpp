@@ -73,8 +73,30 @@ void Image::setPixel(int x, int y, const Pixel& p)
 
 void Image::drawScanline(int y)
 {
-    glRasterPos2f(-1, -1 + 2*y / (float)m_height);
-    glDrawPixels(m_width, 1, GL_RGB, GL_UNSIGNED_BYTE, &m_pixels[y*m_width]);
+	glRasterPos2f(-1, -1 + 2*y / (float)m_height);
+	glDrawPixels(m_width, 1, GL_RGB, GL_UNSIGNED_BYTE, &m_pixels[y*m_width]);
+}
+
+void Image::drawScanlines(int yMin, int yMax)
+{
+	for (int i = yMin; i < yMax; i++)
+	{
+		drawScanline(i);
+	}	
+}
+
+void Image::drawScanlineBucket(int y, int xMin, int xMax)
+{
+	glRasterPos2f(-1 + 2*xMin / (float)m_width, -1 + 2*y / (float)m_height);
+	glDrawPixels(xMax-xMin, 1, GL_RGB, GL_UNSIGNED_BYTE, &m_pixels[y*m_width + xMin]);
+}
+
+void Image::drawBucket(int yMin, int yMax, int xMin, int xMax)
+{
+	for (int i = yMin; i < yMax; i++)
+	{
+		drawScanlineBucket(i, xMin, xMax);
+	}	
 }
 
 void Image::draw()

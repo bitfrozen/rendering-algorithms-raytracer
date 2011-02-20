@@ -3,6 +3,8 @@
 
 #include "Material.h"
 #include "mtrand.h"
+#include "Miro.h"
+#include "SSE.h"
 
 class Blinn : public Material
 {
@@ -42,7 +44,10 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
-	//static int num;
+	/*static int randsIdx;
+	static float rands[1000000];
+	static void genRands();*/
+
 protected:
     Vector3 m_kd;			// Diffuse Color
     Vector3 m_ka;			// Ambient Color

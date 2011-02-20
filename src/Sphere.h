@@ -19,8 +19,7 @@ public:
 	virtual AABB getAABB()				{return m_AABB;}
 
     virtual void renderGL();
-    virtual bool intersect(HitInfo& result, const Ray& ray,
-                           float tMin = 0.0f, float tMax = MIRO_TMAX);
+    virtual bool intersect(HitInfo& result, const Ray& ray, float tMin = 0.0f);
 
 protected:
     Vector3 m_center;

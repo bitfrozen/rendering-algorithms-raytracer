@@ -16,8 +16,7 @@ void makeSphereScene();
 //This function is defined in main.cpp
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 
-void
-makeBunnyScene()
+void makeBunnyScene()
 {
     g_camera = new Camera;
     g_scene = new Scene;
@@ -56,7 +55,7 @@ makeBunnyScene()
     floor->setN2(Vector3(0, 1, 0));
     floor->setN3(Vector3(0, 1, 0));
     
-    Triangle* t = new Triangle;
+    Object* t = new Object;
     t->setIndex(0);
     t->setMesh(floor);
     t->setMaterial(mat); 
@@ -66,8 +65,7 @@ makeBunnyScene()
     g_scene->preCalc();
 }
 
-void
-makeTeapotScene()
+void makeTeapotScene()
 {
     g_camera = new Camera;
     g_scene = new Scene;
@@ -106,7 +104,7 @@ makeTeapotScene()
     floor->setN2(Vector3(0, 1, 0));
     floor->setN3(Vector3(0, 1, 0));
     
-    Triangle* t = new Triangle;
+    Object* t = new Object;
     t->setIndex(0);
     t->setMesh(floor);
     t->setMaterial(mat); 
@@ -116,8 +114,7 @@ makeTeapotScene()
     g_scene->preCalc();
 }
 
-void
-makeSphereScene()
+void makeSphereScene()
 {
     g_camera = new Camera;
     g_scene = new Scene;
@@ -147,7 +144,7 @@ makeSphereScene()
 	makeMeshObjs(sphere,mat);
     
     // create the floor triangle
-    TriangleMesh * floor = new TriangleMesh;
+    /*TriangleMesh * floor = new TriangleMesh;
     floor->createSingleTriangle();
     floor->setV1(Vector3(  0, 0,  10));
     floor->setV2(Vector3( 10, 0, -10));
@@ -160,7 +157,7 @@ makeSphereScene()
     t->setIndex(0);
     t->setMesh(floor);
     t->setMaterial(mat); 
-    g_scene->addObject(t);
+    g_scene->addObject(t);*/
     
     // let objects do pre-calculations if needed
     g_scene->preCalc();

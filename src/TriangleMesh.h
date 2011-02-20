@@ -29,35 +29,33 @@ public:
         u_int x, y, z;
     };
 
-    struct VectorR2
+    ALIGN_SSE struct VectorR2
     {
         float x, y;
     };
-	
-	bool intersect(HitInfo& result, const Ray& r, float tMin = epsilon, float tMax = MIRO_TMAX, u_int index = 0);
+
 	void getAABB(u_int index, AABB* outBox);
 	AABB getAABB(u_int index);
 
-	Vector3* m_normals;
-	Vector3* m_vertices;
-	VectorR2* m_texCoords;
+	ALIGN_SSE Vector3* m_normals;
+	ALIGN_SSE Vector3* m_vertices;
+	ALIGN_SSE VectorR2* m_texCoords;
 
 	TupleI3* m_normalIndices;
 	TupleI3* m_vertexIndices;
 	TupleI3* m_texCoordIndices;
 	u_int m_numTris;
+	
+	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine
+	{
+		union {float n[4]; __m128 _n;};
+		union {float u[4]; __m128 _u;};
+		union {float v[4]; __m128 _v;};
+	};
+	PrecomputedTriangle* m_preCalcTris;			// Holds precomputed triangle data for intersection routine.
 
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);
-
-	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine
-	{
-		float nx, ny, nz, nd;
-		float ux, uy, uz, ud;
-		float vx, vy, vz, vd;
-	};
-
-	PrecomputedTriangle* m_preCalcTris;			// Holds precomputed triangle data for intersection routine.
 	bool doPreCalc;
 };
 

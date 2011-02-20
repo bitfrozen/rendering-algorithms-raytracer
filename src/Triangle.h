@@ -18,15 +18,13 @@ public:
     void setMesh(TriangleMesh* m) {m_mesh = m;}
 
     virtual void renderGL();
-    virtual bool intersect(HitInfo& result, const Ray& ray,
-                           float tMin = epsilon, float tMax = MIRO_TMAX);
+    virtual bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon);
 
 	virtual void getAABB(AABB* outBox);
 	virtual AABB getAABB();
-
-protected:
-    TriangleMesh* m_mesh;
-    u_int m_index;
+	
+	TriangleMesh* m_mesh;
+	u_int m_index;
 };
 
 #endif // CSE168_TRIANGLE_H_INCLUDED

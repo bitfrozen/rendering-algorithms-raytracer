@@ -7,7 +7,11 @@
 #ifndef GLUT_BUILDING_LIB
 #define GLUT_BUILDING_LIB
 #endif // GLUT_BUILDING_LIB
+#ifdef WIN64
+#include <freeglut.h>
+#else
 #include <GL/glut.h>
+#endif
 
 #else
 

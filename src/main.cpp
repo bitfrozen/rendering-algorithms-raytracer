@@ -5,9 +5,8 @@
 #include "Image.h"
 #include "Console.h"
 #include "PointLight.h"
-#include "Sphere.h"
+#include "Object.h"
 #include "TriangleMesh.h"
-#include "Triangle.h"
 #include "Lambert.h"
 #include "MiroWindow.h"
 #include "Blinn.h"
@@ -17,7 +16,6 @@
 #include "Assignment1.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
-void makeSpiralScene();
 void makeBunnyScene();
 void makeBunnyScene2();
 void makeBunny20Scene();
@@ -35,8 +33,8 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	//makeBunnyScene2();
-	makeBunny20Scene();
+	makeBunnyScene2();
+	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
@@ -61,9 +59,9 @@ void makeTestScene()
 	g_camera->setEye(Vector3(-5, 4, 3));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(45);
+	g_camera->setFOV(90);
 
-	// create and place a point light source
+	/*// create and place a point light source
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
@@ -74,7 +72,7 @@ void makeTestScene()
 	light2->setPosition(Vector3(-15, 10, -6));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setWattage(2000);
-	g_scene->addLight(light2);
+	g_scene->addLight(light2);*/
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
@@ -84,17 +82,18 @@ void makeTestScene()
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(1.0), Vector3(0.06));
+	Blinn* mat = new Blinn(Vector3(0.25, 0.15, 0.01), Vector3(0), Vector3(1.0, 0.75, 0.1));
 	mat->setSpecExp(30.0f);
-	mat->setIor(1.58f);
+	mat->setSpecAmt(0);
+	mat->setIor(10.0f);
 	mat->setReflectAmt(1.0f);
-	mat->setRefractAmt(1.0f);
+	mat->setRefractAmt(0.0f);
 
-	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
+	Blinn* planeMat = new Blinn(Vector3(1.0));
 	planeMat->setSpecExp(20.0f);
-	planeMat->setSpecAmt(0.1f);
+	planeMat->setSpecAmt(0);
 	planeMat->setIor(2.2f);
-	planeMat->setReflectAmt(1.0f);
+	planeMat->setReflectAmt(0.0f);
 	planeMat->setRefractAmt(0.0f);
 
 	TriangleMesh *mesh = new TriangleMesh;
@@ -108,51 +107,6 @@ void makeTestScene()
 	g_scene->preCalc();
 }
 
-void makeSpiralScene()
-{
-    g_camera = new Camera;
-    g_scene = new Scene;
-    g_image = new Image;
-
-    g_image->resize(512, 512);
-    
-    // set up the camera
-    g_scene->setBGColor(Vector3(1.0f, 1.0f, 1.0f));
-    g_camera->setEye(Vector3(-5, 2, 3));
-    g_camera->setLookAt(Vector3(0, 0, 0));
-    g_camera->setUp(Vector3(0, 1, 0));
-    g_camera->setFOV(45);
-
-    // create and place a point light source
-    PointLight * light = new PointLight;
-    light->setPosition(Vector3(-3, 15, 3));
-    light->setColor(Vector3(1, 1, 1));
-    light->setWattage(1000);
-    g_scene->addLight(light);
-
-    // create a spiral of spheres
-    Material* mat = new Lambert(Vector3(1.0f, 0.0f, 0.0f));
-    const int maxI = 200;
-    const float a = 0.15f;
-    for (int i = 1; i < maxI; ++i)
-    {
-        float t = i/float(maxI);
-        float theta = 4*PI*t;
-        float r = a*theta;
-        float x = r*cos(theta);
-        float y = r*sin(theta);
-        float z = 2*(2*PI*a - r);
-        Sphere * sphere = new Sphere;
-        sphere->setCenter(Vector3(x,y,z));
-        sphere->setRadius(r/10);
-        sphere->setMaterial(mat);
-        g_scene->addObject(sphere);
-    }
-    
-    // let objects do pre-calculations if needed
-    g_scene->preCalc();
-}
-
 void makeBunnyScene2()
 {
 	g_camera = new Camera;
@@ -162,11 +116,11 @@ void makeBunnyScene2()
 	g_image->resize(512, 512);
 
 	// set up the camera
-	g_scene->setBGColor(Vector3(0.6,0.6,0.85));
+	g_scene->setBGColor(Vector3(1.0,0.0,0.0));
 	g_camera->setEye(Vector3(-5, 4, 3));
-	g_camera->setLookAt(Vector3(0, 0, 0));
+	g_camera->setLookAt(Vector3(0, 0.65, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(60);
+	g_camera->setFOV(45);
 
 	// create and place a point light source
 	PointLight * light = new PointLight;
@@ -189,7 +143,7 @@ void makeBunnyScene2()
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
+	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.3,0.3,0.3));
 	mat->setSpecExp(30.0f);
 	mat->setIor(1.56f);
 	mat->setReflectAmt(1.0f);
@@ -204,7 +158,7 @@ void makeBunnyScene2()
 	planeMat->setRefractAmt(0.0f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/multiBunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
@@ -552,7 +506,7 @@ makeBunny20Scene()
 	mesh->setN2(Vector3(0, 1, 0));
 	mesh->setN3(Vector3(0, 1, 0));
 
-	Triangle* t = new Triangle;
+	Object* t = new Object;
 	t->setIndex(0);
 	t->setMesh(mesh);
 	t->setMaterial(mat2); 
@@ -586,7 +540,7 @@ makeSponzaScene()
 	g_scene->addLight(light);
 
 	Material* material = new Blinn(Vector3(1.0f));
-	TriangleMesh * mesh = new TriangleMesh;
+	TriangleMesh* mesh = new TriangleMesh;
 	mesh->load("Models/sponza.obj");
 	makeMeshObjs(mesh, material);
 
@@ -594,17 +548,20 @@ makeSponzaScene()
 	g_scene->preCalc();
 }
 
+// Insert all objects into the scene in a single memory block
 void makeMeshObjs(TriangleMesh* mesh, Material* mat)
 {
-	int i = mesh->m_numTris-1;
-	Triangle* t;
+	int numObjs = mesh->m_numTris;
+
+	Object* t = (Object*)_aligned_malloc(sizeof(Object)*numObjs, 16);
+	
+	int i = numObjs-1;
 	while (i >= 0)
 	{
-		t = new Triangle;
-		t->setMesh(mesh);
-		t->setIndex(i);
-		t->setMaterial(mat);
-		g_scene->addObject(t);
+		t[i].setMesh(mesh);
+		t[i].setIndex(i);
+		t[i].setMaterial(mat);
+		g_scene->addObject(&t[i]);
 		i--;
 	}
 }

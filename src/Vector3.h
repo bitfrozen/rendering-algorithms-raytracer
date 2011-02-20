@@ -4,26 +4,28 @@
 #include <math.h>
 #include <float.h>
 #include <iostream>
+#include "Miro.h"
+#include "SSE.h"
 
 #ifdef WIN32
 #pragma warning(disable:4305) // disable useless warnings
 #pragma warning(disable:4244)
 #endif
 
-class Vector3
+ALIGN_SSE class Vector3
 {
 
 public:
-    float x, y, z;      // The x & y & z coordinates.
+    float x, y, z, __dummy;      // The x & y & z coordinates.
 
     Vector3() :
-        x(0), y(0), z(0) {}
+        x(0), y(0), z(0), __dummy(0) {}
 
     Vector3(float s) :
-        x(s), y(s), z(s) {}
+        x(s), y(s), z(s), __dummy(0) {}
 
     Vector3(float xVal, float yVal, float zVal) :
-        x(xVal), y(yVal), z(zVal) {}
+        x(xVal), y(yVal), z(zVal), __dummy(0) {}
 
     //! Assignment operator.
     /*!
@@ -218,24 +220,21 @@ public:
 
 
 //! Multiply a scalar by a Vec3.
-inline Vector3
-operator*(float s, const Vector3& v)
+inline Vector3 operator*(float s, const Vector3& v)
 {
-    return Vector3(v.x * s, v.y * s, v.z * s);
+	return Vector3(v.x * s, v.y * s, v.z * s);
 }
 
 
 //! The dot product of two Vec3s.
-inline float
-dot(const Vector3 & a, const Vector3 & b)
+inline float dot(const Vector3 & a, const Vector3 & b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 
 //! The cross product of two Vec3s.
-inline Vector3
-cross(const Vector3 & a, const Vector3 & b)
+inline Vector3 cross(const Vector3 & a, const Vector3 & b)
 {
     return Vector3(a.y * b.z - a.z * b.y,
                    a.z * b.x - a.x * b.z,
@@ -243,16 +242,14 @@ cross(const Vector3 & a, const Vector3 & b)
 }
 
 
-inline float
-Vector3::length2() const
+inline float Vector3::length2() const
 {
     return dot(*this, *this);
 }
 
 
 //! Return a rotated copy of the vector
-inline Vector3
-Vector3::rotated(float theta, const Vector3 & w) const
+inline Vector3 Vector3::rotated(float theta, const Vector3 & w) const
 {
     float c = cosf(theta);
     float s = sinf(theta);
