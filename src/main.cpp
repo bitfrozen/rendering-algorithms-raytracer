@@ -158,7 +158,7 @@ void makeBunnyScene2()
 	planeMat->setRefractAmt(0.0f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/multiBunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
