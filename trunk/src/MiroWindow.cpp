@@ -16,7 +16,6 @@
 #pragma warning(disable:4996)
 #endif
 
-
 namespace
 {
 
@@ -29,7 +28,6 @@ void mouse(int btn,int state,int x,int y) {g_miroWindow->mouse(btn,state,x,y);}
 void motion(int x, int y) {g_miroWindow->motion(x,y);}
 
 } // namespace
-
 
 MiroWindow::MiroWindow(int * argc, char* argv[]) :
     m_scaleFact(0.1f),
@@ -53,7 +51,6 @@ MiroWindow::MiroWindow(int * argc, char* argv[]) :
     glShadeModel(GL_SMOOTH);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // draw outlines only
 }
-
 
 void
 MiroWindow::mainLoop()

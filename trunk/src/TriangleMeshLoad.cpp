@@ -1,11 +1,12 @@
 #include "TriangleMesh.h"
 #include "Console.h"
 
+using namespace std;
+
 #ifdef WIN32
 // disable useless warnings
 #pragma warning(disable:4996)
 #endif
-
 
 void
 TriangleMesh::createSingleTriangle()
@@ -95,7 +96,6 @@ getIndices(char *word, int *vindex, int *tindex, int *nindex)
     *nindex = atoi (np);
 }
 
-
 void
 TriangleMesh::loadObj(FILE* fp, const Matrix4x4& ctm)
 {
@@ -119,12 +119,12 @@ TriangleMesh::loadObj(FILE* fp, const Matrix4x4& ctm)
     }
     fseek(fp, 0, 0);
 
-    m_normals = new Vector3[std::max(nv,nf)];
-    m_vertices = new Vector3[nv];
+    m_normals = (Vector3*)_aligned_malloc(sizeof(Vector3)*(max(nv,nf)), 16);
+    m_vertices = (Vector3*)_aligned_malloc(sizeof(Vector3)*(nv), 16);
 
     if (nt)
     {   // got texture coordinates
-        m_texCoords = new VectorR2[nt];
+        m_texCoords = (VectorR2*)_aligned_malloc(sizeof(VectorR2)*(nt), 16);
         m_texCoordIndices = new TupleI3[nf];
     }
     m_normalIndices = new TupleI3[nf]; // always make normals

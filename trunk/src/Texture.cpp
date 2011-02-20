@@ -23,8 +23,8 @@ Vector4 Texture::getLookup(float u, float v) {
 	v = 1.0f - v;
 
     //use bilinear lookup
-	float px = u*m_image->m_width;
-	float py = v*m_image->m_height;
+	float px = u*(m_image->m_width-1);
+	float py = v*(m_image->m_height-1);
 	float x1 = floor(px);
     float x2 = x1 + 1.0f;
 	float dx = px - x1;
@@ -39,8 +39,6 @@ Vector4 Texture::getLookup(float u, float v) {
 	//interpolate those two points
 	return q1*(1.0f - dy) + q2*dy;
 }
-
-
 
 Vector3 Texture::getLookup3(float u, float v) {
 	Vector4 temp = getLookup(u,v);

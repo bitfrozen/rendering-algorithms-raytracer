@@ -22,8 +22,7 @@ Sphere::renderGL()
 }
 
 bool
-Sphere::intersect(HitInfo& result, const Ray& ray,
-                  float tMin, float tMax)
+Sphere::intersect(HitInfo& result, const Ray& ray, float tMin)
 {
     static Vector3 rayO = Vector3(ray.ox, ray.oy, ray.oz);
 	const Vector3 toO = rayO - m_center; 
@@ -45,11 +44,11 @@ Sphere::intersect(HitInfo& result, const Ray& ray,
 
     // since we know that discrim >= 0, t[0] < t{1]
     // return the t closest to us that is within range
-    if ((t[0] > tMin) && (t[0] < tMax))
+    if ((t[0] > tMin) && (t[0] < result.t))
     {
         result.t = t[0];
     }
-    else if((t[1] > tMin) && (t[1] < tMax))
+    else if((t[1] > tMin) && (t[1] < result.t))
     {
         result.t = t[1];
     }
@@ -59,11 +58,5 @@ Sphere::intersect(HitInfo& result, const Ray& ray,
         return false; 
     }
  
-    Vector3 P = rayO + result.t*rayD;
-	result.px = P.x; result.py = P.y; result.pz = P.z;
-	result.N = (P-m_center); 
-    result.N.normalize(); 
-    result.material = this->m_material; 
-
     return true;
 }

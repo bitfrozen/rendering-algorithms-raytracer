@@ -27,8 +27,7 @@ public:
     void openGL(Camera *cam);
 
     void raytraceImage(Camera *cam, Image *img);
-    bool trace(HitInfo& minHit, const Ray& ray,
-               float tMin = 0.0f, float tMax = MIRO_TMAX) const;
+    bool trace(HitInfo& minHit, const Ray& ray, float tMin = 0.0f) const;
 
 	void setBGColor(Vector3& color)		{m_BGColor = color;}
 	Vector3& getBGColor()				{return m_BGColor;}
