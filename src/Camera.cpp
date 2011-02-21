@@ -108,3 +108,43 @@ Ray Camera::eyeRay(int x, int y, int imageWidth, int imageHeight)
 
     return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
 }
+
+Ray Camera::eyeRayRandom(int x, int y, int imageWidth, int imageHeight)
+{
+    // first compute the camera coordinate system 
+    // ------------------------------------------
+
+    // wDir = e - (e+m_viewDir) = -m_vView
+    const Vector3 wDir = Vector3(-m_viewDir).normalize(); 
+    const Vector3 uDir = cross(m_up, wDir).normalize(); 
+    const Vector3 vDir = cross(wDir, uDir);    
+
+
+
+    // next find the corners of the image plane in camera space
+    // --------------------------------------------------------
+
+    const float aspectRatio = (float)imageWidth/(float)imageHeight; 
+
+
+    const float top     = tan(m_fov*HalfDegToRad); 
+    const float right   = aspectRatio*top; 
+
+    const float bottom  = -top; 
+    const float left    = -right; 
+
+
+
+    // transform x and y into camera space 
+    // -----------------------------------
+    //add a randomness so that the ray will be sent somewhere inside the pixel,
+	// and not necessarily through the center of the pixel
+	MTRand drand;
+	float urand = drand();
+	float vrand = drand();
+
+    const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth); 
+    const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight); 
+
+    return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
+}

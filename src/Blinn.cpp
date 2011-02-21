@@ -5,7 +5,6 @@
 #include <math.h>
 #include "Miro.h"
 #include "SSE.h"
-#include "Triangle.h"
 #include "TriangleMesh.h"
 
 using namespace std;
@@ -19,6 +18,8 @@ Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 	m_reflectAmt(reflectAmt), m_refractAmt(refractAmt)
 {	
 	//genRands();
+	m_lightEmitted = 0.0f;
+	m_Le = Vector3(0.0f);
 }
 
 Blinn::~Blinn()
@@ -223,50 +224,85 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	}
 
 	Vector3 rVec = (rayD + 2*(vDotN)*theNormal);									// get the reflection vector
-
-	const Lights *lightlist = scene.lights();
-
-	// loop over all of the lights
-	Lights::const_iterator lightIter;
-	for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
-	{
-		PointLight* pLight = *lightIter;
-
-		Vector3 l = pLight->position() - P;
-
-		// the inverse-squared falloff
-		ALIGN_SSE float falloff = l.length2();
-		ALIGN_SSE float distanceRecip, distance;
-#ifndef NO_SSE
-		fastrsqrtss(setSSE(falloff), distanceRecip);
-		recipss(setSSE(falloff), falloff);
-		recipss(setSSE(distanceRecip), distance);
-#else
-		distance      = sqrtf(falloff);
-		distanceRecip = 1.0f / distance;
-		falloff       = 1.0f / falloff;
-#endif
-
-		// normalize the light direction
-		l *= distanceRecip;
-
-		float nDotL = max(0.0f, dot(theNormal, l));
-		Vector3 E   = (nDotL * pLight->color() * pLight->wattage()) * (0.25*falloff*piRecip);		// Light irradiance
-		Ray sRay    = Ray(P, l, 1.0f, 0, IS_SHADOW_RAY);											// Create shadow ray
-
-		if (nDotL)
-		{
-			HitInfo newHit;
-			newHit.t = distance;
-			if (scene.trace(newHit, sRay, 0.001))								// Check for shadows
-			{
-				E = 0;
-			}
+	
+	////////////////////PATH TRACE
+	
+	if (scene.m_pathTrace) {
+		//compute diffuse component using path tracing.
+		if (m_lightEmitted > 0.0f) {
+			//insert BRDF here if we plan on using one
+			Ld += m_lightEmitted*m_Le;
+			return Ld;
 		}
+		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
+		if (bounces < scene.m_maxBounces) {
+			//make random ray based on the cosine distribution
+			MTRand drand;
+			float e1 = drand();
+			float e2 = drand();
+			Vector3 rw = geoN;
+			Vector3 ru = edge0;
+			ru = cross(rw,ru);
+			ru = ru.normalize();
+			Vector3 rv = cross(rw,ru);
+			Vector3 randD = cos(2*PI*e1)*sqrt(e2)*ru + sin(2*PI*e1)*sqrt(e2)*rv + sqrt(1 - e2)*rw;
+			Ray randRay = Ray(P, randD, 1.0f, bounces + 1, IS_PRIMARY_RAY);
 
-		Ls += m_ks*m_specAmt*pow(dot(rVec, l), m_specExp);								// Calculate specular component
-		Ld += E*(m_kd + Ls);															// Total = Light*(Diffuse+Spec)
-	}
+			//trace the random ray
+			HitInfo newHit;
+			if (scene.trace(newHit, randRay, 0.001))								// Check for shadows
+			{
+				Ld += m_kd*newHit.obj->m_material->shade(randRay,newHit,scene);
+			}
+		} else {
+			return Ld; //return no color since we did not hit a light
+		}
+ //////////////////////NO PATH TRACE
+	} else { //no path tracing 
+		const Lights *lightlist = scene.lights();
+
+		// loop over all of the lights
+		Lights::const_iterator lightIter;
+		for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
+		{
+			PointLight* pLight = *lightIter;
+
+			Vector3 l = pLight->position() - P;
+
+			// the inverse-squared falloff
+			ALIGN_SSE float falloff = l.length2();
+			ALIGN_SSE float distanceRecip, distance;
+	#ifndef NO_SSE
+			fastrsqrtss(setSSE(falloff), distanceRecip);
+			recipss(setSSE(falloff), falloff);
+			recipss(setSSE(distanceRecip), distance);
+	#else
+			distance      = sqrtf(falloff);
+			distanceRecip = 1.0f / distance;
+			falloff       = 1.0f / falloff;
+	#endif
+
+			// normalize the light direction
+			l *= distanceRecip;
+
+			float nDotL = max(0.0f, dot(theNormal, l));
+			Vector3 E   = (nDotL * pLight->color() * pLight->wattage()) * (0.25*falloff*piRecip);		// Light irradiance
+			Ray sRay    = Ray(P, l, 1.0f, 0, IS_SHADOW_RAY);											// Create shadow ray
+
+			if (nDotL)
+			{
+				HitInfo newHit;
+				newHit.t = distance;
+				if (scene.trace(newHit, sRay, 0.001))								// Check for shadows
+				{
+					E = 0;
+				}
+			}
+
+			Ls += m_ks*m_specAmt*pow(dot(rVec, l), m_specExp);								// Calculate specular component
+			Ld += E*(m_kd + Ls);															// Total = Light*(Diffuse+Spec)
+		}
+	}  ///////////END
 
 	Ray::IORList IORHistory = ray.r_IOR;
 	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
