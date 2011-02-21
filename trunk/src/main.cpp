@@ -14,6 +14,7 @@
 #include "Texture.h"
 #include "StoneTexture.h"
 #include "Assignment1.h"
+#include "Assignment2.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 void makeBunnyScene();
@@ -33,12 +34,15 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	makeBunnyScene2();
+	//makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
-	//makeSponzaScene();
+	//makeSponzaScene2();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
+
+	//assignment 2
+	makePathTracingScene();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
@@ -253,7 +257,7 @@ void makeEnvironmentMapScene() {
 	g_scene->preCalc();
 }
 
-inline Matrix4x4 translate(float x, float y, float z)
+/*inline Matrix4x4 translate(float x, float y, float z)
 {
 	Matrix4x4 m;
 	m.setColumn4(Vector4(x, y, z, 1));
@@ -297,7 +301,7 @@ inline Matrix4x4 rotate(float angle, float x, float y, float z)
 		xzcinv + ys, yzcinv - xs, z2 + c*(1-z2), 0,
 		0, 0, 0, 1);
 	return m;
-}
+}*/
 
 void
 makeBunny20Scene()

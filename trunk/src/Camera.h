@@ -4,6 +4,7 @@
 #include "Vector3.h"
 #include "Miro.h"
 #include "Ray.h"
+#include "MTRand.h"
 
 class Camera
 {
@@ -39,6 +40,7 @@ public:
     inline const Vector3 & eye() const      {return m_eye;}
 
     Ray eyeRay(int x, int y, int imageWidth, int imageHeight);
+	Ray eyeRayRandom(int x, int y, int imageWidth, int imageHeight);
     
     void drawGL();
 

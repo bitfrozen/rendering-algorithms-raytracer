@@ -7,7 +7,6 @@
 
 #include "PointLight.h"
 #include "TriangleMesh.h"
-#include "Triangle.h"
 #include "Lambert.h"
 
 void makeBunnyScene();

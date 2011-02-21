@@ -39,7 +39,9 @@ public:
 	void setSpecAmt(const float specAmt) {m_specAmt = specAmt;}
 	void setReflectAmt(const float reflectAmt) {m_reflectAmt = reflectAmt;}
 	void setRefractAmt(const float refractAmt) {m_refractAmt = refractAmt;}
-
+	
+	void setLightEmittedIntensity(float le) { m_lightEmitted = le; }
+	void setLightEmittedColor(const Vector3 & le) { m_Le = le; }
     virtual void preCalc() {}
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
@@ -58,6 +60,8 @@ protected:
 	float m_specAmt;		// Specular component weight (only for "hilights")
 	float m_reflectAmt;		// Reflection amount. 1.0 -> 100% reflectve. Weighted using fresnel approximation.
 	float m_refractAmt;		// Refraction amount. This weights the refraction amount prescribed by the fresnel approximation.
+	float m_lightEmitted;	//power of light emitted
+	Vector3 m_Le;			//color of the emitted light
 };
 
 #endif // CSE168_LAMBERT_H_INCLUDED

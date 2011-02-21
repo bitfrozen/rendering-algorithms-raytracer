@@ -13,6 +13,9 @@ Scene * g_scene = 0;
 Scene::Scene() {
   m_envMap = NULL;
   m_envExposure = 1.0f;
+  m_pathTrace = false;
+  m_numRays = 1;
+  m_maxBounces = 10;
 }
 
 void
@@ -117,22 +120,37 @@ Scene::raytraceImage(Camera *cam, Image *img)
 					hitInfo.t = MIRO_TMAX;
 					hitInfo.a = 0.0;
 					hitInfo.b = 0.0;
-					ray = cam->eyeRay(i, j, img->width(), img->height());				
-					if (trace(hitInfo, ray, epsilon))
-					{					
-						img->setPixel(i, j, hitInfo.obj->m_material->shade(ray, hitInfo, *this));
-					}
-					else
-					{
-						if (m_envMap != NULL) 
-						{
-							//environment map lookup
-							Vector3 envColor = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]);
-							envColor /= m_envExposure;
-							img->setPixel(i,j,envColor);
+					if (m_pathTrace) {//path tracing
+						Vector3 shadeResult = Vector3(0.0f);
+						for (int p = 0; p < m_numRays; p++) {
+							hitInfo.t = MIRO_TMAX;
+							ray = cam->eyeRayRandom(i, j, img->width(), img->height());
+							if (trace(hitInfo, ray, epsilon))
+							{
+								shadeResult += hitInfo.obj->m_material->shade(ray, hitInfo, *this);
+							}
 						}
-						else img->setPixel(i, j, g_scene->getBGColor());
-					}
+						shadeResult /= m_numRays;
+						img->setPixel(i, j, shadeResult);
+						
+					} else {//no path tracing
+						ray = cam->eyeRay(i, j, img->width(), img->height());				
+						if (trace(hitInfo, ray, epsilon))
+						{					
+							img->setPixel(i, j, hitInfo.obj->m_material->shade(ray, hitInfo, *this));
+						}
+						else
+						{
+							if (m_envMap != NULL) 
+							{
+								//environment map lookup
+								Vector3 envColor = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]);
+								envColor /= m_envExposure;
+								img->setPixel(i,j,envColor);
+							}
+							else img->setPixel(i, j, g_scene->getBGColor());
+						}
+					} //end
 				}
 			}
 			if (num_threads > 1)

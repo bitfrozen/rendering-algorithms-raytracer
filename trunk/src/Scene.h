@@ -34,6 +34,14 @@ public:
 
 	Texture* getEnvMap()				{return m_envMap;}
 
+	void setPathTrace(bool pt) { m_pathTrace = pt; }
+	void setNumRays(int r) { m_numRays = r; }
+	void setMaxBounces(int mb) { m_maxBounces = mb; }
+	
+	bool m_pathTrace;
+	int m_numRays;
+	int m_maxBounces;
+
 protected:
     Objects m_objects;
     BVH m_bvh;
