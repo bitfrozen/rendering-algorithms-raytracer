@@ -46,9 +46,9 @@ public:
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit,
                           const Scene& scene) const;
-	/*static int randsIdx;
+	static int randsIdx;
 	static float rands[1000000];
-	static void genRands();*/
+	static void genRands();
 
 protected:
     Vector3 m_kd;			// Diffuse Color

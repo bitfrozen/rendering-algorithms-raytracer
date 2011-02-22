@@ -44,17 +44,22 @@ public:
     
     void drawGL();
 
+	static int randsIdx;
+	static float rands[1000000];
+	static void genRands();
+
+	Vector3 m_eye;
+	Vector3 m_up;
+	Vector3 m_viewDir;
+	Vector3 m_lookAt;
+	float m_fov;
+
 private:
     void calcLookAt();
 
     int m_renderer;
 
     // main screen params
-    Vector3 m_eye;
-    Vector3 m_up;
-    Vector3 m_viewDir;
-    Vector3 m_lookAt;
-    float m_fov;
 };
 
 extern Camera * g_camera;

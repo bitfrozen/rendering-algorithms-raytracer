@@ -34,7 +34,7 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	//makeBunnyScene2();
+	makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene2();
@@ -42,7 +42,7 @@ int main(int argc, char*argv[])
 	//makeTestScene();
 
 	//assignment 2
-	makePathTracingScene();
+	//makePathTracingScene();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
@@ -119,6 +119,10 @@ void makeBunnyScene2()
 
 	g_image->resize(512, 512);
 
+	/*g_scene->m_pathTrace = true;
+	g_scene->m_numRays = 16;
+	g_scene->m_maxBounces = 2;*/
+
 	// set up the camera
 	g_scene->setBGColor(Vector3(1.0,0.0,0.0));
 	g_camera->setEye(Vector3(-5, 4, 3));
@@ -162,7 +166,7 @@ void makeBunnyScene2()
 	planeMat->setRefractAmt(0.0f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/multiBunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);

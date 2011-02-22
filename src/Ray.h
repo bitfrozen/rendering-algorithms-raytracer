@@ -96,6 +96,28 @@ public:
 		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		r_IOR = IOR;
 	}
+
+	void set(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	{
+		//#pragma omp atomic
+		counter++;
+
+		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
+		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
+#ifndef NO_SSE
+		_id = recipps(_d);		// This is faster if we have SSE...
+#else
+		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
+#endif
+#ifdef USE_TRI_PACKETS
+		ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
+		dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
+		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
+#endif
+		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
+		if (!(flags & IS_SHADOW_RAY))
+			r_IOR.push_back(IOR);
+	}
 };
 
 //! Contains information about a ray hit with a surface.

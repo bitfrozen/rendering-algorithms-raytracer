@@ -51,9 +51,19 @@ public:
 	float calcSAHCost(int leftNum, float leftArea, int rightNum, float rightArea);
 };
 
-/*ALIGN_SSE class QBVH_Node
+/*#define FIRST_NODE_IS_VALID		0x01
+#define SECOND_NODE_IS_VALID	0x02
+#define THIRD_NODE_IS_VALID		0x04
+#define FOURTH_NODE_IS_VALID	0x08
+#define FIRST_NODE_IS_LEAF		0x10
+#define SECOND_NODE_IS_LEAF		0x20
+#define THIRD_NODE_IS_LEAF		0x40
+#define FOURTH_NODE_IS_LEAF		0x80
+
+ALIGN_64 class QBVH_Node
 {
-	QBVH_Node();
+public:
+	QBVH_Node() {};
 	~QBVH_Node();
 	union {float bbMinX[4]; __m128 bbMinX4; };
 	union {float bbMinY[4]; __m128 bbMinY4; };
@@ -61,6 +71,14 @@ public:
 	union {float bbMaxX[4]; __m128 bbMaxX4; };
 	union {float bbMaxY[4]; __m128 bbMaxY4; };
 	union {float bbMaxZ[4]; __m128 bbMaxZ4; };
+	union {
+		QBVH_Node* Children[4];
+		BVH_Node::TriCache4* triCaches[4];
+	};
+	u_int flags;
+
+	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc);
+	void buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, BVH_Node::TriCache4* triCache, int nodeNum);
 };*/
 
 class BVH
@@ -72,6 +90,7 @@ public:
 protected:
     Objects* m_objects;
 	BVH_Node m_baseNode;
+	//QBVH_Node m_baseQNode;
 };
 
 #endif // CSE168_BVH_H_INCLUDED
