@@ -6,6 +6,7 @@
 #include "Scene.h"
 #include "Console.h" 
 #include "OpenGL.h"
+#include <time.h>
 
 Camera * g_camera = 0;
 
@@ -20,6 +21,7 @@ Camera::Camera() :
     m_fov((45.)*(PI/180.))
 {
     calcLookAt();
+	genRands();
 }
 
 Camera::~Camera()
@@ -139,12 +141,28 @@ Ray Camera::eyeRayRandom(int x, int y, int imageWidth, int imageHeight)
     // -----------------------------------
     //add a randomness so that the ray will be sent somewhere inside the pixel,
 	// and not necessarily through the center of the pixel
-	MTRand drand;
-	float urand = drand();
-	float vrand = drand();
+	if (randsIdx >= 990000)
+	{
+		randsIdx = 0;
+		genRands();
+	}
+	float urand = rands[randsIdx++];
+	float vrand = rands[randsIdx++];
 
     const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth); 
     const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight); 
 
     return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
+}
+
+int Camera::randsIdx = 0;		// Current index into random number array
+float Camera::rands[1000000];	// Array of random numbers
+
+void Camera::genRands()			// Run the random number generator. This way we don't run into
+{								// threading problems...
+	MTRand_int32 drand(clock());
+	for (int i = 0; i < 1000000; i++)
+	{
+		rands[i] = ((float)drand()+0.5) * IntRecip;
+	}
 }

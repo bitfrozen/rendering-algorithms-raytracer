@@ -384,8 +384,8 @@ void makePathTracingScene() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 5000;
-	g_scene->m_maxBounces = 10;
+	g_scene->m_numRays = 1000;
+	g_scene->m_maxBounces = 20;
     
     // set up the camera
     g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.2f));

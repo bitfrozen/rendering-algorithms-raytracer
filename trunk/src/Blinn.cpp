@@ -17,9 +17,21 @@ Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 	m_specExp(specExp), m_specAmt(specAmt),
 	m_reflectAmt(reflectAmt), m_refractAmt(refractAmt)
 {	
-	//genRands();
+	genRands();
 	m_lightEmitted = 0.0f;
 	m_Le = Vector3(0.0f);
+}
+
+int Blinn::randsIdx = 0;		// Current index into random number array
+float Blinn::rands[1000000];	// Array of random numbers
+
+void Blinn::genRands()			// Run the random number generator. This way we don't run into
+{								// threading problems...
+	MTRand_int32 drand(clock());
+	for (int i = 0; i < 1000000; i++)
+	{
+		rands[i] = ((float)drand()+0.5) * IntRecip;
+	}
 }
 
 Blinn::~Blinn()
@@ -237,15 +249,34 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
 		if (bounces < scene.m_maxBounces) {
 			//make random ray based on the cosine distribution
-			MTRand drand;
-			float e1 = drand();
-			float e2 = drand();
+			if (randsIdx >= 990000)
+			{
+				randsIdx = 0;
+				genRands();
+			}
+			ALIGN_SSE float e1 = rands[randsIdx++];
+			ALIGN_SSE float e2 = rands[randsIdx++];
 			Vector3 rw = geoN;
 			Vector3 ru = edge0;
 			ru = cross(rw,ru);
 			ru = ru.normalize();
 			Vector3 rv = cross(rw,ru);
-			Vector3 randD = cos(2*PI*e1)*sqrt(e2)*ru + sin(2*PI*e1)*sqrt(e2)*rv + sqrt(1 - e2)*rw;
+			float _2PIe1 = 2*PI*e1;
+			ALIGN_SSE float sqrte2recip;
+			ALIGN_SSE float sqrte2;
+			ALIGN_SSE float sqrt1_e2recip;
+			ALIGN_SSE float sqrt1_e2;
+#ifndef NO_SSE
+			fastrsqrtss(setSSE(e2), sqrte2recip);
+			fastrsqrtss(setSSE(1-e2), sqrt1_e2recip);
+			recipss(setSSE(sqrte2recip), sqrte2);
+			recipss(setSSE(sqrt1_e2recip), sqrt1_e2);
+#else
+			distance      = sqrtf(falloff);
+			distanceRecip = 1.0f / distance;
+			falloff       = 1.0f / falloff;
+#endif
+			Vector3 randD = cos(_2PIe1)*sqrte2*ru + sin(_2PIe1)*sqrte2*rv + sqrt1_e2*rw;
 			Ray randRay = Ray(P, randD, 1.0f, bounces + 1, IS_PRIMARY_RAY);
 
 			//trace the random ray
@@ -329,7 +360,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);						// Find out how many bounces we've taken
 	bool doEnv  = true;
 
-	if (m_reflectAmt*Rs > 0.0f && bounces < 10)											// Do two bounces of reflection rays.
+	if (m_reflectAmt*Rs > 0.0f && bounces < 4)											// Do two bounces of reflection rays.
 	{
 		Ray rRay = Ray(P, rVec, ray.r_IOR, bounces+1, IS_REFLECT_RAY);
 		HitInfo newHit;
@@ -376,7 +407,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 		doEnv          = true;
 
-		if (bounces < 10)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+		if (bounces < 4)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 		{		
 			IORHistory.push_back(outIOR);
 			Ray tRay = Ray(P, tVec, IORHistory, bounces+1, IS_REFRACT_RAY);						// Make a new refraction ray.
@@ -425,17 +456,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 
 // Very quick and dirty image based lighting... still kinda cool!
 
-/*int Blinn::randsIdx = 0;		// Current index into random number array
-float Blinn::rands[1000000];	// Array of random numbers
-
-void Blinn::genRands()			// Run the random number generator. This way we don't run into
-{								// threading problems...
-	MTRand_int32 drand(clock());
-	for (int i = 0; i < 1000000; i++)
-	{
-		rands[i] = ((float)drand()+0.5) * IntRecip;
-	}
-}
+/*
 
 Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
 {
@@ -468,6 +489,9 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	float a = hit.a; float b = hit.b;
 	Vector3 N = Vector3((theMesh->m_normals[ti3.x]*c+theMesh->m_normals[ti3.y]*a+theMesh->m_normals[ti3.z]*b).normalized());
 
+	Vector3 T = cross(N, edge0).normalized();
+	Vector3 biT = cross(T, N).normalized();
+
 	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates
 	{
 		ti3 = theMesh->m_texCoordIndices[meshIndex];
@@ -480,11 +504,11 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		v = b;
 	}
 
-	float vDotN			= dot(viewDir, N);					// Find if the interpolated normal points back while
-	float vDotGeoN		= dot(viewDir, geoN);					// geometric normal is fine.
-	bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);				// True if both are equal
+	float vDotN			= dot(viewDir, N);				// Find if the interpolated normal points back while
+	float vDotGeoN		= dot(viewDir, geoN);			// geometric normal is fine.
+	bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);		// True if both are equal
 	Vector3 theNormal	= nEqGeoN ? N : geoN;			// Use geometric normal if interpolated one points away
-	vDotN				= nEqGeoN ? vDotN : vDotGeoN;			// from object
+	vDotN				= nEqGeoN ? vDotN : vDotGeoN;	// from object
 	bool flip = false;
 	if (vDotN < 0.0)
 	{
@@ -495,6 +519,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 
 	float num_samples_rec = 1.0f / num_samples;
 	Ray newRay;
+	HitInfo sHit;
 	float theta, phi, lookupU, lookupV;
 
 	for (int i = 0; i < num_samples; i++)
@@ -504,21 +529,20 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 			randsIdx = 0;
 			genRands();
 		}
-		float newVecPhi = asinf(sqrtf(rands[randsIdx++]));
-		float newVecTheta   = 2*PI*rands[randsIdx++];
-		Vector3 newVec = Vector3(sinf(newVecTheta)*cosf(newVecPhi), sinf(newVecTheta)*sinf(newVecPhi), cosf(newVecTheta)).normalized();
+		float sinTheta = sqrtf(rands[randsIdx++]);
+		float newVecTheta = asinf(sinTheta);
+		float newVecPhi   = 2*PI*rands[randsIdx++];
+		//Vector3 newVec = sinTheta*cosf(newVecPhi)*biT + sinTheta*sinf(newVecPhi)*T + cosf(newVecTheta)*N;
+		Vector3 newVec = Vector3(rands[randsIdx++], rands[randsIdx++], rands[randsIdx++]).normalized();
+		//Vector3 newVec = Vector3(sinTheta*cosf(newVecPhi), cosf(newVecTheta), sinTheta*sinf(newVecPhi)).normalized();
 
 		float E = 1;
-		//float newVdotN = dot(theNormal, newVec);
-		//newVec = (newVdotN > 0.0) ? newVec : -newVec;
-		//newVdotN = fabsf(newVdotN);
+		float newVdotN = dot(theNormal, newVec);
+		newVec = (newVdotN > 0.0) ? newVec : -newVec;
+		newVdotN = fabsf(newVdotN);
 
-		newRay.o[0] = P.x; newRay.o[1] = P.y; newRay.o[2] = P.z; newRay.o[3] = 1.0f;
-		newRay.d[0] = newVec.x; newRay.d[1] = newVec.y; newRay.d[2] = newVec.z; newRay.d[3] = 0.0f;
-		newRay.id[0] = 1.0f/newVec.x; newRay.id[1] = 1.0f/newVec.y; newRay.id[2] = 1.0f/newVec.z; newRay.id[3] = 0.0f;
-		newRay.bounces_flags = IS_SHADOW_RAY;
+		newRay.set(P, newVec, 1.001f, 0, IS_SHADOW_RAY); 
 
-		HitInfo sHit;
 		sHit.t = MIRO_TMAX;
 
 		if (scene.trace(sHit, newRay, 0.001))								// Check for shadows
@@ -533,7 +557,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		lookupV = 1.0 - (phi * piRecip);
 		Vector4 tmp = g_scene->getEnvMap()->getLookup3(lookupU, lookupV);
 		Vector3 envColor = Vector3(tmp.x*num_samples_rec, tmp.y*num_samples_rec, tmp.z*num_samples_rec);
-		Ld += m_kd*envColor*E;//*newVdotN;
+		Ld += m_kd*envColor*E*newVdotN;
 	}
 	
 	Vector3 rVec = (rayD + 2*(vDotN)*theNormal);				// get the reflection vector

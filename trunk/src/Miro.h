@@ -37,7 +37,7 @@ const float RadToDeg		= 180.0f/PI;
 const float IntRecip		= (1. / 4294967296.);
 const bool use_BVH			= true;
 const bool use_Schlick		= false;
-const u_int num_samples		= 100;
+const u_int num_samples		= 512;
 const u_int NUM_BINS		= 8;
 const float INFINITY		= -logf(0);
 #ifdef USE_BINS

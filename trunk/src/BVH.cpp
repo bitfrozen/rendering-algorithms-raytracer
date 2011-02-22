@@ -14,6 +14,322 @@ unsigned int BVH_Node::nodeCount = 0;
 unsigned int BVH_Node::leafCount = 0;
 unsigned int BVH_Node::maxDepth  = 0;
 
+/*QBVH_Node::~QBVH_Node()
+{
+	if (flags & FIRST_NODE_IS_LEAF)
+	{
+		_aligned_free(triCaches[0]);
+	}
+	else if (flags & FIRST_NODE_IS_VALID)
+	{
+		_aligned_free(Children[0]);
+	}
+
+	if (flags & SECOND_NODE_IS_LEAF)
+	{
+		_aligned_free(triCaches[1]);
+	}
+	else if (flags & SECOND_NODE_IS_VALID)
+	{
+		_aligned_free(Children[1]);
+	}
+
+	if (flags & THIRD_NODE_IS_LEAF)
+	{
+		_aligned_free(triCaches[2]);
+	}
+	else if (flags & THIRD_NODE_IS_VALID)
+	{
+		_aligned_free(Children[2]);
+	}
+
+	if (flags & FOURTH_NODE_IS_LEAF)
+	{
+		_aligned_free(triCaches[3]);
+	}
+	else if (flags & FOURTH_NODE_IS_VALID)
+	{
+		_aligned_free(Children[3]);
+	}
+}
+
+void QBVH_Node::buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, BVH_Node::TriCache4* triCache, int nodeNum)
+{
+	triCache = &cacheAlloc[nodeNum];
+	BVH_Node::TriCache4* t = triCache;
+	for (int i = 0; i < 4; i++)
+	{
+		t->Ax[i] = t->Ay[i] = t->Az[i] \
+			= t->edge0x[i] = t->edge0y[i] = t->edge0z[i] \
+			= t->edge1x[i] = t->edge1y[i] = t->edge1z[i] = 0;
+		t->tris[i] = 0;
+	}
+	Object** tmpObjs = node->objs;
+	for (int i = 0; i < GET_NUMCHILD(node->numChildren); i++)
+	{
+		TriangleMesh::TupleI3 ti3;
+		ti3          = tmpObjs[i]->m_mesh->m_vertexIndices[tmpObjs[i]->m_index];
+		t->Ax[i]     = tmpObjs[i]->m_mesh->m_vertices[ti3.x].x;
+		t->Ay[i]     = tmpObjs[i]->m_mesh->m_vertices[ti3.x].y;
+		t->Az[i]     = tmpObjs[i]->m_mesh->m_vertices[ti3.x].z;
+		t->edge0x[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.y].x - tmpObjs[i]->m_mesh->m_vertices[ti3.x].x;
+		t->edge0y[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.y].y - tmpObjs[i]->m_mesh->m_vertices[ti3.x].y;
+		t->edge0z[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.y].z - tmpObjs[i]->m_mesh->m_vertices[ti3.x].z;
+		t->edge1x[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.z].x - tmpObjs[i]->m_mesh->m_vertices[ti3.x].x;
+		t->edge1y[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.z].y - tmpObjs[i]->m_mesh->m_vertices[ti3.x].y;
+		t->edge1z[i] = tmpObjs[i]->m_mesh->m_vertices[ti3.z].z - tmpObjs[i]->m_mesh->m_vertices[ti3.x].z;
+		t->tris[i]   = tmpObjs[i];
+	}
+}
+
+void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
+{
+	static int nodeNum = 0;
+
+	bbMinX[0] = bbMinX[1] = bbMinX[2] = bbMinX[3] = 0;
+	bbMinY[0] = bbMinY[1] = bbMinY[2] = bbMinY[3] = 0;
+	bbMinZ[0] = bbMinZ[1] = bbMinZ[2] = bbMinZ[3] = 0;
+	bbMaxX[0] = bbMaxX[1] = bbMaxX[2] = bbMaxX[3] = 0;
+	bbMaxY[0] = bbMaxY[1] = bbMaxY[2] = bbMaxY[3] = 0;
+	bbMaxZ[0] = bbMaxZ[1] = bbMaxZ[2] = bbMaxZ[3] = 0;
+
+	if (node->isLeaf & true)
+	{
+		flags = FIRST_NODE_IS_VALID | FIRST_NODE_IS_LEAF;
+
+		bbMinX[0] = node->bBox->bbMin.x;
+		bbMinY[0] = node->bBox->bbMin.y;
+		bbMinZ[0] = node->bBox->bbMin.z;
+		bbMaxX[0] = node->bBox->bbMax.x;
+		bbMaxY[0] = node->bBox->bbMax.y;
+		bbMaxZ[0] = node->bBox->bbMax.z;
+
+		buildTriBundle(node, cacheAlloc, triCaches[0], nodeNum++);
+	}
+	else
+	{
+		if ((node->Children[0].isLeaf & true) && (node->Children[1].isLeaf & true))
+		{
+			flags = FIRST_NODE_IS_VALID | FIRST_NODE_IS_LEAF | SECOND_NODE_IS_VALID | SECOND_NODE_IS_LEAF;
+
+			bbMinX[0] = node->Children[0].bBox->bbMin.x;
+			bbMinY[0] = node->Children[0].bBox->bbMin.y;
+			bbMinZ[0] = node->Children[0].bBox->bbMin.z;
+			bbMaxX[0] = node->Children[0].bBox->bbMax.x;
+			bbMaxY[0] = node->Children[0].bBox->bbMax.y;
+			bbMaxZ[0] = node->Children[0].bBox->bbMax.z;
+
+			bbMinX[1] = node->Children[1].bBox->bbMin.x;
+			bbMinY[1] = node->Children[1].bBox->bbMin.y;
+			bbMinZ[1] = node->Children[1].bBox->bbMin.z;
+			bbMaxX[1] = node->Children[1].bBox->bbMax.x;
+			bbMaxY[1] = node->Children[1].bBox->bbMax.y;
+			bbMaxZ[1] = node->Children[1].bBox->bbMax.z;
+
+			buildTriBundle(&node->Children[0], cacheAlloc, triCaches[0], nodeNum++);
+			buildTriBundle(&node->Children[1], cacheAlloc, triCaches[1], nodeNum++);
+		}
+		else if (node->Children[0].isLeaf & true)
+		{
+			flags = FIRST_NODE_IS_VALID | FIRST_NODE_IS_LEAF;
+
+			bbMinX[0] = node->Children[0].bBox->bbMin.x;
+			bbMinY[0] = node->Children[0].bBox->bbMin.y;
+			bbMinZ[0] = node->Children[0].bBox->bbMin.z;
+			bbMaxX[0] = node->Children[0].bBox->bbMax.x;
+			bbMaxY[0] = node->Children[0].bBox->bbMax.y;
+			bbMaxZ[0] = node->Children[0].bBox->bbMax.z;
+
+			bbMinX[1] = node->Children[1].Children[0].bBox->bbMin.x;
+			bbMinY[1] = node->Children[1].Children[0].bBox->bbMin.y;
+			bbMinZ[1] = node->Children[1].Children[0].bBox->bbMin.z;
+			bbMaxX[1] = node->Children[1].Children[0].bBox->bbMax.x;
+			bbMaxY[1] = node->Children[1].Children[0].bBox->bbMax.y;
+			bbMaxZ[1] = node->Children[1].Children[0].bBox->bbMax.z;
+
+			bbMinX[2] = node->Children[1].Children[1].bBox->bbMin.x;
+			bbMinY[2] = node->Children[1].Children[1].bBox->bbMin.y;
+			bbMinZ[2] = node->Children[1].Children[1].bBox->bbMin.z;
+			bbMaxX[2] = node->Children[1].Children[1].bBox->bbMax.x;
+			bbMaxY[2] = node->Children[1].Children[1].bBox->bbMax.y;
+			bbMaxZ[2] = node->Children[1].Children[1].bBox->bbMax.z;
+
+			buildTriBundle(&node->Children[0], cacheAlloc, triCaches[0], nodeNum++);
+
+			if ((node->Children[1].Children[0].isLeaf & true) && (node->Children[1].Children[1].isLeaf & true)) // Three leaves
+			{
+				flags |= SECOND_NODE_IS_VALID | SECOND_NODE_IS_LEAF | THIRD_NODE_IS_VALID | THIRD_NODE_IS_LEAF;
+				
+				buildTriBundle(&node->Children[1].Children[0], cacheAlloc, triCaches[1], nodeNum++);
+				buildTriBundle(&node->Children[1].Children[1], cacheAlloc, triCaches[2], nodeNum++);
+			}
+			else if (node->Children[1].Children[0].isLeaf & true) // Two leaves
+			{
+				flags |= SECOND_NODE_IS_VALID | SECOND_NODE_IS_LEAF | THIRD_NODE_IS_VALID;
+
+				buildTriBundle(&node->Children[1].Children[0], cacheAlloc, triCaches[1], nodeNum++);
+
+				Children[2] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[2]->build(&node->Children[1].Children[1], cacheAlloc);
+			}
+			else if (node->Children[1].Children[1].isLeaf & true) // Two leaves
+			{
+				flags |= SECOND_NODE_IS_VALID | THIRD_NODE_IS_VALID | THIRD_NODE_IS_LEAF;
+
+				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[1]->build(&node->Children[1].Children[0], cacheAlloc);
+
+				buildTriBundle(&node->Children[1].Children[1], cacheAlloc, triCaches[1], nodeNum++);
+			}
+			else // One leaf
+			{
+				flags |= SECOND_NODE_IS_VALID | THIRD_NODE_IS_VALID;
+
+				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node)*2, 64);
+				Children[1]->build(&node->Children[1].Children[0], cacheAlloc);
+				Children[2]->build(&node->Children[1].Children[1], cacheAlloc);
+			}
+		}
+		else if (node->Children[1].isLeaf & true)
+		{
+			flags = THIRD_NODE_IS_VALID | THIRD_NODE_IS_LEAF;
+
+			bbMinX[0] = node->Children[0].Children[0].bBox->bbMin.x;
+			bbMinY[0] = node->Children[0].Children[0].bBox->bbMin.y;
+			bbMinZ[0] = node->Children[0].Children[0].bBox->bbMin.z;
+			bbMaxX[0] = node->Children[0].Children[0].bBox->bbMax.x;
+			bbMaxY[0] = node->Children[0].Children[0].bBox->bbMax.y;
+			bbMaxZ[0] = node->Children[0].Children[0].bBox->bbMax.z;
+
+			bbMinX[1] = node->Children[0].Children[1].bBox->bbMin.x;
+			bbMinY[1] = node->Children[0].Children[1].bBox->bbMin.y;
+			bbMinZ[1] = node->Children[0].Children[1].bBox->bbMin.z;
+			bbMaxX[1] = node->Children[0].Children[1].bBox->bbMax.x;
+			bbMaxY[1] = node->Children[0].Children[1].bBox->bbMax.y;
+			bbMaxZ[1] = node->Children[0].Children[1].bBox->bbMax.z;
+
+			bbMinX[2] = node->Children[1].bBox->bbMin.x;
+			bbMinY[2] = node->Children[1].bBox->bbMin.y;
+			bbMinZ[2] = node->Children[1].bBox->bbMin.z;
+			bbMaxX[2] = node->Children[1].bBox->bbMax.x;
+			bbMaxY[2] = node->Children[1].bBox->bbMax.y;
+			bbMaxZ[2] = node->Children[1].bBox->bbMax.z;
+
+			buildTriBundle(&node->Children[1], cacheAlloc, triCaches[2], nodeNum++);
+
+			if ((node->Children[0].Children[0].isLeaf & true) && (node->Children[0].Children[1].isLeaf & true)) // Three leaves
+			{
+				flags |= FIRST_NODE_IS_VALID | FIRST_NODE_IS_LEAF | SECOND_NODE_IS_VALID | SECOND_NODE_IS_LEAF;
+
+				buildTriBundle(&node->Children[0].Children[0], cacheAlloc, triCaches[0], nodeNum++);
+				buildTriBundle(&node->Children[0].Children[1], cacheAlloc, triCaches[1], nodeNum++);
+			}
+			else if (node->Children[0].Children[0].isLeaf & true) // Two leaves
+			{
+				flags |= FIRST_NODE_IS_VALID | FIRST_NODE_IS_LEAF | SECOND_NODE_IS_VALID;
+
+				buildTriBundle(&node->Children[0].Children[0], cacheAlloc, triCaches[0], nodeNum++);
+
+				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
+			}
+			else if (node->Children[0].Children[1].isLeaf & true) // Two leaves
+			{
+				flags |= FIRST_NODE_IS_VALID | SECOND_NODE_IS_VALID | SECOND_NODE_IS_LEAF;
+
+				Children[0] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
+
+				buildTriBundle(&node->Children[0].Children[1], cacheAlloc, triCaches[1], nodeNum++);
+			}
+			else
+			{
+				flags |= FIRST_NODE_IS_VALID | SECOND_NODE_IS_VALID;
+
+				Children[0] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node)*2, 64);
+				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
+				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
+			}
+		}
+		else
+		{
+			flags = FIRST_NODE_IS_VALID | SECOND_NODE_IS_VALID | THIRD_NODE_IS_VALID | FOURTH_NODE_IS_VALID;
+
+			bbMinX[0] = node->Children[0].Children[0].bBox->bbMin.x;
+			bbMinY[0] = node->Children[0].Children[0].bBox->bbMin.y;
+			bbMinZ[0] = node->Children[0].Children[0].bBox->bbMin.z;
+			bbMaxX[0] = node->Children[0].Children[0].bBox->bbMax.x;
+			bbMaxY[0] = node->Children[0].Children[0].bBox->bbMax.y;
+			bbMaxZ[0] = node->Children[0].Children[0].bBox->bbMax.z;
+
+			bbMinX[1] = node->Children[0].Children[1].bBox->bbMin.x;
+			bbMinY[1] = node->Children[0].Children[1].bBox->bbMin.y;
+			bbMinZ[1] = node->Children[0].Children[1].bBox->bbMin.z;
+			bbMaxX[1] = node->Children[0].Children[1].bBox->bbMax.x;
+			bbMaxY[1] = node->Children[0].Children[1].bBox->bbMax.y;
+			bbMaxZ[1] = node->Children[0].Children[1].bBox->bbMax.z;
+
+			bbMinX[2] = node->Children[1].Children[0].bBox->bbMin.x;
+			bbMinY[2] = node->Children[1].Children[0].bBox->bbMin.y;
+			bbMinZ[2] = node->Children[1].Children[0].bBox->bbMin.z;
+			bbMaxX[2] = node->Children[1].Children[0].bBox->bbMax.x;
+			bbMaxY[2] = node->Children[1].Children[0].bBox->bbMax.y;
+			bbMaxZ[2] = node->Children[1].Children[0].bBox->bbMax.z;
+
+			bbMinX[3] = node->Children[1].Children[1].bBox->bbMin.x;
+			bbMinY[3] = node->Children[1].Children[1].bBox->bbMin.y;
+			bbMinZ[3] = node->Children[1].Children[1].bBox->bbMin.z;
+			bbMaxX[3] = node->Children[1].Children[1].bBox->bbMax.x;
+			bbMaxY[3] = node->Children[1].Children[1].bBox->bbMax.y;
+			bbMaxZ[3] = node->Children[1].Children[1].bBox->bbMax.z;
+
+			if (node->Children[0].Children[0].isLeaf & true) 
+			{
+				flags |= FIRST_NODE_IS_LEAF;
+				buildTriBundle(&node->Children[0].Children[0], cacheAlloc, triCaches[0], nodeNum++);
+			}
+			else
+			{
+				Children[0] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
+			}
+
+			if (node->Children[0].Children[1].isLeaf & true) 
+			{
+				flags |= SECOND_NODE_IS_LEAF;
+				buildTriBundle(&node->Children[0].Children[1], cacheAlloc, triCaches[1], nodeNum++);
+			}
+			else
+			{
+				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
+			}
+
+			if (node->Children[1].Children[0].isLeaf & true) 
+			{
+				flags |= THIRD_NODE_IS_LEAF;
+				buildTriBundle(&node->Children[1].Children[0], cacheAlloc, triCaches[2], nodeNum++);
+			}
+			else
+			{
+				Children[2] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[2]->build(&node->Children[1].Children[0], cacheAlloc);
+			}
+
+			if (node->Children[1].Children[1].isLeaf & true) 
+			{
+				flags |= FOURTH_NODE_IS_LEAF;
+				buildTriBundle(&node->Children[1].Children[1], cacheAlloc, triCaches[3], nodeNum++);
+			}
+			else
+			{
+				Children[3] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+				Children[3]->build(&node->Children[1].Children[1], cacheAlloc);
+			}
+		}
+	}
+}*/
+
 BVH_Node::~BVH_Node()
 {
 	delete bBox;
