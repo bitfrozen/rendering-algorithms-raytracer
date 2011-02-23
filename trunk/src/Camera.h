@@ -4,7 +4,6 @@
 #include "Vector3.h"
 #include "Miro.h"
 #include "Ray.h"
-#include "MTRand.h"
 
 class Camera
 {
@@ -43,10 +42,6 @@ public:
 	Ray eyeRayRandom(int x, int y, int imageWidth, int imageHeight);
     
     void drawGL();
-
-	static int randsIdx;
-	static float rands[1000000];
-	static void genRands();
 
 	Vector3 m_eye;
 	Vector3 m_up;

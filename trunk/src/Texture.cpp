@@ -23,8 +23,8 @@ Vector4 Texture::getLookup(float u, float v) {
 	v = 1.0f - v;
 
     //use bilinear lookup
-	float px = u*(m_image->m_width-1);
-	float py = v*(m_image->m_height-1);
+	float px = u*(m_image->m_width);
+	float py = v*(m_image->m_height);
 	float x1 = floor(px);
     float x2 = x1 + 1.0f;
 	float dx = px - x1;
