@@ -5,6 +5,7 @@
 #include "Object.h"
 #include "PointLight.h"
 #include "BVH.h"
+#include "MTRand.h"
 
 class Camera;
 class Image;
@@ -41,6 +42,11 @@ public:
 	bool m_pathTrace;
 	int m_numRays;
 	int m_maxBounces;
+
+	static int randsIdx;
+	static float rands[1000000];
+	static MTRand_int32 drand;
+	static void genRands();
 
 protected:
     Objects m_objects;

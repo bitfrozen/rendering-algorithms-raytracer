@@ -16,10 +16,24 @@ Scene::Scene() {
   m_pathTrace = false;
   m_numRays = 1;
   m_maxBounces = 10;
+  genRands();
 }
 
-void
-Scene::openGL(Camera *cam)
+int Scene::randsIdx = 0;		// Current index into random number array
+float Scene::rands[1000000];	// Array of random numbers
+MTRand_int32 Scene::drand(clock());
+
+
+void Scene::genRands()			// Run the random number generator. This way we don't run into
+{								// threading problems...
+	#pragma omp critical
+	for (int i = 0; i < 1000000; i++)
+	{
+		rands[i] = ((float)drand()+0.5) * IntRecip;
+	}
+}
+
+void Scene::openGL(Camera *cam)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -107,6 +121,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 				} while (bucketDone == false && shownBuckets < totalBuckets);
 			}
 		}
+		float m_numRaysRecip = 1.0f / m_numRays;
 
 #pragma omp for schedule(dynamic) nowait
 		for (int bucket = 0; bucket < totalBuckets; bucket++)
@@ -129,8 +144,17 @@ Scene::raytraceImage(Camera *cam, Image *img)
 							{
 								shadeResult += hitInfo.obj->m_material->shade(ray, hitInfo, *this);
 							}
+							else
+							{
+								if (m_envMap != NULL) 
+								{
+									//environment map lookup
+									shadeResult += m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure;
+								}
+								shadeResult += g_scene->getBGColor()*m_envExposure;
+							}
 						}
-						shadeResult /= m_numRays;
+						shadeResult *= m_numRaysRecip;
 						img->setPixel(i, j, shadeResult);
 						
 					} else {//no path tracing
@@ -145,7 +169,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 							{
 								//environment map lookup
 								Vector3 envColor = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]);
-								envColor /= m_envExposure;
+								envColor *= m_envExposure;
 								img->setPixel(i,j,envColor);
 							}
 							else img->setPixel(i, j, g_scene->getBGColor());

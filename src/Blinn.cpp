@@ -12,26 +12,13 @@ using namespace std;
 Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 			 const Vector3 & ks, const Vector3 & kt,
 			 float ior, float specExp, float specAmt,
-			 float reflectAmt, float refractAmt) :
+			 float reflectAmt, float refractAmt, float specGloss) :
     m_kd(kd), m_ka(ka), m_ks(ks), m_kt(kt), m_ior(ior), 
 	m_specExp(specExp), m_specAmt(specAmt),
-	m_reflectAmt(reflectAmt), m_refractAmt(refractAmt)
+	m_reflectAmt(reflectAmt), m_refractAmt(refractAmt), m_specGloss(specGloss)
 {	
-	genRands();
 	m_lightEmitted = 0.0f;
 	m_Le = Vector3(0.0f);
-}
-
-int Blinn::randsIdx = 0;		// Current index into random number array
-float Blinn::rands[1000000];	// Array of random numbers
-
-void Blinn::genRands()			// Run the random number generator. This way we don't run into
-{								// threading problems...
-	MTRand_int32 drand(clock());
-	for (int i = 0; i < 1000000; i++)
-	{
-		rands[i] = ((float)drand()+0.5) * IntRecip;
-	}
 }
 
 Blinn::~Blinn()
@@ -208,6 +195,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	ti3       = theMesh->m_normalIndices[meshIndex];				// Get the interpolated normal
 	float c   = 1.0f-hit.a-hit.b;
 	float a   = hit.a; float b = hit.b;
+
 	Vector3 N = Vector3((theMesh->m_normals[ti3.x]*c+theMesh->m_normals[ti3.y]*a+theMesh->m_normals[ti3.z]*b).normalized());
 
 	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates
@@ -239,6 +227,17 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	
 	////////////////////PATH TRACE
 	
+	Vector3 randD, ru, rv, envColor;
+	float _2PIe1;
+	ALIGN_SSE float sqrte2recip;
+	ALIGN_SSE float sqrte2;
+	ALIGN_SSE float sqrt1_e2recip;
+	ALIGN_SSE float sqrt1_e2;
+	ALIGN_SSE float e1;
+	ALIGN_SSE float e2;
+	Ray randRay;
+	HitInfo newHit;
+	float theta, phi, LookUpU, LookUpV;
 	if (scene.m_pathTrace) {
 		//compute diffuse component using path tracing.
 		if (m_lightEmitted > 0.0f) {
@@ -249,26 +248,21 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
 		if (bounces < scene.m_maxBounces) {
 			//make random ray based on the cosine distribution
-			if (randsIdx >= 990000)
+			if (Scene::randsIdx >= 990000)
 			{
-				randsIdx = 0;
-				genRands();
+				Scene::randsIdx = 0;
+				Scene::genRands();
 			}
-			ALIGN_SSE float e1 = rands[randsIdx++];
-			ALIGN_SSE float e2 = rands[randsIdx++];
-			Vector3 rw = geoN;
-			Vector3 ru = edge0;
-			ru = cross(rw,ru);
-			ru = ru.normalize();
-			Vector3 rv = cross(rw,ru);
-			float _2PIe1 = 2*PI*e1;
-			ALIGN_SSE float sqrte2recip;
-			ALIGN_SSE float sqrte2;
-			ALIGN_SSE float sqrt1_e2recip;
-			ALIGN_SSE float sqrt1_e2;
+			e1 = Scene::rands[Scene::randsIdx++];
+			e2 = Scene::rands[Scene::randsIdx++];
+			e2 = (e2 > 0.99) ? 0.99 : e2;
+			ru = cross(theNormal,edge0).normalize();
+			rv = cross(theNormal,ru);
+			_2PIe1 = 2*PI*e1;
+			
 #ifndef NO_SSE
 			fastrsqrtss(setSSE(e2), sqrte2recip);
-			fastrsqrtss(setSSE(1-e2), sqrt1_e2recip);
+			fastrsqrtss(setSSE(fabsf(1-e2)), sqrt1_e2recip);
 			recipss(setSSE(sqrte2recip), sqrte2);
 			recipss(setSSE(sqrt1_e2recip), sqrt1_e2);
 #else
@@ -276,14 +270,39 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 			distanceRecip = 1.0f / distance;
 			falloff       = 1.0f / falloff;
 #endif
-			Vector3 randD = cos(_2PIe1)*sqrte2*ru + sin(_2PIe1)*sqrte2*rv + sqrt1_e2*rw;
-			Ray randRay = Ray(P, randD, 1.0f, bounces + 1, IS_PRIMARY_RAY);
-
+			randD = (cos(_2PIe1)*sqrte2*ru + sin(_2PIe1)*sqrte2*rv + sqrt1_e2*N).normalize();
+			randRay.set(P, randD, 1.0f, bounces + 1, IS_PRIMARY_RAY);
+			newHit.t = MIRO_TMAX;
 			//trace the random ray
-			HitInfo newHit;
+			
 			if (scene.trace(newHit, randRay, 0.001))								// Check for shadows
 			{
 				Ld += m_kd*newHit.obj->m_material->shade(randRay,newHit,scene);
+			}
+			else
+			{
+				if (m_envMap != NULL || g_scene->getEnvMap() != NULL) 
+				{
+					//environment map lookup
+					theta   = atan2(randD.z, randD.x) + PI;
+					phi     = acos(randD.y);
+					LookUpU = theta * 0.5 * piRecip;
+					LookUpV = 1.0 - (phi * piRecip);
+					if (m_envMap != NULL)
+					{
+						envColor        = m_envMap->getLookup3(LookUpU, LookUpV)*m_envExposure;
+						Ld              += m_kd*envColor;
+					} 
+					else
+					{
+						envColor        = g_scene->getEnvMap()->getLookup3(LookUpU, LookUpV)*g_scene->getEnvExposure();
+						Ld              += m_kd*envColor;
+					}
+				}
+				else
+				{
+					Ld += m_kd*g_scene->getBGColor();
+				}
 			}
 		} else {
 			return Ld; //return no color since we did not hit a light
@@ -335,16 +354,17 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		}
 	}  ///////////END
 
-	Ray::IORList IORHistory = ray.r_IOR;
+	if (m_specGloss < 1.0)
+	{
+		rVec = m_specGloss*rVec + (1-m_specGloss)*randD;									// get the reflection vector
+	}
+
 	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
-	float inIOR = IORHistory.back();				// inIOR is the IOR of the medium the ray is currently in.
+	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (flip)										// If this is true, then we've hit a back-facing polygon:
 	{												// we're going out of the current material.
-		if (IORHistory.size() > 1)					// Pop the back of the IORHistory so we get the IOR right, be careful and make sure this is OK.
-		{
-			IORHistory.pop_back();
-		}		
-		outIOR = IORHistory.back();
+		ray.r_IOR.pop();					// Pop the back of the IORHistory so we get the IOR right, be careful and make sure this is OK.
+		outIOR = ray.r_IOR();
 	}
 	else											// Normal. We're going (if possible) into a new material,
 	{												// record its IOR in the ray's IORHistory
@@ -377,10 +397,10 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		if (m_envMap != NULL || g_scene->getEnvMap() != NULL) 
 		{
 			//environment map lookup
-			float theta   = atan2(rVec.z, rVec.x) + PI;
-			float phi     = acos(rVec.y);
-			float LookUpU = theta * 0.5 * piRecip;
-			float LookUpV = 1.0 - (phi * piRecip);
+			theta   = atan2(rVec.z, rVec.x) + PI;
+			phi     = acos(rVec.y);
+			LookUpU = theta * 0.5 * piRecip;
+			LookUpV = 1.0 - (phi * piRecip);
 			if (m_envMap != NULL)
 			{
 				Vector3 envColor = m_envMap->getLookup3(LookUpU, LookUpV);
@@ -409,8 +429,8 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 
 		if (bounces < 4)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 		{		
-			IORHistory.push_back(outIOR);
-			Ray tRay = Ray(P, tVec, IORHistory, bounces+1, IS_REFRACT_RAY);						// Make a new refraction ray.
+			ray.r_IOR.push(outIOR);
+			Ray tRay = Ray(P, tVec, ray.r_IOR, bounces+1, IS_REFRACT_RAY);						// Make a new refraction ray.
 			HitInfo newHit;
 			newHit.t = MIRO_TMAX;
 			if (scene.trace(newHit, tRay, 0.001))
@@ -425,10 +445,10 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 			if (m_envMap != NULL || g_scene->getEnvMap() != NULL) 
 			{
 				//environment map lookup
-				float theta   = atan2(tVec.z, tVec.x) + PI;
-				float phi     = acos(tVec.y);
-				float LookUpU = theta * 0.5 * piRecip;
-				float LookUpV = 1.0 - (phi * piRecip);
+				theta   = atan2(tVec.z, tVec.x) + PI;
+				phi     = acos(tVec.y);
+				LookUpU = theta * 0.5 * piRecip;
+				LookUpV = 1.0 - (phi * piRecip);
 				if (m_envMap != NULL)
 				{
 					Vector3 envColor = m_envMap->getLookup3(LookUpU, LookUpV);

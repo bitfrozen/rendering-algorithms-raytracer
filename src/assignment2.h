@@ -430,7 +430,6 @@ void makePathTracingScene() {
 
     // let objects do pre-calculations if needed
     g_scene->preCalc();
-
 }
 
 

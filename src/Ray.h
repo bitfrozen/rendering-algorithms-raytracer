@@ -34,8 +34,16 @@ public:
 #endif
 	static unsigned long int counter, rayTriangleIntersections;
 	unsigned int bounces_flags;
-	typedef std::vector<float> IORList;		
-	IORList r_IOR;							// History of IOR this ray has traversed..
+	
+	struct IORList {
+		float _IORList[256];
+		unsigned int IOR_idx;
+		IORList() {_IORList[0] = 1.0f; IOR_idx = 0;}
+		float operator()() {return _IORList[IOR_idx];}
+		void pop() {if (IOR_idx > 0) IOR_idx--;}
+		void push(float num) {_IORList[++IOR_idx] = num;}
+	};
+	mutable IORList r_IOR;							// History of IOR this ray has traversed..
 
     Ray()
     {
@@ -51,7 +59,7 @@ public:
 		idx4 = setZero; idy4 = setZero; idz4 = setZero;
 #endif
 		bounces_flags = IS_PRIMARY_RAY;
-		r_IOR.push_back(1.001f);
+		r_IOR.push(1.001f);
     }
 
     Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
@@ -73,12 +81,13 @@ public:
 #endif
 		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		if (!(flags & IS_SHADOW_RAY))
-			r_IOR.push_back(IOR);
+			r_IOR.push(IOR);
     }
 
-	Ray(const Vector3& o, const Vector3& d, const IORList& IOR, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	Ray(const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
+		r_IOR = IOR;
 		counter++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
@@ -94,7 +103,6 @@ public:
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
 		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
-		r_IOR = IOR;
 	}
 
 	void set(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
@@ -115,8 +123,8 @@ public:
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
 		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
-		if (!(flags & IS_SHADOW_RAY))
-			r_IOR.push_back(IOR);
+		r_IOR.pop();
+		r_IOR.push(IOR);
 	}
 };
 

@@ -34,12 +34,12 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	makeBunnyScene2();
+	//makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene2();
 	//makeEnvironmentMapScene();
-	//makeTestScene();
+	makeTestScene();
 
 	//assignment 2
 	//makePathTracingScene();
@@ -58,53 +58,63 @@ void makeTestScene()
 
 	g_image->resize(512, 512);
 
+	g_scene->m_pathTrace = true;
+	g_scene->m_numRays = 1024;
+	g_scene->m_maxBounces = 20;
+
 	// set up the camera
-	g_scene->setBGColor(Vector3(0.6,0.6,0.85));
+	g_scene->setBGColor(Vector3(0));
 	g_camera->setEye(Vector3(-5, 4, 3));
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(90);
-
-	/*// create and place a point light source
-	PointLight * light = new PointLight;
-	light->setPosition(Vector3(-3, 15, 6));
-	light->setColor(Vector3(1, 1, 1));
-	light->setWattage(2000);
-	g_scene->addLight(light);
-
-	PointLight * light2 = new PointLight;
-	light2->setPosition(Vector3(-15, 10, -6));
-	light2->setColor(Vector3(1, 1, 1));
-	light2->setWattage(2000);
-	g_scene->addLight(light2);*/
+	g_camera->setFOV(60);
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Arches_E_PineTree_3k.hdr");
+	hdrImage->loadImage("Images/Topanga_Forest_B_3kb.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.25, 0.15, 0.01), Vector3(0), Vector3(1.0, 0.75, 0.1));
+	Blinn* mat = new Blinn(Vector3(0.9, 0.94, 1.0));
 	mat->setSpecExp(30.0f);
 	mat->setSpecAmt(0);
-	mat->setIor(10.0f);
-	mat->setReflectAmt(1.0f);
+	mat->setIor(6.0f);
+	mat->setReflectAmt(0.80f);
 	mat->setRefractAmt(0.0f);
+	mat->setReflectGloss(0.98f);
+
+	// create a spiral of spheres
+	Blinn* mat2 = new Blinn(Vector3(0.4, 0.05, 0.02), Vector3(0), Vector3(1.0, 0.5, 0.0));
+	mat2->setSpecExp(30.0f);
+	mat2->setSpecAmt(0);
+	mat2->setIor(8.0f);
+	mat2->setReflectAmt(0.80f);
+	mat2->setRefractAmt(0.0f);
+	mat2->setReflectGloss(0.98f);
 
 	Blinn* planeMat = new Blinn(Vector3(1.0));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0);
-	planeMat->setIor(2.2f);
-	planeMat->setReflectAmt(0.0f);
+	planeMat->setIor(1.6f);
+	planeMat->setReflectAmt(1.0f);
 	planeMat->setRefractAmt(0.0f);
+	planeMat->setReflectGloss(0.97f);
+
+	Matrix4x4 xform;
+	xform *= scale(0.8, 0.8, 0.8);
+	xform *= rotate(30, 0, 1, 0);
+	xform *= translate(-5, 0, 0);
 
 	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *mesh2 = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
 	mesh->load("Models/bunny.obj");
+	mesh2->load("Models/bunny.obj", xform);
 	plane->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
+	makeMeshObjs(mesh2, mat2);
 	makeMeshObjs(plane, planeMat);
 
 	// let objects do pre-calculations if needed
@@ -119,9 +129,9 @@ void makeBunnyScene2()
 
 	g_image->resize(512, 512);
 
-	/*g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 16;
-	g_scene->m_maxBounces = 2;*/
+	g_scene->m_pathTrace = true;
+	g_scene->m_numRays = 64;
+	g_scene->m_maxBounces = 4;
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(1.0,0.0,0.0));
@@ -151,22 +161,23 @@ void makeBunnyScene2()
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.3,0.3,0.3));
+	Blinn* mat = new Blinn(Vector3(0.7f, 0.1f, 0.05f), Vector3(0));
 	mat->setSpecExp(30.0f);
-	mat->setIor(1.56f);
+	mat->setIor(2.2f);
 	mat->setReflectAmt(1.0f);
-	mat->setRefractAmt(1.0f);
+	mat->setRefractAmt(0.0f);
 	mat->setEnvMap(hdrTex);
 	mat->setEnvExposure(1.0f);
-	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0.06,0.06,0.06));
+	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0.1f);
 	planeMat->setIor(2.2f);
 	planeMat->setReflectAmt(1.0f);
 	planeMat->setRefractAmt(0.0f);
+	planeMat->setReflectGloss(0.95f);
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/multiBunny.obj");
+	mesh->load("Models/bunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
