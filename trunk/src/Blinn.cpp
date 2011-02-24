@@ -243,7 +243,6 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		if (m_lightEmitted > 0.0f) {
 			//insert BRDF here if we plan on using one
 			Ld += m_lightEmitted*m_Le;
-			return Ld;
 		}
 		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
 		if (bounces < scene.m_maxBounces) {
@@ -304,6 +303,91 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 					Ld += m_kd*g_scene->getBGColor();
 				}
 			}
+
+			{
+				// Directly sample square light, this would be rolled into the next loop over all lights...
+				// I use the same two random numbers again, it shouldn't be an issue...
+				Vector3 p1, p2, p3;
+				p1 = Vector3(4.0, 5.5, -1.5);
+				p2 = Vector3(4.0, 5.5, -4.0);
+				p3 = Vector3(1.5, 5.5, -1.5);
+				Vector3 D = p1-P + e1*(p2-p1) + e2*(p3-p1); // Linear interpolation over the square
+				
+				// the inverse-squared falloff
+				ALIGN_SSE float falloff = D.length2();
+				ALIGN_SSE float distanceRecip, distance;
+#ifndef NO_SSE
+				fastrsqrtss(setSSE(falloff), distanceRecip);
+				recipss(setSSE(falloff), falloff);
+				recipss(setSSE(distanceRecip), distance);
+#else
+				distance      = sqrtf(falloff);
+				distanceRecip = 1.0f / distance;
+				falloff       = 1.0f / falloff;
+#endif
+				D *= distanceRecip;
+
+				float nDotL = max(0.0f, dot(theNormal, D));
+				Vector3 E   = (nDotL * 50) * (0.25*falloff*piRecip);				// Light irradiance
+				Ray sRay    = Ray(P, D, 1.0f, 0, IS_SHADOW_RAY);					// Create shadow ray
+
+				if (nDotL)
+				{
+					HitInfo newHit;
+					newHit.t = distance;
+					if (scene.trace(newHit, sRay, 0.001))							// Check for shadows
+					{
+						E = 0;
+					}
+				}
+				Ld += E*(m_kd + Ls);
+			}		
+
+			// Directly sample pointlights
+			const Lights *lightlist = scene.lights();
+
+			// loop over all of the lights
+			Lights::const_iterator lightIter;
+			for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
+			{
+				PointLight* pLight = *lightIter;
+
+				Vector3 l = pLight->position() - P;
+
+				// the inverse-squared falloff
+				ALIGN_SSE float falloff = l.length2();
+				ALIGN_SSE float distanceRecip, distance;
+#ifndef NO_SSE
+				fastrsqrtss(setSSE(falloff), distanceRecip);
+				recipss(setSSE(falloff), falloff);
+				recipss(setSSE(distanceRecip), distance);
+#else
+				distance      = sqrtf(falloff);
+				distanceRecip = 1.0f / distance;
+				falloff       = 1.0f / falloff;
+#endif
+
+				// normalize the light direction
+				l *= distanceRecip;
+
+				float nDotL = max(0.0f, dot(theNormal, l));
+				Vector3 E   = (nDotL * pLight->color() * pLight->wattage()) * (0.25*falloff*piRecip);		// Light irradiance
+				Ray sRay    = Ray(P, l, 1.0f, 0, IS_SHADOW_RAY);											// Create shadow ray
+
+				if (nDotL)
+				{
+					HitInfo newHit;
+					newHit.t = distance;
+					if (scene.trace(newHit, sRay, 0.001))								// Check for shadows
+					{
+						E = 0;
+					}
+				}
+
+				Ls += m_ks*m_specAmt*pow(dot(rVec, l), m_specExp);								// Calculate specular component.
+				Ld += E*(m_kd + Ls);															// Total = Light*(Diffuse+Spec)
+			}
+
 		} else {
 			return Ld; //return no color since we did not hit a light
 		}
@@ -354,16 +438,17 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		}
 	}  ///////////END
 
+	// Here we do glossy reflection, however it de-coheres the rays too quickly
 	if (m_specGloss < 1.0)
 	{
-		rVec = m_specGloss*rVec + (1-m_specGloss)*randD;									// get the reflection vector
+		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();						// get the (randomized) reflection vector
 	}
 
 	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (flip)										// If this is true, then we've hit a back-facing polygon:
 	{												// we're going out of the current material.
-		ray.r_IOR.pop();					// Pop the back of the IORHistory so we get the IOR right, be careful and make sure this is OK.
+		ray.r_IOR.pop();							// Pop the back of the IORHistory so we get the IOR right, be careful and make sure this is OK.
 		outIOR = ray.r_IOR();
 	}
 	else											// Normal. We're going (if possible) into a new material,
@@ -373,7 +458,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	float Rs = 0; float Ts = 0;
 	if (m_reflectAmt > 0.0 || m_refractAmt > 0.0)
 	{
-		Rs = fresnel(inIOR, outIOR, vDotN);												// Compute Fresnel's equations  http://www.bramz.net/data/writings/reflection_transmission.pdf
+		Rs = fresnel(inIOR, outIOR, vDotN);												// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
 		Ts = 1.0f-Rs;																	// Energy conservation
 	}
 	

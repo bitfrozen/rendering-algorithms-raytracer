@@ -384,25 +384,25 @@ void makePathTracingScene() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 1000;
-	g_scene->m_maxBounces = 20;
+	g_scene->m_numRays = 100;
+	g_scene->m_maxBounces = 5;
     
     // set up the camera
-    g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.2f));
+    g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.0f));
     g_camera->setEye(Vector3(2.25, 2.25, 5.5));
     g_camera->setLookAt(Vector3(2.5, 2.25, 0));
     g_camera->setUp(Vector3(0, 1, 0));
     g_camera->setFOV(55);
 
     // create and place a point light source
-    PointLight * light = new PointLight;
+    /*PointLight * light = new PointLight;
     light->setPosition(Vector3(2.0, 5.0, -2.0));
     light->setColor(Vector3(1, 1, 1));
     light->setWattage(20);
-    g_scene->addLight(light);
+    g_scene->addLight(light);*/
 
 	Blinn* lmaterial = new Blinn(Vector3(1.0, 1.0, 1.0f));
-	lmaterial->setLightEmittedIntensity(5.0f);
+	lmaterial->setLightEmittedIntensity(1.0f);
 	lmaterial->setLightEmittedColor(Vector3(1.0f, 1.0f, 1.0f));
     TriangleMesh * lmesh = new TriangleMesh;
     lmesh->load("Models/cornell_box-light2.obj");
@@ -414,7 +414,6 @@ void makePathTracingScene() {
 	wmesh->load("Models/cornell_box-white2.obj");
     makeMeshObjs(wmesh, wmaterial);
     
-
 	Blinn* rmaterial = new Blinn(Vector3(.80f,.20f, 0.20f));
 	rmaterial->setReflectAmt(.0f);
     TriangleMesh * rmesh = new TriangleMesh;
