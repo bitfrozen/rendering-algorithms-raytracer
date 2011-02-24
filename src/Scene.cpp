@@ -23,7 +23,6 @@ int Scene::randsIdx = 0;		// Current index into random number array
 float Scene::rands[1000000];	// Array of random numbers
 MTRand_int32 Scene::drand(clock());
 
-
 void Scene::genRands()			// Run the random number generator. This way we don't run into
 {								// threading problems...
 	#pragma omp critical

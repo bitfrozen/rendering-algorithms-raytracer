@@ -39,10 +39,10 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene2();
 	//makeEnvironmentMapScene();
-	makeTestScene();
+	//makeTestScene();
 
 	//assignment 2
-	//makePathTracingScene();
+	makePathTracingScene();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
@@ -59,8 +59,8 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 1024;
-	g_scene->m_maxBounces = 20;
+	g_scene->m_numRays = 64;
+	g_scene->m_maxBounces = 10;
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(0));
@@ -71,17 +71,17 @@ void makeTestScene()
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Topanga_Forest_B_3kb.hdr");
+	hdrImage->loadImage("Images/Topanga_Forest_B_3k.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.9, 0.94, 1.0));
+	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
 	mat->setSpecExp(30.0f);
 	mat->setSpecAmt(0);
 	mat->setIor(6.0f);
-	mat->setReflectAmt(0.80f);
+	mat->setReflectAmt(0.90f);
 	mat->setRefractAmt(0.0f);
 	mat->setReflectGloss(0.98f);
 
@@ -90,7 +90,7 @@ void makeTestScene()
 	mat2->setSpecExp(30.0f);
 	mat2->setSpecAmt(0);
 	mat2->setIor(8.0f);
-	mat2->setReflectAmt(0.80f);
+	mat2->setReflectAmt(0.90f);
 	mat2->setRefractAmt(0.0f);
 	mat2->setReflectGloss(0.98f);
 
@@ -140,7 +140,7 @@ void makeBunnyScene2()
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(45);
 
-	// create and place a point light source
+	/*// create and place a point light source
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
@@ -151,11 +151,11 @@ void makeBunnyScene2()
 	light2->setPosition(Vector3(-15, 10, -6));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setWattage(2000);
-	g_scene->addLight(light2);
+	g_scene->addLight(light2);*/
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Mono_Lake.hdr");
+	hdrImage->loadImage("Images/Ditch-River_2k.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
@@ -165,7 +165,7 @@ void makeBunnyScene2()
 	mat->setSpecExp(30.0f);
 	mat->setIor(2.2f);
 	mat->setReflectAmt(1.0f);
-	mat->setRefractAmt(0.0f);
+	mat->setRefractAmt(1.0f);
 	mat->setEnvMap(hdrTex);
 	mat->setEnvExposure(1.0f);
 	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0));
