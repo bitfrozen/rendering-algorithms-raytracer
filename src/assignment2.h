@@ -8,12 +8,14 @@
 #include "TriangleMesh.h"
 #include "Lambert.h"
 #include "Blinn.h"
+#include "RectangleLight.h"
 
 void makeTeapotScene2();
 void makeBunny1Scene2();
 void makeBunny20Scene2();
 void makeSponzaScene2();
 void makePathTracingScene();
+void makePathTracingScene2();
 //This function is defined in main.cpp
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 
@@ -384,8 +386,8 @@ void makePathTracingScene() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 100;
-	g_scene->m_maxBounces = 5;
+	g_scene->m_numRays = 512;
+	g_scene->m_maxBounces = 10;
     
     // set up the camera
     g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.0f));
@@ -400,6 +402,12 @@ void makePathTracingScene() {
     light->setColor(Vector3(1, 1, 1));
     light->setWattage(20);
     g_scene->addLight(light);*/
+
+	RectangleLight* rlight = new RectangleLight();
+	rlight->setColor(Vector3(1,1,1));
+	rlight->setWattage(100);
+	rlight->setVertices(Vector3(4.0, 5.5, -1.5), Vector3(4.0, 5.5, -4.0), Vector3(1.5, 5.5, -1.5));
+	g_scene->addLight(rlight); 
 
 	Blinn* lmaterial = new Blinn(Vector3(1.0, 1.0, 1.0f));
 	lmaterial->setLightEmittedIntensity(1.0f);
@@ -426,6 +434,81 @@ void makePathTracingScene() {
     gmesh->load("Models/cornell_box-green.obj");
     makeMeshObjs(gmesh, gmaterial);
 
+
+    // let objects do pre-calculations if needed
+    g_scene->preCalc();
+}
+
+void makePathTracingScene2() {
+    g_camera = new Camera;
+    g_scene = new Scene;
+    g_image = new Image;
+
+    //g_image->resize(512, 512);
+	g_image->resize(512, 512);
+
+	g_scene->m_pathTrace = true;
+	g_scene->m_numRays = 2000;
+	g_scene->m_maxBounces = 30;
+    
+    // set up the camera
+    g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.2f));
+    g_camera->setEye(Vector3(2.25, 2.25, 5.5));
+    g_camera->setLookAt(Vector3(2.5, 2.25, 0));
+    g_camera->setUp(Vector3(0, 1, 0));
+    g_camera->setFOV(55);
+
+    // create and place a point light source
+    /*PointLight * light = new PointLight;
+    light->setPosition(Vector3(2.0, 5.0, -2.0));
+    light->setColor(Vector3(1, 1, 1));
+    light->setWattage(20);
+    g_scene->addLight(light);*/
+
+	RectangleLight* rlight = new RectangleLight();
+	rlight->setColor(Vector3(1,1,1));
+	rlight->setWattage(100);
+	rlight->setVertices(Vector3(4.0, 5.5, -1.5), Vector3(4.0, 5.5, -4.0), Vector3(1.5, 5.5, -1.5));
+	g_scene->addLight(rlight); 
+
+	Blinn* lmaterial = new Blinn(Vector3(1.0, 1.0, 1.0f));
+	lmaterial->setLightEmittedIntensity(5.0f);
+	lmaterial->setLightEmittedColor(Vector3(1.0f, 1.0f, 1.0f));
+    TriangleMesh * lmesh = new TriangleMesh;
+    lmesh->load("Models/cornell_box-light2.obj");
+    makeMeshObjs(lmesh, lmaterial);
+
+    Blinn* wmaterial = new Blinn(Vector3(1.0f));
+	wmaterial->setReflectAmt(.0f);
+    TriangleMesh * wmesh = new TriangleMesh;
+	wmesh->load("Models/cornell_box-white2.obj");
+    makeMeshObjs(wmesh, wmaterial);
+    
+
+	Blinn* rmaterial = new Blinn(Vector3(.80f,.20f, 0.20f));
+	rmaterial->setReflectAmt(.0f);
+    TriangleMesh * rmesh = new TriangleMesh;
+    rmesh->load("Models/cornell_box-red.obj");
+    makeMeshObjs(rmesh, rmaterial);
+
+	Blinn* gmaterial = new Blinn(Vector3(0.20f,.80f,0.20f));
+	gmaterial->setReflectAmt(.0f);
+    TriangleMesh * gmesh = new TriangleMesh;
+    gmesh->load("Models/cornell_box-green.obj");
+    makeMeshObjs(gmesh, gmaterial);
+
+	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.3,0.3,0.3));
+	mat->setSpecExp(30.0f);
+	mat->setIor(1.56f);
+	mat->setReflectAmt(1.0f);
+	mat->setRefractAmt(1.0f);
+	Matrix4x4 xform;
+	xform.setIdentity();
+	xform *= scale(.6, .6, .6);
+	xform *= translate(2, 0, -2);
+	TriangleMesh *mesh = new TriangleMesh;
+	mesh->load("Models/sphere2.obj", xform);
+	makeMeshObjs(mesh, mat);
 
     // let objects do pre-calculations if needed
     g_scene->preCalc();

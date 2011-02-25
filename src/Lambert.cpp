@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "SSE.h"
 #include "TriangleMesh.h"
+#include "PointLight.h"
 
 using namespace std;
 
@@ -62,7 +63,9 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
     Lights::const_iterator lightIter;
     for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
     {
-        PointLight* pLight = *lightIter;
+        PointLight* pLight = dynamic_cast<PointLight*>(*lightIter);
+        if (pLight == 0)
+			continue;
     
         Vector3 l = pLight->position() - P;
         

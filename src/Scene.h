@@ -3,7 +3,7 @@
 
 #include "Miro.h"
 #include "Object.h"
-#include "PointLight.h"
+#include "Light.h"
 #include "BVH.h"
 #include "MTRand.h"
 
@@ -17,7 +17,7 @@ public:
     void addObject(Object* pObj)        {m_objects.push_back(pObj);}
     const Objects* objects() const      {return &m_objects;}
 
-    void addLight(PointLight* pObj)     {m_lights.push_back(pObj);}
+    void addLight(Light* pObj)     {m_lights.push_back(pObj);}
     const Lights* lights() const        {return &m_lights;}
 
 	void setEnvMap(Texture* envMap)		{m_envMap = envMap; }
