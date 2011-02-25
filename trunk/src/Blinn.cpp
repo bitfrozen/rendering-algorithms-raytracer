@@ -6,6 +6,8 @@
 #include "Miro.h"
 #include "SSE.h"
 #include "TriangleMesh.h"
+#include "RectangleLight.h"
+#include "PointLight.h"
 
 using namespace std;
 
@@ -241,7 +243,6 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	if (scene.m_pathTrace) {
 		//compute diffuse component using path tracing.
 		if (m_lightEmitted > 0.0f) {
-			//insert BRDF here if we plan on using one
 			Ld += m_lightEmitted*m_Le;
 		}
 		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
@@ -305,42 +306,56 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 			}
 
 			{
-				// Directly sample square light, this would be rolled into the next loop over all lights...
-				// I use the same two random numbers again, it shouldn't be an issue...
-				Vector3 p1, p2, p3;
-				p1 = Vector3(4.0, 5.5, -1.5);
-				p2 = Vector3(4.0, 5.5, -4.0);
-				p3 = Vector3(1.5, 5.5, -1.5);
-				Vector3 D = p1-P + e1*(p2-p1) + e2*(p3-p1); // Linear interpolation over the square
-				
-				// the inverse-squared falloff
-				ALIGN_SSE float falloff = D.length2();
-				ALIGN_SSE float distanceRecip, distance;
-#ifndef NO_SSE
-				fastrsqrtss(setSSE(falloff), distanceRecip);
-				recipss(setSSE(falloff), falloff);
-				recipss(setSSE(distanceRecip), distance);
-#else
-				distance      = sqrtf(falloff);
-				distanceRecip = 1.0f / distance;
-				falloff       = 1.0f / falloff;
-#endif
-				D *= distanceRecip;
 
-				float nDotL = max(0.0f, dot(theNormal, D));
-				Vector3 E   = (nDotL * 50) * (0.25*falloff*piRecip);				// Light irradiance
-				Ray sRay    = Ray(P, D, 1.0f, 0, IS_SHADOW_RAY);					// Create shadow ray
-
-				if (nDotL)
+				// Directly sample area lights
+				const Lights *arealightlist = scene.lights();
+				// loop over all of the area lights
+				Lights::const_iterator arealightIter;
+				for (arealightIter = arealightlist->begin(); arealightIter != arealightlist->end(); arealightIter++)
 				{
-					HitInfo newHit;
-					newHit.t = distance;
-					if (scene.trace(newHit, sRay, 0.001))							// Check for shadows
+					RectangleLight* rLight = dynamic_cast<RectangleLight*>(*arealightIter);
+					if (rLight == 0)
+						continue;
+
+					Vector3 D = rLight->getPointOnLight() - P;
+
+					// Directly sample square light, this would be rolled into the next loop over all lights...
+					// I use the same two random numbers again, it shouldn't be an issue...
+					//Vector3 p1, p2, p3;
+					//p1 = Vector3(4.0, 5.5, -1.5);
+					//p2 = Vector3(4.0, 5.5, -4.0);
+					//p3 = Vector3(1.5, 5.5, -1.5);
+					//Vector3 D = p1-P + e1*(p2-p1) + e2*(p3-p1); // Linear interpolation over the square
+					
+					// the inverse-squared falloff
+					ALIGN_SSE float falloff = D.length2();
+					ALIGN_SSE float distanceRecip, distance;
+	#ifndef NO_SSE
+					fastrsqrtss(setSSE(falloff), distanceRecip);
+					recipss(setSSE(falloff), falloff);
+					recipss(setSSE(distanceRecip), distance);
+	#else
+					distance      = sqrtf(falloff);
+					distanceRecip = 1.0f / distance;
+					falloff       = 1.0f / falloff;
+	#endif
+					D *= distanceRecip;
+
+					float nDotL = max(0.0f, dot(theNormal, D));
+					Vector3 E   = (nDotL * rLight->wattage()) * (0.25*falloff*piRecip);				// Light irradiance
+					Ray sRay    = Ray(P, D, 1.0f, 0, IS_SHADOW_RAY);					// Create shadow ray
+
+					if (nDotL)
 					{
-						E = 0;
+						HitInfo newHit;
+						newHit.t = distance;
+						if (scene.trace(newHit, sRay, 0.001))							// Check for shadows
+						{
+							E = 0;
+						}
 					}
+					Ld += E*(m_kd + Ls);
 				}
-				Ld += E*(m_kd + Ls);
 			}		
 
 			// Directly sample pointlights
@@ -350,7 +365,9 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 			Lights::const_iterator lightIter;
 			for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
 			{
-				PointLight* pLight = *lightIter;
+				PointLight* pLight = dynamic_cast<PointLight*>(*lightIter);
+				if (pLight == 0)
+					continue;
 
 				Vector3 l = pLight->position() - P;
 
@@ -399,7 +416,9 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		Lights::const_iterator lightIter;
 		for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
 		{
-			PointLight* pLight = *lightIter;
+			PointLight* pLight = dynamic_cast<PointLight*>(*lightIter);
+			if (pLight == 0)
+				continue;
 
 			Vector3 l = pLight->position() - P;
 

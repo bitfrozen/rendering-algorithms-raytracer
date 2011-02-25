@@ -57,7 +57,7 @@ Scene::preCalc()
     Lights::iterator lit;
     for (lit = m_lights.begin(); lit != m_lights.end(); lit++)
     {
-        PointLight* pLight = *lit;
+        Light* pLight = *lit;
         pLight->preCalc();
     }
 
