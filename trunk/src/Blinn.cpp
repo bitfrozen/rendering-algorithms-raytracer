@@ -243,7 +243,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	if (scene.m_pathTrace) {
 		//compute diffuse component using path tracing.
 		if (m_lightEmitted > 0.0f) {
-			Ld += m_lightEmitted*m_Le;
+			Ld += m_kd*m_lightEmitted*m_Le;
 		}
 		int bounces = GET_BOUNCES(ray.bounces_flags & BOUNCES_MASK);
 		if (bounces < scene.m_maxBounces) {
