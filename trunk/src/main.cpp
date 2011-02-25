@@ -34,15 +34,19 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	//makeBunnyScene2();
+	makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
-	//makeSponzaScene2();
+	//makeSponzaScene();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
 
 	//assignment 2
-	makePathTracingScene();
+	//makePathTracingScene();
+	//makeTeapotScene2();
+	//makeBunny1Scene2();
+	//makeBunny20Scene2();
+	//makeSponzaScene2();
 
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
@@ -129,7 +133,7 @@ void makeBunnyScene2()
 
 	g_image->resize(512, 512);
 
-	g_scene->m_pathTrace = true;
+	g_scene->m_pathTrace = false;
 	g_scene->m_numRays = 64;
 	g_scene->m_maxBounces = 4;
 
@@ -140,7 +144,7 @@ void makeBunnyScene2()
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(45);
 
-	/*// create and place a point light source
+	// create and place a point light source
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
@@ -151,11 +155,11 @@ void makeBunnyScene2()
 	light2->setPosition(Vector3(-15, 10, -6));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setWattage(2000);
-	g_scene->addLight(light2);*/
+	g_scene->addLight(light2);
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Ditch-River_2k.hdr");
+	hdrImage->loadImage("Images/Mono_Lake.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
@@ -168,6 +172,7 @@ void makeBunnyScene2()
 	mat->setRefractAmt(1.0f);
 	mat->setEnvMap(hdrTex);
 	mat->setEnvExposure(1.0f);
+
 	Blinn* planeMat = new Blinn(Vector3(1.0f, 0.4f, 0.4f), Vector3(0));
 	planeMat->setSpecExp(20.0f);
 	planeMat->setSpecAmt(0.1f);
@@ -175,9 +180,10 @@ void makeBunnyScene2()
 	planeMat->setReflectAmt(1.0f);
 	planeMat->setRefractAmt(0.0f);
 	planeMat->setReflectGloss(0.95f);
+
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
+	mesh->load("Models/multiBunny.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
@@ -318,8 +324,7 @@ inline Matrix4x4 rotate(float angle, float x, float y, float z)
 	return m;
 }*/
 
-void
-makeBunny20Scene()
+void makeBunny20Scene()
 {
 	g_camera = new Camera;
 	g_scene = new Scene;

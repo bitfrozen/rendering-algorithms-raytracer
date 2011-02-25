@@ -54,7 +54,7 @@ makeTeapotScene2()
     light->setWattage(700);
     g_scene->addLight(light);
 
-    Material* material = new Lambert(Vector3(1.0f));
+    Material* material = new Blinn(Vector3(1.0f));
     TriangleMesh * teapot = new TriangleMesh;
     teapot->load("Models/teapot.obj");
     makeMeshObjs(teapot, material);
@@ -103,7 +103,7 @@ makeBunny1Scene2()
     light->setWattage(1000);
     g_scene->addLight(light);
 
-    Material* material = new Lambert(Vector3(1.0f));
+    Material* material = new Blinn(Vector3(1.0f));
     TriangleMesh * bunny = new TriangleMesh;
     bunny->load("Models/bunny.obj");
     makeMeshObjs(bunny, material);
@@ -137,7 +137,7 @@ makeBunny20Scene2()
     g_scene = new Scene;
     g_image = new Image;
 
-    g_image->resize(128, 128);
+    g_image->resize(512, 512);
     
     // set up the camera
     g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.2f));
@@ -154,7 +154,7 @@ makeBunny20Scene2()
     g_scene->addLight(light);
 
     TriangleMesh * mesh;
-    Material* material = new Lambert(Vector3(1.0f));
+    Material* material = new Blinn(Vector3(1.0f));
     Matrix4x4 xform;
     Matrix4x4 xform2;
     xform2 *= rotate(110, 0, 1, 0);
@@ -347,7 +347,6 @@ makeBunny20Scene2()
     g_scene->preCalc();
 }
 
-
 void
 makeSponzaScene2()
 {
@@ -371,7 +370,7 @@ makeSponzaScene2()
     light->setWattage(200);
     g_scene->addLight(light);
 
-    Material* material = new Lambert(Vector3(1.0f));
+    Material* material = new Blinn(Vector3(1.0f));
     TriangleMesh * mesh = new TriangleMesh;
     mesh->load("Models/sponza.obj");
     makeMeshObjs(mesh, material);

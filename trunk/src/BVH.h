@@ -11,7 +11,14 @@
 ALIGN_SSE class BVH_Node
 {
 public:
-	BVH_Node() {};
+	BVH_Node() {
+		bBox = NULL;
+		Children = NULL;
+		numChildren = 0;
+#ifdef USE_TRI_PACKETS
+		triCache = NULL;
+#endif
+	}
 	~BVH_Node();
 	ALIGN_SSE AABB* bBox;
 	union {
@@ -39,7 +46,6 @@ public:
 	void buildTriBundles(TriCache4* cacheAlloc);
 #endif
 	static unsigned int nodeCount, leafCount, maxDepth;
-
 	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon) const;
 
 	void buildSAH(Object** objs, u_int numObjs, float* leftArea, float* rightArea);
@@ -51,14 +57,7 @@ public:
 	float calcSAHCost(int leftNum, float leftArea, int rightNum, float rightArea);
 };
 
-/*#define FIRST_NODE_IS_VALID		0x01
-#define SECOND_NODE_IS_VALID	0x02
-#define THIRD_NODE_IS_VALID		0x04
-#define FOURTH_NODE_IS_VALID	0x08
-#define FIRST_NODE_IS_LEAF		0x10
-#define SECOND_NODE_IS_LEAF		0x20
-#define THIRD_NODE_IS_LEAF		0x40
-#define FOURTH_NODE_IS_LEAF		0x80
+#ifdef USE_QBVH
 
 ALIGN_64 class QBVH_Node
 {
@@ -75,22 +74,41 @@ public:
 		QBVH_Node* Children[4];
 		BVH_Node::TriCache4* triCaches[4];
 	};
-	u_int flags;
+	bool flagsIsValid[4];
+	bool flagsIsLeaf[4];
+	static unsigned int nodeCount, leafCount, maxDepth;
 
+	void intersect(HitInfo& result, const Ray& ray, bool hit[4], float tMin = epsilon) const;
 	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc);
-	void buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, BVH_Node::TriCache4* triCache, int nodeNum);
-};*/
+	BVH_Node::TriCache4* buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum);
+};
+
+#endif
 
 class BVH
 {
 public:
+	BVH() {
+		m_baseNode = (BVH_Node*)_aligned_malloc(sizeof(BVH_Node), 16);
+#ifdef USE_QBVH
+		m_baseQNode = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
+#endif
+	}
+	~BVH() {
+		_aligned_free(m_baseNode);
+#ifdef USE_QBVH
+		_aligned_free(m_baseQNode);
+#endif
+	}
     void build(Objects* objs);
 	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon) const;
 	static unsigned long int rayBoxIntersections;
 protected:
     Objects* m_objects;
-	BVH_Node m_baseNode;
-	//QBVH_Node m_baseQNode;
+	BVH_Node* m_baseNode;
+#ifdef USE_QBVH
+	ALIGN_64 mutable QBVH_Node* m_baseQNode;
+#endif
 };
 
 #endif // CSE168_BVH_H_INCLUDED
