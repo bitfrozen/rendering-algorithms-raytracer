@@ -51,7 +51,7 @@ makeTeapotScene2()
     PointLight * light = new PointLight;
     light->setPosition(Vector3(10, 10, 10));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(700);
+    light->setPower(700);
     g_scene->addLight(light);
 
     Material* material = new Blinn(Vector3(1.0f));
@@ -79,7 +79,6 @@ makeTeapotScene2()
     g_scene->preCalc();
 }
 
-
 void
 makeBunny1Scene2()
 {
@@ -100,7 +99,7 @@ makeBunny1Scene2()
     PointLight * light = new PointLight;
     light->setPosition(Vector3(10, 20, 10));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(1000);
+    light->setPower(1000);
     g_scene->addLight(light);
 
     Material* material = new Blinn(Vector3(1.0f));
@@ -128,8 +127,6 @@ makeBunny1Scene2()
     g_scene->preCalc();
 }
 
-
-
 void
 makeBunny20Scene2()
 {
@@ -150,7 +147,7 @@ makeBunny20Scene2()
     PointLight * light = new PointLight;
     light->setPosition(Vector3(10, 20, 10));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(1000);
+    light->setPower(1000);
     g_scene->addLight(light);
 
     TriangleMesh * mesh;
@@ -367,7 +364,7 @@ makeSponzaScene2()
     PointLight * light = new PointLight;
     light->setPosition(Vector3(0, 10.0, 0));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(200);
+    light->setPower(200);
     g_scene->addLight(light);
 
     Material* material = new Blinn(Vector3(1.0f));
@@ -388,8 +385,8 @@ void makePathTracingScene() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 10;
-	g_scene->m_maxBounces = 20;
+	g_scene->m_numRays = 100;
+	g_scene->m_maxBounces = 40;
     
     // set up the camera
     g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.0f));
@@ -402,17 +399,17 @@ void makePathTracingScene() {
     /*PointLight * light = new PointLight;
     light->setPosition(Vector3(2.0, 5.0, -2.0));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(20);
+    light->setPower(20);
     g_scene->addLight(light);*/
 
 	RectangleLight* rlight = new RectangleLight();
 	rlight->setColor(Vector3(1,1,1));
-	rlight->setWattage(40);
+	rlight->setPower(10.0f);
 	rlight->setVertices(Vector3(3.0, 5.5, -2.5), Vector3(3.0, 5.5, -3.0), Vector3(2.5, 5.5, -2.5));
-	g_scene->addLight(rlight); 
+	g_scene->addLight(rlight);
 
-	Blinn* lmaterial = new Blinn(Vector3(1.0, 1.0, 1.0f));
-	lmaterial->setLightEmittedIntensity(40.0f);
+	Blinn* lmaterial = new Blinn(Vector3(1.0f));
+	lmaterial->setLightEmittedIntensity(50.0);
 	lmaterial->setLightEmittedColor(Vector3(1.0f, 1.0f, 1.0f));
     TriangleMesh * lmesh = new TriangleMesh;
     lmesh->load("Models/cornell_box-light.obj");
@@ -436,6 +433,88 @@ void makePathTracingScene() {
     gmesh->load("Models/cornell_box-green.obj");
     makeMeshObjs(gmesh, gmaterial);
 
+    // let objects do pre-calculations if needed
+    g_scene->preCalc();
+}
+
+void makePathTracingScene3() {
+    g_camera = new Camera;
+    g_scene = new Scene;
+    g_image = new Image;
+
+    //g_image->resize(512, 512);
+	g_image->resize(512, 512);
+
+	g_scene->m_pathTrace = true;
+	g_scene->m_numRays = 64;
+	g_scene->m_maxBounces = 5;
+    
+    // set up the camera
+    g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.0f));
+    g_camera->setEye(Vector3(2.75, 2.75, 5.0));
+    g_camera->setLookAt(Vector3(2.75, 2.75, 0));
+    g_camera->setUp(Vector3(0, 1, 0));
+    g_camera->setFOV(55);
+	g_camera->m_aperture = 0.5f;
+	g_camera->m_focusPlane = 8.6f;
+
+    // create and place a point light source
+    /*PointLight * light = new PointLight;
+    light->setPosition(Vector3(2.0, 5.0, -2.0));
+    light->setColor(Vector3(1, 1, 1));
+    light->setPower(20);
+    g_scene->addLight(light);*/
+
+	RectangleLight* rlight = new RectangleLight();
+	rlight->setColor(Vector3(1,1,1));
+	rlight->setPower(15.0f);
+	rlight->setVertices(Vector3(3.0, 5.5, -2.5), Vector3(3.0, 5.5, -3.0), Vector3(2.5, 5.5, -2.5));
+	g_scene->addLight(rlight);
+
+	Blinn* lmaterial = new Blinn(Vector3(1.0f));
+	lmaterial->setLightEmittedIntensity(0.0f);
+	lmaterial->setLightEmittedColor(Vector3(1.0f, 1.0f, 1.0f));
+    TriangleMesh * lmesh = new TriangleMesh;
+    lmesh->load("Models/CornellBox/Box_light.obj");
+    makeMeshObjs(lmesh, lmaterial);
+
+    Blinn* wmaterial = new Blinn(Vector3(1.0f));
+	wmaterial->setReflectAmt(.0f);
+    TriangleMesh * wmesh = new TriangleMesh;
+	wmesh->load("Models/CornellBox/Box_white.obj");
+    makeMeshObjs(wmesh, wmaterial);
+    
+	Blinn* rmaterial = new Blinn(Vector3(.80f,.20f, 0.20f));
+	rmaterial->setReflectAmt(.0f);
+    TriangleMesh * rmesh = new TriangleMesh;
+    rmesh->load("Models/CornellBox/Box_red.obj");
+    makeMeshObjs(rmesh, rmaterial);
+
+	Blinn* gmaterial = new Blinn(Vector3(0.20f,.80f,0.20f));
+	gmaterial->setReflectAmt(.0f);
+    TriangleMesh * gmesh = new TriangleMesh;
+    gmesh->load("Models/CornellBox/Box_green.obj");
+    makeMeshObjs(gmesh, gmaterial);
+
+	Blinn* glassmaterial = new Blinn(Vector3(0.7f, 0.1f, 0.05f), Vector3(0));
+	glassmaterial->setSpecExp(30.0f);
+	glassmaterial->setIor(2.2f);
+	glassmaterial->setReflectAmt(1.0f);
+	glassmaterial->setRefractAmt(1.0f);
+	TriangleMesh * glassmesh = new TriangleMesh;
+	glassmesh->load("Models/CornellBox/Sphere_Glass.obj");
+	makeMeshObjs(glassmesh, glassmaterial);
+
+	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
+	mat->setSpecExp(30.0f);
+	mat->setSpecAmt(0);
+	mat->setIor(6.0f);
+	mat->setReflectAmt(0.90f);
+	mat->setRefractAmt(0.0f);
+	mat->setReflectGloss(0.98f);
+	TriangleMesh * metalmesh = new TriangleMesh;
+	metalmesh->load("Models/CornellBox/Sphere_Metal.obj");
+	makeMeshObjs(metalmesh, mat);
 
     // let objects do pre-calculations if needed
     g_scene->preCalc();
@@ -464,12 +543,12 @@ void makePathTracingSceneBigLight() {
     /*PointLight * light = new PointLight;
     light->setPosition(Vector3(2.0, 5.0, -2.0));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(20);
+    light->setPower(20);
     g_scene->addLight(light);*/
 
 	RectangleLight* rlight = new RectangleLight();
 	rlight->setColor(Vector3(1,1,1));
-	rlight->setWattage(5);
+	rlight->setPower(5);
 	rlight->setVertices(Vector3(4.5, 5.5, -1.5), Vector3(4.5, 5.5, -4.0), Vector3(1.5, 5.5, -1.5));
 	g_scene->addLight(rlight); 
 
@@ -526,12 +605,12 @@ void makePathTracingScene2() {
     /*PointLight * light = new PointLight;
     light->setPosition(Vector3(2.0, 5.0, -2.0));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(20);
+    light->setPower(20);
     g_scene->addLight(light);*/
 
 	RectangleLight* rlight = new RectangleLight();
 	rlight->setColor(Vector3(1,1,1));
-	rlight->setWattage(5);
+	rlight->setPower(5);
 	rlight->setVertices(Vector3(4.0, 5.5, -1.5), Vector3(4.0, 5.5, -4.0), Vector3(1.5, 5.5, -1.5));
 	g_scene->addLight(rlight); 
 
@@ -602,12 +681,12 @@ makeSponzaScenePathTrace()
     /*PointLight * light = new PointLight;
     light->setPosition(Vector3(0, 10.0, 0));
     light->setColor(Vector3(1, 1, 1));
-    light->setWattage(200);
+    light->setPower(200);
     g_scene->addLight(light);*/
 
 	RectangleLight* rlight = new RectangleLight();
 	rlight->setColor(Vector3(1,1,1));
-	rlight->setWattage(1.5);
+	rlight->setPower(1.5);
 	rlight->setVertices(Vector3(8.0, 10, 2), Vector3(8.0, 10, -2.0), Vector3(-8, 10, 2));
 	g_scene->addLight(rlight); 
 

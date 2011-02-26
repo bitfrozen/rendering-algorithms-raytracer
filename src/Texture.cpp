@@ -1,16 +1,16 @@
-
 #include "Texture.h"
 #include "Miro.h"
 
-
-Texture::Texture() {
-
+Texture::Texture() 
+{
 }
 
-Texture::~Texture() {
+Texture::~Texture() 
+{
 }
 
-Vector4 Texture::getLookup(float u, float v) {
+const Vector4 Texture::getLookup(float u, float v) const
+{
 	//force to be between 0 and 1
 	u = u - float(int(u));
 	v = v - float(int(v));
@@ -40,22 +40,34 @@ Vector4 Texture::getLookup(float u, float v) {
 	return q1*(1.0f - dy) + q2*dy;
 }
 
-Vector3 Texture::getLookup3(float u, float v) {
+const Vector3 Texture::getLookup3(float u, float v) const
+{
 	Vector4 temp = getLookup(u,v);
 	return Vector3(temp[0], temp[1], temp[2]);
 }
 
-Vector3 Texture::getLookupXYZ3(float x, float y, float z) {
+const Vector3 Texture::getLookupXYZ3(float x, float y, float z) const 
+{
 	float theta = atan2(z, x) + PI;
 	float phi = acos(y);
-	float u = theta * 0.5 * piRecip;
-	float v = 1.0 - (phi * piRecip);
+	float u = theta * 0.5 * _1_PI;
+	float v = 1.0 - (phi * _1_PI);
 
 	return getLookup3(u,v);
-
 }
 
-Vector4 Texture::getPixel(int x, int y) {
+const Vector3 Texture::getLookupXYZ3(const Vector3& direction) const 
+{
+	float theta = atan2(direction.z, direction.x) + PI;
+	float phi = acos(direction.y);
+	float u = theta * 0.5 * _1_PI;
+	float v = 1.0 - (phi * _1_PI);
+
+	return getLookup3(u,v);
+}
+
+const Vector4 Texture::getPixel(int x, int y) const
+{
 	//clamp
 	//if (x > m_image->m_width) x = m_image->m_width;
 	//if (y > m_image->m_height) y = m_image->m_height;

@@ -8,9 +8,9 @@
 #include <iostream>
 
 //#define NO_SSE
-#define USE_BINS
-#define USE_QBVH
-#define USE_TRI_PACKETS
+//#define USE_BINS
+//#define USE_QBVH
+//#define USE_TRI_PACKETS
 //#define USE_SCHLICK // Don't use this, it turns out to be slower than the full fresnel calculation...
 
 #ifdef USE_TRI_PACKETS					// We need SSE for triangle packets...
@@ -55,7 +55,8 @@ const bool use_Bins			= false;
 const int bucket_size		= 32;
 const float epsilon			= 0.001f; 
 const float PI				= 3.1415926f;
-const float piRecip			= 1.0f / PI;
+const float _1_PI			= 1.0f / PI;
+const float _1_4PI			= 0.25f / PI;
 const float DegToRad		= PI/180.0f;
 const float RadToDeg		= 180.0f/PI;
 const float IntRecip		= (1. / 4294967296.);

@@ -148,3 +148,49 @@ Ray Camera::eyeRayRandom(int x, int y, int imageWidth, int imageHeight)
 
     return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
 }
+
+Ray Camera::eyeRayRandomDOF(int x, int y, int imageWidth, int imageHeight)
+{
+	// first compute the camera coordinate system 
+	// ------------------------------------------
+
+	// wDir = e - (e+m_viewDir) = -m_vView
+	const Vector3 wDir = Vector3(-m_viewDir).normalize(); 
+	const Vector3 uDir = cross(m_up, wDir).normalize(); 
+	const Vector3 vDir = cross(wDir, uDir);
+
+	// next find the corners of the image plane in camera space
+	// --------------------------------------------------------
+
+	const float aspectRatio = (float)imageWidth/(float)imageHeight; 
+
+	const float top     = tan(m_fov*HalfDegToRad); 
+	const float right   = aspectRatio*top; 
+
+	const float bottom  = -top; 
+	const float left    = -right; 
+
+	// transform x and y into camera space 
+	// -----------------------------------
+	//add a randomness so that the ray will be sent somewhere inside the pixel,
+	// and not necessarily through the center of the pixel
+	float urand = Scene::getRand();
+	float vrand = Scene::getRand();
+
+	const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth);
+	const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight);
+
+	const Vector3 focalPoint = (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized() * m_focusPlane + m_eye;
+
+	// Rejection sample a disc
+	do 
+	{
+		urand = 1.0 - 2*Scene::getRand();
+		vrand = 1.0 - 2*Scene::getRand();
+	} while (urand*urand + vrand*vrand > 1.0f);
+
+	const Vector3 origin = m_aperture*(urand*uDir + vrand*vDir) + m_eye;
+	const Vector3 direction = (focalPoint - origin).normalized();
+
+	return Ray(origin, direction);
+}

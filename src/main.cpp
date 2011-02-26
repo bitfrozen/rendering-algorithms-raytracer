@@ -34,7 +34,7 @@ int main(int argc, char*argv[])
 	//makeSphereScene();
 
 	//scenes that show other functionality
-	makeBunnyScene2();
+	//makeBunnyScene2();
 	//makeBunny20Scene();
 	//makeStoneFloorScene();
 	//makeSponzaScene();
@@ -42,7 +42,7 @@ int main(int argc, char*argv[])
 	//makeTestScene();
 
 	//assignment 2
-	//makePathTracingScene();
+	makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -148,13 +148,13 @@ void makeBunnyScene2()
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(-3, 15, 6));
 	light->setColor(Vector3(1, 1, 1));
-	light->setWattage(2000);
+	light->setPower(2000);
 	g_scene->addLight(light);
 
 	PointLight * light2 = new PointLight;
 	light2->setPosition(Vector3(-15, 10, -6));
 	light2->setColor(Vector3(1, 1, 1));
-	light2->setWattage(2000);
+	light2->setPower(2000);
 	g_scene->addLight(light2);
 
 	//make a raw image from hdr file
@@ -211,7 +211,7 @@ void makeStoneFloorScene()
 	PointLight * light2 = new PointLight;
 	light2->setPosition(Vector3(5, 5, 5));
 	light2->setColor(Vector3(1, 1, 1));
-	light2->setWattage(500);
+	light2->setPower(500);
 	g_scene->addLight(light2);
 
 	//some texture stuff
@@ -250,7 +250,7 @@ void makeEnvironmentMapScene() {
 	PointLight * light2 = new PointLight;
 	light2->setPosition(Vector3(-5, 10, -5));
 	light2->setColor(Vector3(1, 1, 1));
-	light2->setWattage(500);
+	light2->setPower(500);
 	g_scene->addLight(light2);
 
 	//make a raw image from hdr file
@@ -343,7 +343,7 @@ void makeBunny20Scene()
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(10, 20, 10));
 	light->setColor(Vector3(1, 1, 1));
-	light->setWattage(1000);
+	light->setPower(1000);
 	g_scene->addLight(light);
 
 	TriangleMesh * mesh;
@@ -560,7 +560,7 @@ makeSponzaScene()
 	PointLight * light = new PointLight;
 	light->setPosition(Vector3(0, 10.0, 0));
 	light->setColor(Vector3(1, 1, 1));
-	light->setWattage(200);
+	light->setPower(200);
 	g_scene->addLight(light);
 
 	Material* material = new Blinn(Vector3(1.0f));

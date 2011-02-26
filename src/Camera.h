@@ -40,6 +40,7 @@ public:
 
     Ray eyeRay(int x, int y, int imageWidth, int imageHeight);
 	Ray eyeRayRandom(int x, int y, int imageWidth, int imageHeight);
+	Ray eyeRayRandomDOF(int x, int y, int imageWidth, int imageHeight);
     
     void drawGL();
 
@@ -48,6 +49,8 @@ public:
 	Vector3 m_viewDir;
 	Vector3 m_lookAt;
 	float m_fov;
+	float m_focusPlane;
+	float m_aperture;
 
 private:
     void calcLookAt();
