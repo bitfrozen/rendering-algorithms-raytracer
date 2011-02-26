@@ -16,14 +16,18 @@ public:
     virtual void preCalc() {}
     
     virtual Vector3 shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const;
-	void setEnvMap(Texture* map)	{m_envMap = map;}
-	void setEnvExposure(float exp)	{m_envExposure = exp;}
+	void setEnvMap(Texture* map)					{m_envMap = map;}
+	void setEnvExposure(float exp)					{m_envExposure = exp;}
+	const float refractAmt() const					{return m_refractAmt;}
+
+	void setRefractAmt(const float refractAmt)		{m_refractAmt = refractAmt;}
+	const Vector3 getEnvironmentColor(const Vector3& direction, const Scene& scene) const;
 
 	Texture* m_texture;
 	Texture* m_envMap;
 	float m_envExposure;
 
-	static float fresnel(float n1, float n2, float cosThetaI) 
+	__forceinline static float fresnel(float n1, float n2, float cosThetaI) 
 	{
 #ifndef USE_SCHLICK
 		const float n1CosTh = n1*cosThetaI;
@@ -46,6 +50,10 @@ public:
 		return r0 + (1.0 - r0) * x2*x2*x;
 #endif
 	}
+
+	static void getCosineDistributedSamples(const Vector3 &N, Vector3 &out);
+protected:
+	float m_refractAmt;				// Refraction amount. This weights the refraction amount prescribed by the fresnel approximation.
 };
 
 #endif // CSE168_MATERIAL_H_INCLUDED

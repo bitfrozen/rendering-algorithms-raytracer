@@ -4,20 +4,20 @@
 #include "Light.h"
 #include "Scene.h"
 
+// Implements a direct sampled arbitrary parallelogram light
 class RectangleLight : public Light
 {
 public:
-    void setVertices(const Vector3& v1, const Vector3& v2, const Vector3& v3)  {m_v1 = v1; m_v2 = v2; m_v3 = v3; }
+	RectangleLight() : Light() {m_v1 = m_v2 = m_v3 = Vector3(0); setType(RECTANGLE_LIGHT);}
+
+    void setVertices(const Vector3& v1, const Vector3& v2, const Vector3& v3);
+	virtual void setPower(float f);
     
-	const Vector3 getPointOnLight() const;
-	
-	void preCalc() {} // use this if you need to
+	const Vector3 sampleLight(const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const;
+	const Vector3 sampleSpec(const Vector3 &from, const Vector3 &rVec) const;
 
 protected:
-    Vector3 m_v1;
-	Vector3 m_v2;
-	Vector3 m_v3;
-
+    Vector3 m_v1, m_v2, m_v3;
 };
 
 #endif

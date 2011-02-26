@@ -1,9 +1,9 @@
 #ifndef CSE168_SCENE_H_INCLUDED
 #define CSE168_SCENE_H_INCLUDED
 
+#include "Light.h"
 #include "Miro.h"
 #include "Object.h"
-#include "Light.h"
 #include "BVH.h"
 #include "MTRand.h"
 
@@ -17,23 +17,22 @@ public:
     void addObject(Object* pObj)        {m_objects.push_back(pObj);}
     const Objects* objects() const      {return &m_objects;}
 
-    void addLight(Light* pObj)     {m_lights.push_back(pObj);}
+    void addLight(Light* pObj)			{m_lights.push_back(pObj);}
     const Lights* lights() const        {return &m_lights;}
 
 	void setEnvMap(Texture* envMap)		{m_envMap = envMap; }
 	void setEnvExposure(float exposure)	{m_envExposure = exposure;}
-	float getEnvExposure()				{return m_envExposure;}
+	const float getEnvExposure() const  {return m_envExposure;}
+	const Texture* getEnvMap() const	{return m_envMap;}
 
     void preCalc();
     void openGL(Camera *cam);
 
     void raytraceImage(Camera *cam, Image *img);
-    bool trace(HitInfo& minHit, const Ray& ray, float tMin = 0.0f) const;
+    bool trace(HitInfo& minHit, const Ray& ray, float tMin = epsilon) const;
 
 	void setBGColor(Vector3& color)		{m_BGColor = color;}
-	Vector3& getBGColor()				{return m_BGColor;}
-
-	Texture* getEnvMap()				{return m_envMap;}
+	const Vector3& getBGColor()	const   {return m_BGColor;}
 
 	void setPathTrace(bool pt) { m_pathTrace = pt; }
 	void setNumRays(int r) { m_numRays = r; }
@@ -47,6 +46,7 @@ public:
 	static float rands[1000000];
 	static MTRand_int32 drand;
 	static void genRands();
+	static float getRand();
 
 protected:
     Objects m_objects;

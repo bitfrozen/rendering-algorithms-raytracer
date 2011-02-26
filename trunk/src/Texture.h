@@ -12,13 +12,14 @@ public:
 	Texture();
 	Texture(RawImage* image) { m_image = image; }
 	~Texture();
-	virtual Vector4 getLookup(float u, float v);
-	virtual Vector3 getLookup3(float u, float v);
-	/* Lookup for environment map. assumes texture is latitue-longitude map. */
-	virtual Vector3 getLookupXYZ3(float x, float y, float z);
+	const virtual Vector4 getLookup(float u, float v) const;
+	const virtual Vector3 getLookup3(float u, float v) const;
+	/* Lookup for environment map. assumes texture is latitude-longitude map. */
+	const virtual Vector3 getLookupXYZ3(float x, float y, float z) const;
+	const virtual Vector3 getLookupXYZ3(const Vector3& direction) const;
 
 private:
-	Vector4 getPixel(int x, int y);
+	const Vector4 getPixel(int x, int y) const;
 	//pixels stored in column major format
 	RawImage* m_image;	
 };

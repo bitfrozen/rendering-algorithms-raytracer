@@ -18,8 +18,10 @@
 #define IS_PRIMARY_RAY		0x20
 #define IS_GI_RAY			0x40
 #define BOUNCES_MASK		0x7F80		// 8-bit mask, up to 255 bounces
-#define GET_BOUNCES(a)		(a)>>7
+#define GET_BOUNCES(a)		(a & BOUNCES_MASK)>>7
 #define IS_SHADOW_RAY		0x8000
+#define GI_BOUNCES_MASK		0xFF0000	// 8-bit mask, up to 255 bounces
+#define GET_GI_BOUNCES(a)	(a & GI_BOUNCES_MASK)>>16
 
 ALIGN_SSE class Ray
 {
@@ -62,7 +64,7 @@ public:
 		r_IOR.push(1.001f);
     }
 
-    Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+    Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
     {
 		//#pragma omp atomic
 		counter++;
@@ -79,12 +81,12 @@ public:
 		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
-		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
+		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		if (!(flags & IS_SHADOW_RAY))
 			r_IOR.push(IOR);
     }
 
-	Ray(const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	Ray(const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
 		r_IOR = IOR;
@@ -102,10 +104,10 @@ public:
 		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
-		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
+		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 	}
 
-	void set(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	__forceinline void set(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
 		counter++;
@@ -122,9 +124,20 @@ public:
 		dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
-		bounces_flags = bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
+		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		r_IOR.pop();
 		r_IOR.push(IOR);
+	}
+
+	__forceinline const Vector3 getPoint(const float t) const
+	{
+		Vector3 P;
+#ifndef NO_SSE
+		storeps(addps(_o, mulps(setSSE(t), _d)), &P.x);	// Hit position
+#else
+		P = Vector3(o[0] + t*d[0], o[1] + t*d[1], o[2] + t*d[2]);
+#endif
+		return P;
 	}
 };
 
@@ -141,6 +154,10 @@ public:
 
     //! Default constructor.
     explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f, Object* obj = NULL) : t(t), a(a), b(b), obj(obj) {};
+	const void getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float &vCoord) const;
+	const void getInterpolatedNormal(Vector3& N) const;
+	const void getGeoNormal(Vector3& geoN) const;
+	const void getUVs(float& uCoord, float &vCood) const;
 };
 
 #endif // CSE168_RAY_H_INCLUDED

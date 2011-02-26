@@ -32,6 +32,16 @@ void Scene::genRands()			// Run the random number generator. This way we don't r
 	}
 }
 
+float Scene::getRand()
+{
+	if (randsIdx >= 990000)
+	{
+		randsIdx = 0;
+		genRands();
+	}
+	return rands[randsIdx++];
+}
+
 void Scene::openGL(Camera *cam)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -134,20 +144,21 @@ Scene::raytraceImage(Camera *cam, Image *img)
 					hitInfo.t = MIRO_TMAX;
 					hitInfo.a = 0.0;
 					hitInfo.b = 0.0;
-					if (m_pathTrace) {//path tracing
+					if (m_pathTrace) // path tracing
+					{
 						Vector3 shadeResult = Vector3(0.0f);
-						for (int p = 0; p < m_numRays; p++) {
+						for (int p = 0; p < m_numRays; p++) 
+						{
 							hitInfo.t = MIRO_TMAX;
-							ray = cam->eyeRayRandom(i, j, img->width(), img->height());
+							ray = cam->eyeRayRandomDOF(i, j, img->width(), img->height());
 							if (trace(hitInfo, ray, epsilon))
 							{
 								shadeResult += hitInfo.obj->m_material->shade(ray, hitInfo, *this);
 							}
 							else
 							{
-								if (m_envMap != NULL) 
+								if (m_envMap != NULL)	// environment map lookup
 								{
-									//environment map lookup
 									shadeResult += m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure;
 								}
 								shadeResult += g_scene->getBGColor()*m_envExposure;
@@ -155,8 +166,9 @@ Scene::raytraceImage(Camera *cam, Image *img)
 						}
 						shadeResult *= m_numRaysRecip;
 						img->setPixel(i, j, shadeResult);
-						
-					} else {//no path tracing
+					}
+					else  // no path tracing
+					{
 						ray = cam->eyeRay(i, j, img->width(), img->height());				
 						if (trace(hitInfo, ray, epsilon))
 						{					
@@ -164,9 +176,8 @@ Scene::raytraceImage(Camera *cam, Image *img)
 						}
 						else
 						{
-							if (m_envMap != NULL) 
+							if (m_envMap != NULL)	// environment map lookup
 							{
-								//environment map lookup
 								Vector3 envColor = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]);
 								envColor *= m_envExposure;
 								img->setPixel(i,j,envColor);
