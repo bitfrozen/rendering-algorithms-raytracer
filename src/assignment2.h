@@ -385,7 +385,7 @@ void makePathTracingScene() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 100;
+	g_scene->m_numPaths = 100;
 	g_scene->m_maxBounces = 40;
     
     // set up the camera
@@ -446,7 +446,7 @@ void makePathTracingScene3() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 64;
+	g_scene->m_numPaths = 64;
 	g_scene->m_maxBounces = 5;
     
     // set up the camera
@@ -529,7 +529,7 @@ void makePathTracingSceneBigLight() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 10;
+	g_scene->m_numPaths = 10;
 	g_scene->m_maxBounces = 20;
     
     // set up the camera
@@ -591,7 +591,7 @@ void makePathTracingScene2() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 100;
+	g_scene->m_numPaths = 100;
 	g_scene->m_maxBounces = 10;
     
     // set up the camera
@@ -674,7 +674,7 @@ makeSponzaScenePathTrace()
     g_camera->setFOV(55);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 16;
+	g_scene->m_numPaths = 16;
 	g_scene->m_maxBounces = 10;
 
     // create and place a point light source

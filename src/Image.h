@@ -34,6 +34,12 @@ public:
     int width() const               {return m_width;}
     int height() const              {return m_height;}
 
+	static void generateGammaTables();
+
+	static const float GAMMA;
+	static unsigned short gamma_to_linear[256];
+	static unsigned char linear_to_gamma[32769];
+
 private:
     Pixel* m_pixels;
     int m_width;

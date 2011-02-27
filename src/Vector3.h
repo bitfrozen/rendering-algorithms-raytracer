@@ -245,7 +245,12 @@ public:
 
 	__forceinline const float average()
 	{
-		return (x+y+z) / 3.0f;
+		return (x+y+z) * 0.333333f;
+	}
+
+	__forceinline const float maxComp()
+	{
+		return std::max(x, std::max(y, z));
 	}
 };
 

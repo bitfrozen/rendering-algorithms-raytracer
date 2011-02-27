@@ -33,10 +33,10 @@ void Object::renderGL()
 	glEnd();
 }
 
-bool Object::intersect(HitInfo& result, const Ray& r, float tMin)
+const bool Object::intersect(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin)
 {
 //#pragma omp atomic
-	Ray::rayTriangleIntersections++;
+	Ray::rayTriangleIntersections[threadID]++;
 
 	bool hit = false;
 	ALIGN_SSE float newT;

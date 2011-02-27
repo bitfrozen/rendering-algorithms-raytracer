@@ -38,9 +38,9 @@ void RectangleLight::setPower(float f)
 	m_power = f * surfAreaRecip;
 }
 
-const Vector3 RectangleLight::sampleLight(const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const
+const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const
 {
-	Ray sampleRay;
+	Ray sampleRay(threadID);
 	HitInfo sampleHit;
 	Vector3 randDir = 0, tmpResult = 0;
 	float e1, e2, tmpSpec = 0;
@@ -83,8 +83,8 @@ const Vector3 RectangleLight::sampleLight(const Vector3 &from, const Vector3 &no
 				sampleHit.t = distance - epsilon;									// We need this to account for the fact that we CAN hit geometry, to avoid false positives.
 				if (m_fastShadows)
 				{
-					sampleRay.set(from, randDir, 1.0f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
-					if (scene.trace(sampleHit, sampleRay, epsilon))					// Quick method, returns any hit
+					sampleRay.set(threadID, from, randDir, 1.0f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
+					if (scene.trace(threadID, sampleHit, sampleRay, epsilon))					// Quick method, returns any hit
 					{
 						attenuate = 0.0f;
 					}
@@ -92,10 +92,10 @@ const Vector3 RectangleLight::sampleLight(const Vector3 &from, const Vector3 &no
 				else																// Full method, accounts for transparency effects
 				{
 					float distanceTraversed = 0.0f;
-					sampleRay.set(from, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
+					sampleRay.set(threadID, from, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
 					while (distanceTraversed < distance && attenuate > epsilon)
 					{
-						if (scene.trace(sampleHit, sampleRay, epsilon))				
+						if (scene.trace(threadID, sampleHit, sampleRay, epsilon))				
 						{
 							Vector3 hitN; sampleHit.getInterpolatedNormal(hitN);
 							float nDL = dot(hitN, -randDir);
@@ -104,7 +104,7 @@ const Vector3 RectangleLight::sampleLight(const Vector3 &from, const Vector3 &no
 								attenuate *= sampleHit.obj->m_material->refractAmt();
 							}
 							Vector3 newP = Vector3(sampleRay.o[0], sampleRay.o[1], sampleRay.o[2]) + sampleHit.t * randDir;
-							sampleRay.set(newP, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);
+							sampleRay.set(threadID, newP, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);
 							distanceTraversed += sampleHit.t;
 						}
 						else

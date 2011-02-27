@@ -34,7 +34,7 @@ public:
 	__m128  dx4,  dy4,  dz4;
 	__m128 idx4, idy4, idz4;
 #endif
-	static unsigned long int counter, rayTriangleIntersections;
+	static unsigned long int counter[256], rayTriangleIntersections[256];
 	unsigned int bounces_flags;
 	
 	struct IORList {
@@ -47,10 +47,10 @@ public:
 	};
 	mutable IORList r_IOR;							// History of IOR this ray has traversed..
 
-    Ray()
+    Ray(const unsigned int threadID)
     {
 		//#pragma omp atomic
-		counter++;
+		counter[threadID]++;
 
 		 o[0] =  o[1] =  o[2] = o[3] = 0.0f;
 		 d[0] =  d[1] =  d[3] = 0.0f;  d[2] = 1.0f;
@@ -64,10 +64,10 @@ public:
 		r_IOR.push(1.001f);
     }
 
-    Ray(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+    Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
     {
 		//#pragma omp atomic
-		counter++;
+		counter[threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
@@ -86,11 +86,11 @@ public:
 			r_IOR.push(IOR);
     }
 
-	Ray(const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
 		r_IOR = IOR;
-		counter++;
+		counter[threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
@@ -107,10 +107,10 @@ public:
 		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 	}
 
-	__forceinline void set(const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	__forceinline void set(const unsigned int threadID, const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
-		counter++;
+		counter[threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
