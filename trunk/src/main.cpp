@@ -39,10 +39,10 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
-	makeTestScene();
+	//makeTestScene();
 
 	//assignment 2
-	//makePathTracingScene3();
+	makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -63,11 +63,11 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 3;
+	g_scene->m_numPaths = 1;
 	g_scene->m_maxBounces = 5;
-	g_scene->m_minSubdivs = 2;
+	g_scene->m_minSubdivs = 1;
 	g_scene->m_maxSubdivs = 6;
-	g_scene->setNoise(0.005f);
+	g_scene->setNoise(0.03f);
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(0));
@@ -139,8 +139,11 @@ void makeBunnyScene2()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = false;
-	g_scene->m_numPaths = 256;
+	g_scene->m_numPaths = 1;
 	g_scene->m_maxBounces = 4;
+	g_scene->setNoise(0.01f);
+	g_scene->setMinSubdivs(1);
+	g_scene->setMaxSubdivs(6);
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(1.0,0.0,0.0));
@@ -188,7 +191,7 @@ void makeBunnyScene2()
 
 	TriangleMesh *mesh = new TriangleMesh;
 	TriangleMesh *planeMesh = new TriangleMesh;
-	mesh->load("Models/multiBunny.obj");
+	mesh->load("Models/sphere2.obj");
 	planeMesh->load("Models/plane.obj");
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(planeMesh, planeMat);
