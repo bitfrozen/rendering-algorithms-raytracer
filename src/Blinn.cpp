@@ -193,6 +193,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 				Lt                += m_ks*m_refractAmt*Ts*refraction;
 				doEnv              = false;
 			}
+			ray.r_IOR.pop();
 		}
 		if (doEnv)
 		{

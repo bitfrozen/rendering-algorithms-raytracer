@@ -446,8 +446,11 @@ void makePathTracingScene3() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 64;
+	g_scene->m_numPaths = 3;
 	g_scene->m_maxBounces = 5;
+	g_scene->setNoise(0.01);
+	g_scene->setMinSubdivs(1);
+	g_scene->setMaxSubdivs(4);
     
     // set up the camera
     g_scene->setBGColor(Vector3(0.0f, 0.0f, 0.0f));
