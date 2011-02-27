@@ -11,11 +11,31 @@
 
 Image * g_image = 0;
 
+const float Image::GAMMA = 2.2f;
+unsigned short Image::gamma_to_linear[256] = {0};
+unsigned char Image::linear_to_gamma[32769] = {0};
+
+void Image::generateGammaTables()
+{
+	int result;
+
+	for (int i = 0; i < 256; i++) {
+		result = (int)(pow(i/255.0f, GAMMA)*32768.0 + 0.5);
+		gamma_to_linear[i] = (unsigned short)result;
+	}
+
+	for (int i = 0; i < 32769; i++) {
+		result = (int)(pow(i/32768.0f, 1/GAMMA)*255.0 + 0.5);
+		linear_to_gamma[i] = (unsigned char)result;
+	}
+}
+
 Image::Image()
 {
     m_pixels = 0;
     m_width = 1;
     m_height = 1;
+	generateGammaTables();
 }
 
 Image::~Image()
@@ -46,9 +66,9 @@ void Image::clear(const Vector3& c)
 // map floating point values to byte values for pixels
 unsigned char Map(float r)
 {
-    float rMap = 255*r;
-    unsigned char c = rMap>255?255:(unsigned char)rMap;
-    return c;
+    float rMap = 32768.0f*r;
+    unsigned short linear = (rMap > 32768.0f) ? 32768 : (unsigned short)rMap;
+	return Image::linear_to_gamma[linear];
 }
 
 void Image::setPixel(int x, int y, const Vector3& p)

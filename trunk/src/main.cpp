@@ -39,10 +39,10 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
-	//makeTestScene();
+	makeTestScene();
 
 	//assignment 2
-	makePathTracingScene3();
+	//makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -63,8 +63,11 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numRays = 64;
-	g_scene->m_maxBounces = 10;
+	g_scene->m_numPaths = 3;
+	g_scene->m_maxBounces = 5;
+	g_scene->m_minSubdivs = 2;
+	g_scene->m_maxSubdivs = 6;
+	g_scene->setNoise(0.005f);
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(0));
@@ -72,6 +75,8 @@ void makeTestScene()
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(60);
+	g_camera->m_aperture = 0.1f;
+	g_camera->m_focusPlane = 3.0f;
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
@@ -134,7 +139,7 @@ void makeBunnyScene2()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = false;
-	g_scene->m_numRays = 64;
+	g_scene->m_numPaths = 256;
 	g_scene->m_maxBounces = 4;
 
 	// set up the camera

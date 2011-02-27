@@ -14,8 +14,11 @@ Scene::Scene() {
   m_envMap = NULL;
   m_envExposure = 1.0f;
   m_pathTrace = false;
-  m_numRays = 1;
+  m_numPaths = 1;
   m_maxBounces = 10;
+  m_noiseThreshold = 0.01f;
+  m_minSubdivs = 1;
+  m_maxSubdivs = 1;
   genRands();
 }
 
@@ -74,17 +77,13 @@ Scene::preCalc()
     m_bvh.build(&m_objects);
 }
 
-unsigned long int Ray::counter = 0;
-unsigned long int Ray::rayTriangleIntersections = 0;
-unsigned long int BVH::rayBoxIntersections = 0;
+unsigned long int Ray::counter[256] = {0};
+unsigned long int Ray::rayTriangleIntersections[256] = {0};
+unsigned long int BVH::rayBoxIntersections[256] = {0};
 
 void
 Scene::raytraceImage(Camera *cam, Image *img)
 {
-	Ray::counter = 0;
-	Ray::rayTriangleIntersections = 0;
-	BVH::rayBoxIntersections = 0;
-
 	clock_t start = clock();		// Added a clock here to time the rendering.
 
 	int remain_horiz		= img->width() % bucket_size;
@@ -93,7 +92,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	int num_vert_buckets	= img->height() / bucket_size + (remain_vert > 0);
 
 	static HitInfo hitInfo;
-	static Ray ray;
+	static Ray ray(1);
 	int totalBuckets = num_horiz_buckets*num_vert_buckets;
 	bool* doneBuckets = new bool[totalBuckets];
 	int shownBuckets = 0;
@@ -103,9 +102,16 @@ Scene::raytraceImage(Camera *cam, Image *img)
 		doneBuckets[i] = false;
 	}
 
+	static int num_threads = 0;
+
 #pragma omp parallel private(hitInfo, ray) shared (doneBuckets, bucketDone)
 	{
-		const static int num_threads = omp_get_num_threads();
+		unsigned int threadID = omp_get_thread_num();
+		Ray::counter[threadID] = 0;
+		Ray::rayTriangleIntersections[threadID] = 0;
+		BVH::rayBoxIntersections[threadID] = 0;
+
+		num_threads = omp_get_num_threads();
 		if (num_threads > 1)
 		{
 #pragma omp master
@@ -130,7 +136,6 @@ Scene::raytraceImage(Camera *cam, Image *img)
 				} while (bucketDone == false && shownBuckets < totalBuckets);
 			}
 		}
-		float m_numRaysRecip = 1.0f / m_numRays;
 
 #pragma omp for schedule(dynamic) nowait
 		for (int bucket = 0; bucket < totalBuckets; bucket++)
@@ -141,50 +146,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			{
 				for (int i = bucketX*bucket_size; i < min((bucketX+1)*bucket_size, img->width()); ++i)
 				{
-					hitInfo.t = MIRO_TMAX;
-					hitInfo.a = 0.0;
-					hitInfo.b = 0.0;
-					if (m_pathTrace) // path tracing
-					{
-						Vector3 shadeResult = Vector3(0.0f);
-						for (int p = 0; p < m_numRays; p++) 
-						{
-							hitInfo.t = MIRO_TMAX;
-							ray = cam->eyeRayRandomDOF(i, j, img->width(), img->height());
-							if (trace(hitInfo, ray, epsilon))
-							{
-								shadeResult += hitInfo.obj->m_material->shade(ray, hitInfo, *this);
-							}
-							else
-							{
-								if (m_envMap != NULL)	// environment map lookup
-								{
-									shadeResult += m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure;
-								}
-								shadeResult += g_scene->getBGColor()*m_envExposure;
-							}
-						}
-						shadeResult *= m_numRaysRecip;
-						img->setPixel(i, j, shadeResult);
-					}
-					else  // no path tracing
-					{
-						ray = cam->eyeRay(i, j, img->width(), img->height());				
-						if (trace(hitInfo, ray, epsilon))
-						{					
-							img->setPixel(i, j, hitInfo.obj->m_material->shade(ray, hitInfo, *this));
-						}
-						else
-						{
-							if (m_envMap != NULL)	// environment map lookup
-							{
-								Vector3 envColor = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]);
-								envColor *= m_envExposure;
-								img->setPixel(i,j,envColor);
-							}
-							else img->setPixel(i, j, g_scene->getBGColor());
-						}
-					} //end
+					img->setPixel(i, j, adaptiveSampleScene(threadID, cam, img, ray, hitInfo, i, j));
 				}
 			}
 			if (num_threads > 1)
@@ -199,17 +161,88 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			}
 		}
 	}
+	int counter = 0, rayBoxIntersections = 0, rayTriangleIntersections = 0;
+	for (int i = 1; i <= num_threads; i++)
+	{
+		counter                  += Ray::counter[i];
+		rayBoxIntersections      += BVH::rayBoxIntersections[i];
+		rayTriangleIntersections += Ray::rayTriangleIntersections[i];
+	}
 
 	clock_t end = clock();
 	printf("Rendering Progress: 100.000%\n");
 	debug("done Raytracing!\n");
-	printf("Rays cast: %u...\n", Ray::counter);
-	printf("Ray/AABB intersections: %u...\n", BVH::rayBoxIntersections);
-	printf("Ray/Triangle intersections: %u...\n", Ray::rayTriangleIntersections);
+	printf("Rays cast: %u...\n", counter);
+	printf("Ray/AABB intersections: %u...\n", rayBoxIntersections);
+	printf("Ray/Triangle intersections: %u...\n", rayTriangleIntersections);
 	printf("Rendering time: %.4fs...\n", (end-start)/1000.f);
 }
 
-bool Scene::trace(HitInfo& minHit, const Ray& ray, float tMin) const
+Vector3 Scene::sampleScene(const unsigned int threadID, Ray &ray, HitInfo &hitInfo)
 {
-	return m_bvh.intersect(minHit, ray, tMin);
+	Vector3 result = 0;
+
+	for (int i = 0; i < m_numPaths; i++)
+	{
+		hitInfo.t = MIRO_TMAX;
+
+		if (trace(threadID, hitInfo, ray, epsilon))
+		{					
+			result += hitInfo.obj->m_material->shade(threadID, ray, hitInfo, *this);
+		}
+		else
+		{
+			if (m_envMap != NULL)	// environment map lookup
+			{
+				result += m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure; 
+			}
+			else result += m_BGColor;
+		}
+	}
+	return result * (1.0f / m_numPaths);
+}
+
+int getSum(const int n)
+{
+	return (int)(n*(n+1)*(2*n+1)*0.16666667f);
+}
+
+Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Image *img, Ray &ray, HitInfo &hitInfo, int x, int y)
+{
+	ray = cam->eyeRayAdaptive(threadID, x, y, 0.0f, 1.0f, 0.0f, 1.0f, img->width(), img->height());
+	Vector3 shadeResult = sampleScene(threadID, ray, hitInfo);
+
+	int curLevel = 2;
+	bool cutOff = false;
+	while ((curLevel <= m_maxSubdivs && !cutOff) || curLevel <= m_minSubdivs)
+	{		
+		Vector3 curResult = 0;
+
+		for (int i = 0; i < curLevel; i++)
+		{
+			for (int j = 0; j < curLevel; j++)
+			{
+				float offset = 1.0f / (float)curLevel;
+				ray = cam->eyeRayAdaptive(threadID, x, y, i*offset, (i+1)*offset, j*offset, (j+1)*offset, img->width(), img->height());
+				curResult += sampleScene(threadID, ray, hitInfo);
+			}
+		}
+		float numSamplesPre = getSum(curLevel-1);
+		float numSamplesNow = curLevel*curLevel;
+
+		Vector3 newResult = (shadeResult*numSamplesPre + curResult) * (1.0f / (numSamplesPre + numSamplesNow));
+
+		Vector3 test = shadeResult - newResult;
+		cutOff = max(fabsf(test.x), max(fabsf(test.y), fabsf(test.z))) < m_noiseThreshold;
+
+		shadeResult = newResult;
+		curLevel++;
+	}
+
+	return shadeResult;
+}
+
+bool Scene::trace(const unsigned int threadID, HitInfo& hitInfo, const Ray& ray, float tMin) const
+{
+	return m_bvh.intersect(threadID, hitInfo, ray, tMin);
 }

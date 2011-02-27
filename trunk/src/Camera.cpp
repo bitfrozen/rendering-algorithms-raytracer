@@ -18,7 +18,9 @@ Camera::Camera() :
     m_viewDir(0,0,-1),
     m_up(0,1,0),
     m_lookAt(FLT_MAX, FLT_MAX, FLT_MAX),
-    m_fov((45.)*(PI/180.))
+    m_fov((45.)*(PI/180.)),
+	m_focusPlane(1.0f),
+	m_aperture(0.0f)
 {
     calcLookAt();
 }
@@ -82,7 +84,7 @@ void Camera::drawGL()
               up().x, up().y, up().z);
 }
 
-Ray Camera::eyeRay(int x, int y, int imageWidth, int imageHeight)
+const Ray Camera::eyeRay(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const
 {
     // first compute the camera coordinate system 
     // ------------------------------------------
@@ -107,10 +109,10 @@ Ray Camera::eyeRay(int x, int y, int imageWidth, int imageHeight)
     const float imPlaneUPos = left   + (right - left)*(((float)x+0.5f)/(float)imageWidth); 
     const float imPlaneVPos = bottom + (top - bottom)*(((float)y+0.5f)/(float)imageHeight);
 
-    return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
+    return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
 }
 
-Ray Camera::eyeRayRandom(int x, int y, int imageWidth, int imageHeight)
+const Ray Camera::eyeRayRandom(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const
 {
     // first compute the camera coordinate system 
     // ------------------------------------------
@@ -135,21 +137,18 @@ Ray Camera::eyeRayRandom(int x, int y, int imageWidth, int imageHeight)
     // -----------------------------------
     //add a randomness so that the ray will be sent somewhere inside the pixel,
 	// and not necessarily through the center of the pixel
-	if (Scene::randsIdx >= 990000)
-	{
-		Scene::randsIdx = 0;
-		Scene::genRands();
-	}
-	float urand = Scene::rands[Scene::randsIdx++];
-	float vrand = Scene::rands[Scene::randsIdx++];
+	const float urand = Scene::getRand();
+	const float vrand = Scene::getRand();
 
     const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth); 
     const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight); 
 
-    return Ray(m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
+    return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
 }
 
-Ray Camera::eyeRayRandomDOF(int x, int y, int imageWidth, int imageHeight)
+const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const int y, 
+	                                const float minXOffset, const float maxXOffset, const float minYOffset, const float maxYOffset, 
+									const int imageWidth, const int imageHeight) const
 {
 	// first compute the camera coordinate system 
 	// ------------------------------------------
@@ -162,35 +161,45 @@ Ray Camera::eyeRayRandomDOF(int x, int y, int imageWidth, int imageHeight)
 	// next find the corners of the image plane in camera space
 	// --------------------------------------------------------
 
-	const float aspectRatio = (float)imageWidth/(float)imageHeight; 
+	const float aspectRatio = (float)imageWidth / (float)imageHeight; 
 
-	const float top     = tan(m_fov*HalfDegToRad); 
-	const float right   = aspectRatio*top; 
+	const float top     = tan(m_fov * HalfDegToRad); 
+	const float right   = aspectRatio * top; 
 
 	const float bottom  = -top; 
 	const float left    = -right; 
 
 	// transform x and y into camera space 
 	// -----------------------------------
-	//add a randomness so that the ray will be sent somewhere inside the pixel,
-	// and not necessarily through the center of the pixel
+	// We get a sample evenly distributed in the quadrant defined by
+	// minXOffset, maxXOffset, minYOffset and maxYOffset
 	float urand = Scene::getRand();
 	float vrand = Scene::getRand();
 
-	const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth);
-	const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight);
+	float xOffset = (maxXOffset-minXOffset) * urand + minXOffset;
+	float yOffset = (maxYOffset-minYOffset) * vrand + minYOffset;
 
-	const Vector3 focalPoint = (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized() * m_focusPlane + m_eye;
+	const float imPlaneUPos = left   + (right - left) * ( ((float)x + xOffset) / (float)imageWidth );
+	const float imPlaneVPos = bottom + (top - bottom) * ( ((float)y + yOffset) / (float)imageHeight );
 
-	// Rejection sample a disc
-	do 
+	if (m_aperture < epsilon)
 	{
-		urand = 1.0 - 2*Scene::getRand();
-		vrand = 1.0 - 2*Scene::getRand();
-	} while (urand*urand + vrand*vrand > 1.0f);
+		return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized());
+	}
+	else
+	{
+		const Vector3 focalPoint = (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized() * m_focusPlane + m_eye;
 
-	const Vector3 origin = m_aperture*(urand*uDir + vrand*vDir) + m_eye;
-	const Vector3 direction = (focalPoint - origin).normalized();
+		// Rejection-sample a disc
+		do 
+		{
+			urand = 1.0 - 2*Scene::getRand();
+			vrand = 1.0 - 2*Scene::getRand();
+		} while (urand*urand + vrand*vrand > 1.0f);
 
-	return Ray(origin, direction);
+		const Vector3 origin = m_aperture * (urand*uDir + vrand*vDir) + m_eye;
+		const Vector3 direction = (focalPoint - origin).normalized();
+
+		return Ray(threadID, origin, direction);
+	}
 }

@@ -16,8 +16,7 @@ Lambert::~Lambert()
 {
 }
 
-Vector3
-Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
+const Vector3 Lambert::shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const
 {
     Vector3 L		= Vector3(0.0f, 0.0f, 0.0f);
 	Vector3 rayD	= Vector3(ray.d[0],ray.d[1],ray.d[2]);		// Ray direction
@@ -43,7 +42,7 @@ Lambert::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
     for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
     {
 		float discard;
-		Vector3 lightPower = (*lightIter)->sampleLight(P, N, scene, 0, discard);		
+		Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, N, scene, 0, discard);		
 		L += lightPower * diffuseColor;								// Calculate Diffuse component
     }
     

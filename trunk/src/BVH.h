@@ -46,7 +46,7 @@ public:
 	void buildTriBundles(TriCache4* cacheAlloc);
 #endif
 	static unsigned int nodeCount, leafCount, maxDepth;
-	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon) const;
+	const bool intersect(HitInfo& result, const Ray& ray, const float tMin = epsilon) const;
 
 	void buildSAH(Object** objs, u_int numObjs, float* leftArea, float* rightArea);
 	void partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea);
@@ -78,7 +78,7 @@ public:
 	bool flagsIsLeaf[4];
 	static unsigned int nodeCount, leafCount, maxDepth;
 
-	void intersect(HitInfo& result, const Ray& ray, bool hit[4], float tMin = epsilon) const;
+	const void intersect(HitInfo& result, const Ray& ray, bool hit[4], const float tMin = epsilon) const;
 	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc);
 	BVH_Node::TriCache4* buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum);
 };
@@ -101,8 +101,8 @@ public:
 #endif
 	}
     void build(Objects* objs);
-	bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon) const;
-	static unsigned long int rayBoxIntersections;
+	const bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon) const;
+	static unsigned long int rayBoxIntersections[256];
 protected:
     Objects* m_objects;
 	BVH_Node* m_baseNode;

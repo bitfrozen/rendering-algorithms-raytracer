@@ -38,9 +38,11 @@ public:
     inline const Vector3 & up() const       {return m_up;}
     inline const Vector3 & eye() const      {return m_eye;}
 
-    Ray eyeRay(int x, int y, int imageWidth, int imageHeight);
-	Ray eyeRayRandom(int x, int y, int imageWidth, int imageHeight);
-	Ray eyeRayRandomDOF(int x, int y, int imageWidth, int imageHeight);
+    const Ray eyeRay(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const;
+	const Ray eyeRayRandom(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const;
+	const Ray eyeRayAdaptive(const unsigned int threadID, const int x, const int y,
+		                     const float minXOffset, const float maxXOffset, const float minYOffset, const float maxYOffset,
+							 const int imageWidth, const int imageHeight) const;
     
     void drawGL();
 

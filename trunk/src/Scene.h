@@ -29,17 +29,27 @@ public:
     void openGL(Camera *cam);
 
     void raytraceImage(Camera *cam, Image *img);
-    bool trace(HitInfo& minHit, const Ray& ray, float tMin = epsilon) const;
+    bool trace(const unsigned int threadID, HitInfo& hitInfo, const Ray& ray, float tMin = epsilon) const;
+
+	Vector3 adaptiveSampleScene(const unsigned int threadID, Camera *cam, Image *img, Ray &ray, HitInfo &hitInfo, int i, int j);
+	Vector3 sampleScene(const unsigned int threadID, Ray &ray, HitInfo &hitInfo);
 
 	void setBGColor(Vector3& color)		{m_BGColor = color;}
 	const Vector3& getBGColor()	const   {return m_BGColor;}
 
-	void setPathTrace(bool pt) { m_pathTrace = pt; }
-	void setNumRays(int r) { m_numRays = r; }
-	void setMaxBounces(int mb) { m_maxBounces = mb; }
+	void setPathTrace(bool pt)		{ m_pathTrace = pt;}
+	void setMinSubdivs(int r)		{ m_minSubdivs = r;}
+	void setMaxSubdivs(int r)		{ m_maxSubdivs = r;}
+	void setMaxBounces(int mb)		{ m_maxBounces = mb;}
+	void setNumPaths(int p)			{ m_numPaths = p;}
+
+	void setNoise(const float n)	{ m_noiseThreshold = n;}
+	const float getNoise() const    { return m_noiseThreshold;}
 	
 	bool m_pathTrace;
-	int m_numRays;
+	int m_numPaths;
+	int m_minSubdivs;
+	int m_maxSubdivs;
 	int m_maxBounces;
 
 	static int randsIdx;
@@ -55,6 +65,7 @@ protected:
 	Vector3 m_BGColor;
 	Texture* m_envMap;
 	float m_envExposure;
+	float m_noiseThreshold;
 };
 
 extern Scene * g_scene;

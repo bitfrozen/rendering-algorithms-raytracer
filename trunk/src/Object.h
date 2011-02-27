@@ -57,7 +57,7 @@ public:
     void renderGL();
     void preCalc();
 
-    bool intersect(HitInfo& result, const Ray& ray, float tMin = epsilon);
+    const bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon);
 
 	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort (defined in BVH.cpp)
 	static int sortByYComponent(const void* s1, const void* s2);

@@ -15,7 +15,7 @@ public:
 
     virtual void preCalc() {}
     
-    virtual Vector3 shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const;
+    const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const = 0;
 	void setEnvMap(Texture* map)					{m_envMap = map;}
 	void setEnvExposure(float exp)					{m_envExposure = exp;}
 	const float refractAmt() const					{return m_refractAmt;}
@@ -27,7 +27,7 @@ public:
 	Texture* m_envMap;
 	float m_envExposure;
 
-	__forceinline static float fresnel(float n1, float n2, float cosThetaI) 
+	__forceinline static float fresnel(const float n1, const float n2, const float cosThetaI) 
 	{
 #ifndef USE_SCHLICK
 		const float n1CosTh = n1*cosThetaI;

@@ -366,7 +366,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 	}
 }
 
-void QBVH_Node::intersect(HitInfo& result, const Ray& ray, bool hit[4], float tMin) const
+const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, bool hit[4], float tMin) const
 {
 	const __m128 _tMax = setSSE(result.t);
 	const __m128 _tMin = setSSE(tMin);
@@ -1117,10 +1117,10 @@ int Object::sortByZComponent(const void* s1, const void* s2)
 }
 
 #ifdef USE_TRI_PACKETS
-bool intersect4(HitInfo& result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
+const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
 #endif
 
-bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const 
+const bool BVH::intersect(const unsigned int threadID, HitInfo& minHit, const Ray& ray, const float tMin) const 
 {
 	if (!use_BVH)
 	{
@@ -1128,7 +1128,7 @@ bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const
 
 		for (size_t i = 0; i < m_objects->size(); ++i)
 		{
-			if ((*m_objects)[i]->intersect(minHit, ray, tMin))
+			if ((*m_objects)[i]->intersect(threadID, minHit, ray, tMin))
 			{
 				hit = true;
 			}
@@ -1149,7 +1149,7 @@ bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const
 		while (stackIndex >= 0)
 		{
 			// Intersect box bundle
-			BVH::rayBoxIntersections++;
+			BVH::rayBoxIntersections[threadID]++;
 			bool boxHit[4] = {false};
 			BVH_Stack[stackIndex]->intersect(minHit, ray, boxHit, tMin);
 
@@ -1163,7 +1163,7 @@ bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const
 				{
 					if (BVH_Stack[stackIndex]->flagsIsLeaf[i])
 					{
-						if (intersect4(minHit, ray, tMin, BVH_Stack[stackIndex]->triCaches[i]))
+						if (intersect4(threadID, minHit, ray, tMin, BVH_Stack[stackIndex]->triCaches[i]))
 						{
 							hit = true;
 							leafsHit = true;
@@ -1214,23 +1214,21 @@ bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const
 		while (stackIndex >= 0)
 		{
 			// Intersect first child box
-
-			//#pragma omp atomic
-			BVH::rayBoxIntersections++;
+			BVH::rayBoxIntersections[threadID]++;
 
 			if (BVH_Stack[stackIndex]->intersect(minHit, ray, tMin))
 			{
 				if (BVH_Stack[stackIndex]->isLeaf & true)		// If this is a leaf, then we need to intersect the objects inside...
 				{
 #ifdef USE_TRI_PACKETS
-					if (intersect4(minHit, ray, tMin, BVH_Stack[stackIndex]->triCache))
+					if (intersect4(threadID, minHit, ray, tMin, BVH_Stack[stackIndex]->triCache))
 					{
 						hit = true;
 					}
 #else
 					for (int i = 0; i < GET_NUMCHILD(BVH_Stack[stackIndex]->numChildren); i++)
 					{
-						if (BVH_Stack[stackIndex]->objs[i]->intersect(minHit, ray, tMin))
+						if (BVH_Stack[stackIndex]->objs[i]->intersect(threadID, minHit, ray, tMin))
 						{
 							hit = true;
 						}
@@ -1260,7 +1258,7 @@ bool BVH::intersect(HitInfo& minHit, const Ray& ray, float tMin) const
 #endif
 }
 
-bool BVH_Node::intersect(HitInfo& result, const Ray& ray, float tMin) const
+const bool BVH_Node::intersect(HitInfo& result, const Ray& ray, const float tMin) const
 {
 /*#ifndef NO_SSE												// Implementation of Manny Ko's algorithm, from http://tog.acm.org/resources/RTNews/html/rtnv23n1.html#art7
 																// Had to guess as to a few details, but works great.
@@ -1308,10 +1306,10 @@ bool BVH_Node::intersect(HitInfo& result, const Ray& ray, float tMin) const
 }
 
 #ifdef USE_TRI_PACKETS
-bool intersect4(HitInfo& result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache)
+const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin, BVH_Node::TriCache4* triCache)
 {
 //#pragma omp atomic
-	Ray::rayTriangleIntersections++;
+	Ray::rayTriangleIntersections[threadID]++;
 
 	bool shadow = r.bounces_flags & IS_SHADOW_RAY;
 

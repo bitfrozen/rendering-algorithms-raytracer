@@ -30,11 +30,11 @@ Blinn::~Blinn()
 {
 }
 
-const Vector3 Blinn::calculatePathTracing(const Ray& ray, const HitInfo& hit, const Vector3& P, const Vector3& theNormal, const Scene& scene, const Vector3& diffuseColor) const
+const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Vector3& P, const Vector3& theNormal, const Scene& scene, const Vector3& diffuseColor) const
 {
 	Vector3 out = 0;
 	Vector3 randD, envColor;
-	Ray randRay;
+	Ray randRay(threadID);
 	HitInfo newHit;
 
 	// If we get to an emitter (mesh light), we return its intensity
@@ -52,13 +52,13 @@ const Vector3 Blinn::calculatePathTracing(const Ray& ray, const HitInfo& hit, co
 	{
 		getCosineDistributedSamples(theNormal, randD);
 
-		randRay.set(P, randD, ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
+		randRay.set(threadID, P, randD, ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
 		newHit.t = MIRO_TMAX;
 
 		// Trace the random ray; Do the next bounce
-		if (scene.trace(newHit, randRay, epsilon))
+		if (scene.trace(threadID, newHit, randRay, epsilon))
 		{
-			out += diffuseColor * newHit.obj->m_material->shade(randRay, newHit, scene);
+			out += diffuseColor * newHit.obj->m_material->shade(threadID, randRay, newHit, scene);
 		}
 		// If we don't hit anything, add contribution from environment
 		else
@@ -69,7 +69,7 @@ const Vector3 Blinn::calculatePathTracing(const Ray& ray, const HitInfo& hit, co
 	return out;
 }
 
-Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) const
+const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const
 {
 	Vector3 Ld		= 0.0f;										// Diffuse	
 	Vector3 Lr		= 0.0f;										// Reflection
@@ -107,7 +107,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	// Get the Indirect Illumination
 	if (scene.m_pathTrace)
 	{	
-		Ld += calculatePathTracing(ray, hit, P, theNormal, scene, diffuseColor);
+		Ld += calculatePathTracing(threadID, ray, hit, P, theNormal, scene, diffuseColor);
 	}
 	
 	// get the reflection vector (for specular hi-light)
@@ -126,7 +126,7 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 	for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
 	{
 		float   lightSpec  = 0;
-		Vector3 lightPower = (*lightIter)->sampleLight(P, theNormal, scene, rVec, lightSpec);
+		Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, rVec, lightSpec);
 
 		Ls += lightPower * m_ks * m_specAmt * pow(lightSpec, m_specExp);		// Calculate specular component				
 		Ld += lightPower * diffuseColor;										// Calculate Diffuse component
@@ -159,12 +159,12 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 
 	if (m_reflectAmt*Rs > 0.0f && bounces < 3)
 	{
-		Ray rRay = Ray(P, rVec, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
+		Ray rRay = Ray(threadID, P, rVec, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 		HitInfo newHit;
 		newHit.t = MIRO_TMAX;
-		if (scene.trace(newHit, rRay, 0.001))
+		if (scene.trace(threadID, newHit, rRay, epsilon))
 		{
-			Vector3 reflection = newHit.obj->m_material->shade(rRay, newHit, scene);				
+			Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
 			Lr                += m_ks*m_reflectAmt*Rs*reflection;
 			doEnv              = false;
 		}
@@ -184,12 +184,12 @@ Vector3 Blinn::shade(const Ray& ray, const HitInfo& hit, const Scene& scene) con
 		if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 		{		
 			ray.r_IOR.push(outIOR);
-			Ray tRay = Ray(P, tVec, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+			Ray tRay = Ray(threadID, P, tVec, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
 			HitInfo newHit;
 			newHit.t = MIRO_TMAX;
-			if (scene.trace(newHit, tRay, 0.001))
+			if (scene.trace(threadID, newHit, tRay, epsilon))
 			{
-				Vector3 refraction = newHit.obj->m_material->shade(tRay, newHit, scene);				
+				Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
 				Lt                += m_ks*m_refractAmt*Ts*refraction;
 				doEnv              = false;
 			}
