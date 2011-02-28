@@ -5,6 +5,7 @@
 #include "Console.h"
 #include <time.h>
 #include <omp.h>
+#include <Windows.h>
 
 using namespace std;
 
@@ -103,6 +104,10 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	}
 
 	static int num_threads = 0;
+	HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
+	DWORD events;
+	INPUT_RECORD buffer;
+	bool abort = false;
 
 #pragma omp parallel private(hitInfo, ray) shared (doneBuckets, bucketDone)
 	{
@@ -114,7 +119,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 		num_threads = omp_get_num_threads();
 		if (num_threads > 1)
 		{
-#pragma omp master
+			#pragma omp master
 			{
 				do		// Draw the buckets as they become ready...
 				{
@@ -130,6 +135,18 @@ Scene::raytraceImage(Camera *cam, Image *img)
 							glFinish();
 							printf("Rendering Progress: %.3f%%\r", (float)shownBuckets/float(totalBuckets)*100.0f);
 							fflush(stdout);
+							PeekConsoleInput(handle, &buffer, 1, &events);
+							if (events > 0)
+							{
+								ReadConsoleInput(handle, &buffer, 1, &events);
+								if (buffer.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
+								{
+									abort = true;
+									FlushConsoleInputBuffer(handle);
+									shownBuckets = totalBuckets;
+									#pragma omp flush (abort)
+								}
+							}
 						}
 					}
 					bucketDone = false;
@@ -137,27 +154,44 @@ Scene::raytraceImage(Camera *cam, Image *img)
 			}
 		}
 
-#pragma omp for schedule(dynamic) nowait
+		#pragma omp for schedule(dynamic) nowait
 		for (int bucket = 0; bucket < totalBuckets; bucket++)
 		{
-			int bucketX = bucket % num_horiz_buckets;
-			int bucketY = bucket / num_horiz_buckets;
-			for (int j = bucketY*bucket_size; j < min((bucketY+1)*bucket_size, img->height()); ++j)
+			#pragma omp flush (abort)
+			if (!abort)
 			{
-				for (int i = bucketX*bucket_size; i < min((bucketX+1)*bucket_size, img->width()); ++i)
+				int bucketX = bucket % num_horiz_buckets;
+				int bucketY = bucket / num_horiz_buckets;
+				for (int j = bucketY*bucket_size; j < min((bucketY+1)*bucket_size, img->height()); ++j)
 				{
-					img->setPixel(i, j, adaptiveSampleScene(threadID, cam, img, ray, hitInfo, i, j));
+					for (int i = bucketX*bucket_size; i < min((bucketX+1)*bucket_size, img->width()); ++i)
+					{
+						img->setPixel(i, j, adaptiveSampleScene(threadID, cam, img, ray, hitInfo, i, j));
+					}
 				}
-			}
-			if (num_threads > 1)
-			{
-				doneBuckets[bucket] = true;
-				bucketDone = true;
-			}
-			else
-			{
-				img->drawBucket(bucketY*bucket_size, min((bucketY+1)*bucket_size, img->height()), bucketX*bucket_size, min((bucketX+1)*bucket_size, img->width()));
-				glFinish();	
+				if (num_threads > 1)
+				{
+					doneBuckets[bucket] = true;
+					bucketDone = true;
+				}
+				else
+				{
+					img->drawBucket(bucketY*bucket_size, min((bucketY+1)*bucket_size, img->height()), bucketX*bucket_size, min((bucketX+1)*bucket_size, img->width()));
+					glFinish();
+					shownBuckets++;
+					printf("Rendering Progress: %.3f%%\r", (float)shownBuckets/float(totalBuckets)*100.0f);
+					fflush(stdout);
+					PeekConsoleInput(handle, &buffer, 1, &events);
+					if (events > 0)
+					{
+						ReadConsoleInput(handle, &buffer, 1, &events);
+						if (buffer.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
+						{
+							abort = true;
+							FlushConsoleInputBuffer(handle);
+						}
+					}
+				}
 			}
 		}
 	}

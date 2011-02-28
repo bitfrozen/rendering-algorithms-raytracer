@@ -30,7 +30,15 @@ public:
     inline void setViewDir(const Vector3& vd);
     inline void setLookAt(float x, float y, float z);
     inline void setLookAt(const Vector3& look);
+
     inline void setFOV(float fov) {m_fov = fov;}
+	inline float FOV() {return m_fov;}
+
+	inline void setFocusPlane(float f) {m_focusPlane = f;}
+	inline float focusPlane() {return m_focusPlane;}
+
+	inline void setAperture(float f) {m_aperture = f;}
+	inline float aperture() {return m_aperture;}
 
     inline float fov() const                {return m_fov;}
     inline const Vector3 & viewDir() const  {return m_viewDir;}
@@ -106,7 +114,8 @@ inline void Camera::setLookAt(float x, float y, float z)
 
 inline void Camera::setLookAt(const Vector3& vd)
 {
-    setLookAt(vd.x, vd.y, vd.z);
+    m_lookAt = vd;
+	setLookAt(vd.x, vd.y, vd.z);
 }
 
 #endif // CSE168_CAMERA_H_INCLUDED

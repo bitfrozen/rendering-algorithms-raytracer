@@ -38,13 +38,21 @@ public:
 	const Vector3& getBGColor()	const   {return m_BGColor;}
 
 	void setPathTrace(bool pt)		{ m_pathTrace = pt;}
+
 	void setMinSubdivs(int r)		{ m_minSubdivs = r;}
+	int minSubdivs()				{ return m_minSubdivs;}
+
 	void setMaxSubdivs(int r)		{ m_maxSubdivs = r;}
+	int maxSubdivs()				{ return m_maxSubdivs;}
+
 	void setMaxBounces(int mb)		{ m_maxBounces = mb;}
+	int maxBounces()				{ return m_maxBounces;}
+
 	void setNumPaths(int p)			{ m_numPaths = p;}
+	int numPaths()					{ return m_numPaths;}
 
 	void setNoise(const float n)	{ m_noiseThreshold = n;}
-	const float getNoise() const    { return m_noiseThreshold;}
+	const float noise() const		{ return m_noiseThreshold;}
 	
 	bool m_pathTrace;
 	int m_numPaths;
