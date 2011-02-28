@@ -6,6 +6,7 @@
 #include "Console.h"
 #include "PointLight.h"
 #include "Object.h"
+#include "MBObject.h"
 #include "TriangleMesh.h"
 #include "Lambert.h"
 #include "MiroWindow.h"
@@ -17,6 +18,7 @@
 #include "Assignment2.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
+void makeMBMeshObjs(TriangleMesh* mesh, TriangleMesh* mesh2, Material* mat);
 void makeBunnyScene();
 void makeBunnyScene2();
 void makeBunny20Scene();
@@ -24,6 +26,7 @@ void makeEnvironmentMapScene();
 void makeStoneFloorScene();
 void makeSponzaScene();
 void makeTestScene();
+void makeMBTestScene();
 
 int main(int argc, char*argv[])
 {
@@ -40,9 +43,10 @@ int main(int argc, char*argv[])
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
+	makeMBTestScene();
 
 	//assignment 2
-	makePathTracingScene3();
+	//makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -125,6 +129,68 @@ void makeTestScene()
 	makeMeshObjs(mesh, mat);
 	makeMeshObjs(mesh2, mat2);
 	makeMeshObjs(plane, planeMat);
+
+	Object* t = new Object;
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
+}
+
+void makeMBTestScene()
+{
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
+
+	g_image->resize(512, 512);
+
+	g_scene->m_pathTrace = false;
+	g_scene->m_numPaths = 1;
+	g_scene->m_maxBounces = 5;
+	g_scene->m_minSubdivs = 3;
+	g_scene->m_maxSubdivs = 16;
+	g_scene->setNoise(0.002f);
+
+	// set up the camera
+	g_scene->setBGColor(Vector3(0));
+	g_camera->setEye(Vector3(-7.536, 9.552, 15.815));
+	g_camera->setViewDir(Vector3(-0.034, -0.009, -0.999));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(60);
+	g_camera->m_aperture = 0.001f;
+	g_camera->m_focusPlane = 3.0f;
+	g_camera->setShutterSpeed(0.2f);
+
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Topanga_Forest_B_3k.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(1.0f);
+
+	// create and place a point light source
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(5, 5, 5));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setPower(500);
+	g_scene->addLight(light2);
+
+	// create a spiral of spheres
+	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
+	mat->setSpecExp(30.0f);
+	mat->setSpecAmt(0);
+	mat->setIor(6.0f);
+	mat->setReflectAmt(0.90f);
+	mat->setRefractAmt(0.0f);
+	mat->setReflectGloss(0.98f);
+
+	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *mesh2 = new TriangleMesh;
+	mesh->load("Models/bulletMB_01.obj");
+	mesh2->load("Models/bulletMB_02.obj");
+	makeMBMeshObjs(mesh, mesh2, mat);
+
+	Object* t = new Object;
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
@@ -585,12 +651,31 @@ void makeMeshObjs(TriangleMesh* mesh, Material* mat)
 {
 	int numObjs = mesh->m_numTris;
 
-	Object* t = (Object*)_aligned_malloc(sizeof(Object)*numObjs, 16);
+	Object* t = new Object[numObjs];//(Object*)_aligned_malloc(sizeof(Object)*numObjs, 16);
 	
 	int i = numObjs-1;
 	while (i >= 0)
 	{
 		t[i].setMesh(mesh);
+		t[i].setIndex(i);
+		t[i].setMaterial(mat);
+		g_scene->addObject(&t[i]);
+		i--;
+	}
+}
+
+// Insert all MotionBlurred objects into the scene in a single memory block
+void makeMBMeshObjs(TriangleMesh* mesh, TriangleMesh* mesh2, Material* mat)
+{
+	int numObjs = mesh->m_numTris;
+
+	MBObject* t = new MBObject[numObjs];//(MBObject*)_aligned_malloc(sizeof(MBObject)*numObjs, 16);
+
+	int i = numObjs-1;
+	while (i >= 0)
+	{
+		t[i].setMesh(mesh);
+		t[i].setMeshT2(mesh2);
 		t[i].setIndex(i);
 		t[i].setMaterial(mat);
 		g_scene->addObject(&t[i]);

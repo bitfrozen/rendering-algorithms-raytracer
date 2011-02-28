@@ -20,7 +20,8 @@ Camera::Camera() :
     m_lookAt(FLT_MAX, FLT_MAX, FLT_MAX),
     m_fov((45.)*(PI/180.)),
 	m_focusPlane(1.0f),
-	m_aperture(0.0f)
+	m_aperture(0.0f),
+	m_shutterSpeed(epsilon)
 {
     calcLookAt();
 }
@@ -182,9 +183,12 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 	const float imPlaneUPos = left   + (right - left) * ( ((float)x + xOffset) / (float)imageWidth );
 	const float imPlaneVPos = bottom + (top - bottom) * ( ((float)y + yOffset) / (float)imageHeight );
 
+	// Get a random point in time in the interval
+	float trand = Scene::getRand()*m_shutterSpeed;
+
 	if (m_aperture < epsilon)
 	{
-		return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized());
+		return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized(), trand);
 	}
 	else
 	{
@@ -200,6 +204,6 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 		const Vector3 origin = m_aperture * (urand*uDir + vrand*vDir) + m_eye;
 		const Vector3 direction = (focalPoint - origin).normalized();
 
-		return Ray(threadID, origin, direction);
+		return Ray(threadID, origin, direction, trand);
 	}
 }

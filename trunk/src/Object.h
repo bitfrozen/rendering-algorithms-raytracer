@@ -44,6 +44,8 @@ public:
 #endif
 };
 
+enum objectType_t {OBJECT, MB_OBJECT};
+
 ALIGN_SSE class Object
 {
 public:
@@ -55,21 +57,22 @@ public:
 	void setMesh(TriangleMesh* m) {m_mesh = m;}
 
     void renderGL();
-    void preCalc();
+    virtual void preCalc();
 
-    const bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon);
+    const virtual bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon);
 
-	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort (defined in BVH.cpp)
+	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort
 	static int sortByYComponent(const void* s1, const void* s2);
 	static int sortByZComponent(const void* s1, const void* s2);
 	static int sortByArea(const void* s1, const void* s2);
 
-	void getAABB(AABB* outBox);
-	AABB getAABB();
+	virtual void getAABB(AABB* outBox);
+	virtual AABB getAABB();
 
 	const Material* m_material;
 	TriangleMesh* m_mesh;
 	u_int m_index;
+	objectType_t m_objectType;
 };
 
 typedef std::vector<Object*> Objects;

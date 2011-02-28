@@ -7,6 +7,7 @@
 Object::Object(Material* mat, TriangleMesh* m, u_int i) :
     m_material(mat), m_mesh(m), m_index(i)
 {
+	m_objectType = OBJECT;
 }
 	
 Object::~Object()
@@ -134,4 +135,72 @@ void Object::getAABB(AABB* outBox)
 AABB Object::getAABB()
 {
 	return m_mesh->getAABB(m_index);
+}
+
+int Object::sortByArea(const void* s1, const void* s2)
+{
+	float left, right;
+	left = (*(Object**)s1)->getAABB().getArea();
+	right = (*(Object**)s2)->getAABB().getArea();
+
+	if (left < right)
+	{
+		return -1;
+	}
+	else if (left > right)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int Object::sortByXComponent(const void* s1, const void* s2)
+{
+	Vector3 left, right;
+	left = (*(Object**)s1)->getAABB().getCentroid();
+	right = (*(Object**)s2)->getAABB().getCentroid();
+
+	if (left.x < right.x)
+	{
+		return -1;
+	}
+	else if (left.x > right.x)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int Object::sortByYComponent(const void* s1, const void* s2)
+{
+	Vector3 left, right;
+	left = (*(Object**)s1)->getAABB().getCentroid();
+	right = (*(Object**)s2)->getAABB().getCentroid();
+
+	if (left.y < right.y)
+	{
+		return -1;
+	}
+	else if (left.y > right.y)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int Object::sortByZComponent(const void* s1, const void* s2)
+{
+	Vector3 left, right;
+	left = (*(Object**)s1)->getAABB().getCentroid();
+	right = (*(Object**)s2)->getAABB().getCentroid();
+
+	if (left.z < right.z)
+	{
+		return -1;
+	}
+	else if (left.z > right.z)
+	{
+		return 1;
+	}
+	return 0;
 }

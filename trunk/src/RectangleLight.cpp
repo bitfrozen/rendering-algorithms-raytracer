@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Camera.h"
 #include "RectangleLight.h"
 #include "SSE.h"
 
@@ -83,7 +84,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 				sampleHit.t = distance - epsilon;									// We need this to account for the fact that we CAN hit geometry, to avoid false positives.
 				if (m_fastShadows)
 				{
-					sampleRay.set(threadID, from, randDir, 1.0f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
+					sampleRay.set(threadID, from, randDir, g_camera->getTimeSample(), 1.0f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
 					if (scene.trace(threadID, sampleHit, sampleRay, epsilon))					// Quick method, returns any hit
 					{
 						attenuate = 0.0f;
@@ -92,7 +93,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 				else																// Full method, accounts for transparency effects
 				{
 					float distanceTraversed = 0.0f;
-					sampleRay.set(threadID, from, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
+					sampleRay.set(threadID, from, randDir, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
 					while (distanceTraversed < distance && attenuate > epsilon)
 					{
 						if (scene.trace(threadID, sampleHit, sampleRay, epsilon))				
@@ -104,7 +105,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 								attenuate *= sampleHit.obj->m_material->refractAmt();
 							}
 							Vector3 newP = Vector3(sampleRay.o[0], sampleRay.o[1], sampleRay.o[2]) + sampleHit.t * randDir;
-							sampleRay.set(threadID, newP, randDir, 1.001f, 0, 0, IS_PRIMARY_RAY);
+							sampleRay.set(threadID, newP, randDir, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);
 							distanceTraversed += sampleHit.t;
 						}
 						else

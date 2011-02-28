@@ -1,6 +1,7 @@
 #ifndef CSE168_CAMERA_H_INCLUDED
 #define CSE168_CAMERA_H_INCLUDED
 
+#include "Scene.h"
 #include "Vector3.h"
 #include "Miro.h"
 #include "Ray.h"
@@ -40,6 +41,10 @@ public:
 	inline void setAperture(float f) {m_aperture = f;}
 	inline float aperture() {return m_aperture;}
 
+	inline void setShutterSpeed(float f) {m_shutterSpeed = f;}
+	inline float shutterSpeed()			 {return m_shutterSpeed;}
+	inline float getTimeSample()		 {return Scene::getRand()*m_shutterSpeed;}
+
     inline float fov() const                {return m_fov;}
     inline const Vector3 & viewDir() const  {return m_viewDir;}
     inline const Vector3 & lookAt() const   {return m_lookAt;}
@@ -61,6 +66,7 @@ public:
 	float m_fov;
 	float m_focusPlane;
 	float m_aperture;
+	float m_shutterSpeed;
 
 private:
     void calcLookAt();

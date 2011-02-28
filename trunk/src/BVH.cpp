@@ -1048,74 +1048,6 @@ float BVH_Node::calcSAHCost(int leftNum, float leftArea, int rightNum, float rig
 #endif
 }
 
-int Object::sortByArea(const void* s1, const void* s2)
-{
-	float left, right;
-	left = (*(Object**)s1)->getAABB().getArea();
-	right = (*(Object**)s2)->getAABB().getArea();
-
-	if (left < right)
-	{
-		return -1;
-	}
-	else if (left > right)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-int Object::sortByXComponent(const void* s1, const void* s2)
-{
-	Vector3 left, right;
-	left = (*(Object**)s1)->getAABB().getCentroid();
-	right = (*(Object**)s2)->getAABB().getCentroid();
-
-	if (left.x < right.x)
-	{
-		return -1;
-	}
-	else if (left.x > right.x)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-int Object::sortByYComponent(const void* s1, const void* s2)
-{
-	Vector3 left, right;
-	left = (*(Object**)s1)->getAABB().getCentroid();
-	right = (*(Object**)s2)->getAABB().getCentroid();
-
-	if (left.y < right.y)
-	{
-		return -1;
-	}
-	else if (left.y > right.y)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-int Object::sortByZComponent(const void* s1, const void* s2)
-{
-	Vector3 left, right;
-	left = (*(Object**)s1)->getAABB().getCentroid();
-	right = (*(Object**)s2)->getAABB().getCentroid();
-
-	if (left.z < right.z)
-	{
-		return -1;
-	}
-	else if (left.z > right.z)
-	{
-		return 1;
-	}
-	return 0;
-}
-
 #ifdef USE_TRI_PACKETS
 const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
 #endif
@@ -1203,11 +1135,19 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo& minHit, const Ra
 		int stackIndex = -1;
 		BVH_Node* BVH_Stack[256];
 
-		// Push children on "stack"
-		for (int i = NODE_SIZE-1; i >= 0; i--)
-		{		
+		if (m_baseNode->isLeaf & true)
+		{
 			++stackIndex;
-			BVH_Stack[stackIndex] = &m_baseNode->Children[i];
+			BVH_Stack[stackIndex] = m_baseNode;
+		}
+		else
+		{
+			// Push children on "stack"
+			for (int i = NODE_SIZE-1; i >= 0; i--)
+			{		
+				++stackIndex;
+				BVH_Stack[stackIndex] = &m_baseNode->Children[i];
+			}
 		}
 
 		bool isFirst = true;
