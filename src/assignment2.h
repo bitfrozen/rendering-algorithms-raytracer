@@ -446,7 +446,7 @@ void makePathTracingScene3() {
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 3;
+	g_scene->m_numPaths = 1;
 	g_scene->m_maxBounces = 5;
 	g_scene->setNoise(0.01);
 	g_scene->setMinSubdivs(1);
@@ -458,7 +458,7 @@ void makePathTracingScene3() {
     g_camera->setLookAt(Vector3(2.75, 2.75, 0));
     g_camera->setUp(Vector3(0, 1, 0));
     g_camera->setFOV(55);
-	g_camera->m_aperture = 0.5f;
+	g_camera->m_aperture = 0.0f;
 	g_camera->m_focusPlane = 8.6f;
 
     // create and place a point light source

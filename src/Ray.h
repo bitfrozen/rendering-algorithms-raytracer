@@ -36,6 +36,7 @@ public:
 #endif
 	static unsigned long int counter[256], rayTriangleIntersections[256];
 	unsigned int bounces_flags;
+	float time;
 	
 	struct IORList {
 		float _IORList[256];
@@ -47,7 +48,7 @@ public:
 	};
 	mutable IORList r_IOR;							// History of IOR this ray has traversed..
 
-    Ray(const unsigned int threadID)
+    Ray(const unsigned int threadID, const float t = 0.f)
     {
 		//#pragma omp atomic
 		counter[threadID]++;
@@ -62,9 +63,10 @@ public:
 #endif
 		bounces_flags = IS_PRIMARY_RAY;
 		r_IOR.push(1.001f);
+		time = t;
     }
 
-    Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+    Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, const float t = 0.f, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
     {
 		//#pragma omp atomic
 		counter[threadID]++;
@@ -84,9 +86,10 @@ public:
 		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		if (!(flags & IS_SHADOW_RAY))
 			r_IOR.push(IOR);
+		time = t;
     }
 
-	Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, const IORList IOR, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, const float t, const IORList IOR, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
 		r_IOR = IOR;
@@ -105,9 +108,10 @@ public:
 		idx4 = setSSE(id[0]); idy4 = setSSE(id[1]); idz4 = setSSE(id[2]);
 #endif
 		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
+		time = t;
 	}
 
-	__forceinline void set(const unsigned int threadID, const Vector3& o, const Vector3& d, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
+	__forceinline void set(const unsigned int threadID, const Vector3& o, const Vector3& d, const float t = 0.f, const float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
 		counter[threadID]++;
@@ -127,6 +131,7 @@ public:
 		bounces_flags = giBounces<<16 | bounces<<7 | (id[2] < 0)<<2 | (id[1] < 0)<< 1 | (id[0] < 0) | flags;
 		r_IOR.pop();
 		r_IOR.push(IOR);
+		time = t;
 	}
 
 	__forceinline const Vector3 getPoint(const float t) const

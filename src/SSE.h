@@ -42,8 +42,8 @@ static const float _MM_ALIGN16
 	SSE_invertVec[4]	= {-1,-1,-1,1},
 	SSE_invertVec0[4]	= {-1,-1,-1,0};
 
-static const __m128 _zerosps = setZero;
-static const __m128 _onesps = setSSE(1);
+static const __m128 _zerosps   = setZero;
+static const __m128 _onesps    = setSSE(1);
 static const __m128 _negonesps = setSSE(-1);
 
 static __forceinline __m128 hMax(const __m128 & val)

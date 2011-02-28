@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Camera.h"
 #include "PointLight.h"
 #include "SSE.h"
 
@@ -39,7 +40,7 @@ const Vector3 PointLight::sampleLight(const unsigned int threadID, const Vector3
 			sampleHit.t = distance;
 			if (m_fastShadows)
 			{
-				sampleRay.set(threadID, from, L, 1.001f, 0, IS_SHADOW_RAY);			// Create shadow ray
+				sampleRay.set(threadID, from, L, g_camera->getTimeSample(), 1.001f, 0, IS_SHADOW_RAY);			// Create shadow ray
 				if (scene.trace(threadID, sampleHit, sampleRay, 0.001))				// Quick method, returns any hit
 				{
 					attenuate = 0.0f;
@@ -47,7 +48,7 @@ const Vector3 PointLight::sampleLight(const unsigned int threadID, const Vector3
 			}
 			else																// Full method, accounts for transparency effects
 			{
-				sampleRay.set(threadID, from, L, 1.001f, 0, IS_PRIMARY_RAY);	// Create primary ray so we trace properly
+				sampleRay.set(threadID, from, L, g_camera->getTimeSample(), 1.001f, 0, IS_PRIMARY_RAY);	// Create primary ray so we trace properly
 				while (sampleHit.t < distance)
 				{
 					if (scene.trace(threadID, sampleHit, sampleRay, 0.001))				
@@ -59,7 +60,7 @@ const Vector3 PointLight::sampleLight(const unsigned int threadID, const Vector3
 							attenuate *= sampleHit.obj->m_material->refractAmt();
 						}
 						Vector3 newPoint = Vector3(sampleRay.o[0], sampleRay.o[1], sampleRay.o[2]) + sampleHit.t * L;
-						sampleRay.set(threadID, newPoint, L, 1.001f, IS_PRIMARY_RAY);
+						sampleRay.set(threadID, newPoint, L, g_camera->getTimeSample(), 1.001f, IS_PRIMARY_RAY);
 					}
 					else
 					{

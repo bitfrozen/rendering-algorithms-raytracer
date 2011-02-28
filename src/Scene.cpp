@@ -244,7 +244,7 @@ int getSum(const int n)
 
 Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Image *img, Ray &ray, HitInfo &hitInfo, int x, int y)
 {
-	ray = cam->eyeRayAdaptive(threadID, x, y, 0.0f, 1.0f, 0.0f, 1.0f, img->width(), img->height());
+	ray = cam->eyeRayAdaptive(threadID, x, y, 0.5f, 0.5f, 0.5f, 0.5f, img->width(), img->height());
 	Vector3 shadeResult = sampleScene(threadID, ray, hitInfo);
 
 	int curLevel = 2;
@@ -266,8 +266,10 @@ Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Ima
 		float numSamplesNow = curLevel*curLevel;
 
 		Vector3 newResult = (shadeResult*numSamplesPre + curResult) * (1.0f / (numSamplesPre + numSamplesNow));
+		Vector3 newResultGamma = Vector3(pow(newResult.x, 1.f/2.2f), pow(newResult.y, 1.f/2.2f), pow(newResult.y, 1.f/2.2f));
+		Vector3 oldResultGamma = Vector3(pow(shadeResult.x, 1.f/2.2f), pow(shadeResult.y, 1.f/2.2f), pow(shadeResult.y, 1.f/2.2f));
 
-		Vector3 test = shadeResult - newResult;
+		Vector3 test = oldResultGamma - newResultGamma;
 		cutOff = max(fabsf(test.x), max(fabsf(test.y), fabsf(test.z))) < m_noiseThreshold;
 
 		shadeResult = newResult;

@@ -8,6 +8,7 @@
 #include "TriangleMesh.h"
 #include "RectangleLight.h"
 #include "PointLight.h"
+#include "Camera.h"
 
 using namespace std;
 
@@ -48,11 +49,11 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 	int bounces   = GET_BOUNCES(ray.bounces_flags);
 	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
 
-	if (giBounces < scene.m_maxBounces) 
+	if (giBounces < scene.m_maxBounces-1) 
 	{
 		getCosineDistributedSamples(theNormal, randD);
 
-		randRay.set(threadID, P, randD, ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
+		randRay.set(threadID, P, randD, g_camera->getTimeSample(), ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
 		newHit.t = MIRO_TMAX;
 
 		// Trace the random ray; Do the next bounce
@@ -65,7 +66,20 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 		{
 			out += diffuseColor * getEnvironmentColor(randD, scene);
 		}
-	}	
+	}
+	else if (giBounces == scene.m_maxBounces-1)
+	{
+		// Directly sample lights
+		const Lights *lightList = scene.lights();
+		Lights::const_iterator lightIter;
+		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+		{
+			float   lightSpec  = 0;
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, Vector3(0), lightSpec);
+		
+			out += lightPower * diffuseColor;										// Calculate Diffuse component
+		}	
+	}
 	return out;
 }
 
@@ -159,7 +173,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	if (m_reflectAmt*Rs > 0.0f && bounces < 3)
 	{
-		Ray rRay = Ray(threadID, P, rVec, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
+		Ray rRay = Ray(threadID, P, rVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 		HitInfo newHit;
 		newHit.t = MIRO_TMAX;
 		if (scene.trace(threadID, newHit, rRay, epsilon))
@@ -184,7 +198,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 		{		
 			ray.r_IOR.push(outIOR);
-			Ray tRay = Ray(threadID, P, tVec, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+			Ray tRay = Ray(threadID, P, tVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
 			HitInfo newHit;
 			newHit.t = MIRO_TMAX;
 			if (scene.trace(threadID, newHit, tRay, epsilon))

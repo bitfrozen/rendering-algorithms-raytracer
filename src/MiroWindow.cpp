@@ -211,6 +211,13 @@ void MiroWindow::increaseParam()
 			fflush(stdout);
 			break;
 		}
+	case SHUTTER_SPEED:
+		{
+			g_camera->setShutterSpeed(std::min(1.0f, g_camera->shutterSpeed() + m_scaleFact));
+			printf("Camera - Shutter sp(e)ed: %.3ff\r", g_camera->shutterSpeed());
+			fflush(stdout);
+			break;
+		}
 	}
 }
 
@@ -279,6 +286,13 @@ void MiroWindow::decreaseParam()
 		{
 			g_scene->setNoise(std::max(0.0f, g_scene->noise() - m_scaleFact));
 			printf("Scene  - (N)oise Threshold: %.6f\r", g_scene->noise());
+			fflush(stdout);
+			break;
+		}
+	case SHUTTER_SPEED:
+		{
+			g_camera->setShutterSpeed(std::max(0.0f, g_camera->shutterSpeed() - m_scaleFact));
+			printf("Camera - Shutter sp(e)ed: %.3ff\r", g_camera->shutterSpeed());
 			fflush(stdout);
 			break;
 		}
@@ -356,6 +370,13 @@ void MiroWindow::specialKeys(int key, int x, int y)
 					fflush(stdout);
 					break;
 				}
+			case SHUTTER_SPEED:
+				{
+					g_camera->setShutterSpeed(std::min(1.0f, g_camera->shutterSpeed() + m_microScaleFact));
+					printf("Camera - Shutter sp(e)ed: %.3ff\r", g_camera->shutterSpeed());
+					fflush(stdout);
+					break;
+				}
 			}
 			break;
 		}
@@ -366,6 +387,7 @@ void MiroWindow::specialKeys(int key, int x, int y)
 			case SCALE_FACT:
 				{
 					m_scaleFact -= m_microScaleFact;
+					m_scaleFact = max(0.001f, m_scaleFact);
 					printf("Scale Factor (+/-/up/dn): %.6f\r", m_scaleFact);
 					fflush(stdout);
 					break;
@@ -423,6 +445,13 @@ void MiroWindow::specialKeys(int key, int x, int y)
 				{
 					g_scene->setNoise(std::max(0.0f, g_scene->noise() - m_microScaleFact));
 					printf("Scene  - (N)oise Threshold: %.6f\r", g_scene->noise());
+					fflush(stdout);
+					break;
+				}
+			case SHUTTER_SPEED:
+				{
+					g_camera->setShutterSpeed(std::min(1.0f, g_camera->shutterSpeed() - m_microScaleFact));
+					printf("Camera - Shutter sp(e)ed: %.3ff\r", g_camera->shutterSpeed());
 					fflush(stdout);
 					break;
 				}
@@ -522,6 +551,7 @@ void MiroWindow::keyboard(unsigned char key, int x, int y)
 				printf("Camera - (F)OV: %.1f\n", g_camera->FOV());
 				printf("Camera - F(o)cus Distance: %.3f\n", g_camera->focusPlane());
 				printf("Camera - A(p)erture: %.3f\n", g_camera->aperture());
+				printf("Camera - Shutter sp(e)ed: %.3ff\n", g_camera->shutterSpeed());
 				char *token;
 				if (g_scene->m_pathTrace) token = "Yes";
 				else token = "No";			
@@ -531,6 +561,23 @@ void MiroWindow::keyboard(unsigned char key, int x, int y)
 				printf("Scene  - Minimum S(u)bdivs: %i\n", g_scene->minSubdivs());
 				printf("Scene  - Maximum Subdi(v)s: %i\n", g_scene->maxSubdivs());
 				printf("Scene  - (N)oise Threshold: %.6f\n", g_scene->noise());
+				break;
+			}
+
+		case 'e':
+		case 'E':
+			{
+				printf("\n");
+				if (theParam == SHUTTER_SPEED)
+				{
+					theParam = SCALE_FACT;
+				}				
+				else
+				{
+					theParam = SHUTTER_SPEED;
+					printf("Camera - Shutter sp(e)ed: %.3ff\r", g_camera->shutterSpeed());
+					fflush(stdout);
+				}
 				break;
 			}
 

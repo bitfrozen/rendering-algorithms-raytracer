@@ -142,21 +142,16 @@ void makeSphereScene()
     sphere->load("Models/sphere.obj");
 	makeMeshObjs(sphere,mat);
     
-    // create the floor triangle
-    /*TriangleMesh * floor = new TriangleMesh;
-    floor->createSingleTriangle();
-    floor->setV1(Vector3(  0, 0,  10));
-    floor->setV2(Vector3( 10, 0, -10));
-    floor->setV3(Vector3(-10, 0, -10));
-    floor->setN1(Vector3(0, 1, 0));
-    floor->setN2(Vector3(0, 1, 0));
-    floor->setN3(Vector3(0, 1, 0));
-    
-    Triangle* t = new Triangle;
-    t->setIndex(0);
-    t->setMesh(floor);
-    t->setMaterial(mat); 
-    g_scene->addObject(t);*/
+	TriangleMesh * floor = new TriangleMesh;
+	floor->createSingleTriangle();
+	floor->setV1(Vector3(  0, 0,  10));
+	floor->setV2(Vector3( 10, 0, -10));
+	floor->setV3(Vector3(-10, 0, -10));
+	floor->setN1(Vector3(0, 1, 0));
+	floor->setN2(Vector3(0, 1, 0));
+	floor->setN3(Vector3(0, 1, 0));
+
+	Object* t = new Object;
     
     // let objects do pre-calculations if needed
     g_scene->preCalc();
