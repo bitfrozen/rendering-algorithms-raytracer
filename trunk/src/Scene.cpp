@@ -108,6 +108,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	DWORD events;
 	INPUT_RECORD buffer;
 	bool abort = false;
+	FlushConsoleInputBuffer(handle);
 
 #pragma omp parallel private(hitInfo, ray) shared (doneBuckets, bucketDone)
 	{
