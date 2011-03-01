@@ -279,7 +279,7 @@ Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Ima
 	return shadeResult;
 }
 
-bool Scene::trace(const unsigned int threadID, HitInfo& hitInfo, const Ray& ray, float tMin) const
+bool Scene::trace(const unsigned int threadID, HitInfo &hitInfo, const Ray& ray, float tMin) const
 {
 	return m_bvh.intersect(threadID, hitInfo, ray, tMin);
 }
