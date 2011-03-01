@@ -29,7 +29,7 @@ public:
     void openGL(Camera *cam);
 
     void raytraceImage(Camera *cam, Image *img);
-    bool trace(const unsigned int threadID, HitInfo& hitInfo, const Ray& ray, float tMin = epsilon) const;
+    bool trace(const unsigned int threadID, HitInfo &hitInfo, const Ray& ray, float tMin = epsilon) const;
 
 	Vector3 adaptiveSampleScene(const unsigned int threadID, Camera *cam, Image *img, Ray &ray, HitInfo &hitInfo, int i, int j);
 	Vector3 sampleScene(const unsigned int threadID, Ray &ray, HitInfo &hitInfo);

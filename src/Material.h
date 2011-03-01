@@ -15,7 +15,7 @@ public:
 
     virtual void preCalc() {}
     
-    const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const = 0;
+    const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const = 0;
 	void setEnvMap(Texture* map)					{m_envMap = map;}
 	void setEnvExposure(float exp)					{m_envExposure = exp;}
 	const float refractAmt() const					{return m_refractAmt;}

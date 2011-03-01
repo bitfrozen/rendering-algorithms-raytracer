@@ -44,7 +44,7 @@ public:
 #endif
 };
 
-enum objectType_t {OBJECT, MB_OBJECT};
+enum objectType_t {OBJECT, MB_OBJECT, PROXY_OBJECT};
 
 ALIGN_SSE class Object
 {
@@ -54,12 +54,13 @@ public:
 
     void setMaterial(const Material* m) {m_material = m;}
 	void setIndex(u_int i) {m_index = i;}
-	void setMesh(TriangleMesh* m) {m_mesh = m;}
+	void setObjectType(objectType_t objectType) {m_objectType = objectType;}
+	virtual void setMesh(TriangleMesh* m) {m_mesh = m;}
 
-    void renderGL();
+    virtual void renderGL();
     virtual void preCalc();
 
-    const virtual bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon);
+    const virtual bool intersect(const unsigned int threadID, HitInfo &result, const Ray& ray, const float tMin = epsilon);
 
 	static int sortByXComponent(const void* s1, const void* s2);	// Sorting functions for use with qsort
 	static int sortByYComponent(const void* s1, const void* s2);

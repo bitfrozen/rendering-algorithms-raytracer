@@ -18,7 +18,7 @@ public:
 
     virtual void preCalc() {}
     
-    const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const;
+    const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const;
 protected:
     Vector3 m_kd;
     Vector3 m_ka;

@@ -31,7 +31,7 @@ Blinn::~Blinn()
 {
 }
 
-const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Vector3& P, const Vector3& theNormal, const Scene& scene, const Vector3& diffuseColor) const
+const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Vector3& P, const Vector3& theNormal, const Scene& scene, const Vector3& diffuseColor) const
 {
 	Vector3 out = 0;
 	Vector3 randD, envColor;
@@ -83,7 +83,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 	return out;
 }
 
-const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const
+const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const
 {
 	Vector3 Ld		= 0.0f;										// Diffuse	
 	Vector3 Lr		= 0.0f;										// Reflection
@@ -185,6 +185,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	}
 	if (m_reflectAmt*Rs > 0.0f && doEnv)
 	{
+		Vector3 tmp = getEnvironmentColor(rVec, scene);
 		Lr += m_ks * m_reflectAmt * Rs * getEnvironmentColor(rVec, scene);
 	}
 

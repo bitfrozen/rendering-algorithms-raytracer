@@ -20,7 +20,7 @@ void MBObject::preCalc()
 	m_mesh_t2->preCalc();
 }
 
-const bool MBObject::intersect(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin)
+const bool MBObject::intersect(const unsigned int threadID, HitInfo &result, const Ray& r, const float tMin)
 {
 	float t = min(1.f, max(0.f, r.time));
 	
@@ -64,6 +64,7 @@ const bool MBObject::intersect(const unsigned int threadID, HitInfo& result, con
 					storess(mulss(detu, inv_det), &result.a);
 					storess(mulss(detv, inv_det), &result.b);
 					result.obj = this;
+					result.m_proxy = NULL;
 					return true;
 				}
 			}
@@ -117,6 +118,7 @@ const bool MBObject::intersect(const unsigned int threadID, HitInfo& result, con
 		result.a = a;
 		result.b = b;
 		result.obj = this;
+		result.m_proxy = NULL;
 		return true;
 	}	
 #endif

@@ -18,14 +18,12 @@ public:
 
 	void preCalc();
 
-	const bool intersect(const unsigned int threadID, HitInfo& result, const Ray& ray, const float tMin = epsilon);
+	const bool intersect(const unsigned int threadID, HitInfo &result, const Ray& ray, const float tMin = epsilon);
 
 	void getAABB(AABB* outBox);
 	AABB getAABB();
 
 	TriangleMesh* m_mesh_t2;
 };
-
-typedef std::vector<Object*> Objects;
 
 #endif // CSE168_MBOBJECT_H_INCLUDED

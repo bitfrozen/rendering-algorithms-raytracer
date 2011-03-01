@@ -34,7 +34,7 @@ void Object::renderGL()
 	glEnd();
 }
 
-const bool Object::intersect(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin)
+const bool Object::intersect(const unsigned int threadID, HitInfo &result, const Ray& r, const float tMin)
 {
 //#pragma omp atomic
 	Ray::rayTriangleIntersections[threadID]++;
@@ -69,6 +69,7 @@ const bool Object::intersect(const unsigned int threadID, HitInfo& result, const
 					storess(mulss(detu, inv_det), &result.a);
 					storess(mulss(detv, inv_det), &result.b);
 					result.obj = this;
+					result.m_proxy = NULL;
 					return true;
 				}
 			}
@@ -121,6 +122,7 @@ const bool Object::intersect(const unsigned int threadID, HitInfo& result, const
 		result.a = a;
 		result.b = b;
 		result.obj = this;
+		result.m_proxy = NULL;
 		return true;
 	}	
 #endif

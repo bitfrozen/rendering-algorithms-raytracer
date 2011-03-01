@@ -1,4 +1,5 @@
 #include "Ray.h"
+#include "ProxyObject.h"
 #include "TriangleMesh.h"
 
 const void HitInfo::getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float &vCoord) const
@@ -7,6 +8,7 @@ const void HitInfo::getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float 
 	{
 		return;
 	}
+
 	TriangleMesh::TupleI3 ti3;								// Get pointer and index for the mesh
 	TriangleMesh* theMesh = obj->m_mesh;
 	u_int meshIndex       = obj->m_index;
@@ -19,6 +21,14 @@ const void HitInfo::getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float 
 	ti3       = theMesh->m_normalIndices[meshIndex];		// Get the interpolated normal
 	float c   = 1.0f-a-b;
 	N		  = Vector3((theMesh->m_normals[ti3.x]*c+theMesh->m_normals[ti3.y]*a+theMesh->m_normals[ti3.z]*b).normalized());
+
+	if (m_proxy)
+	{
+		Vector3 oldGeoN = geoN;
+		Vector3 oldN = N;
+		geoN = m_proxy->getMatrix().m_transpose.multiplyAndDivideByW(oldGeoN);
+		N = m_proxy->getMatrix().m_transpose.multiplyAndDivideByW(oldN);
+	}
 
 	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates
 	{
@@ -39,6 +49,7 @@ const void HitInfo::getInterpolatedNormal(Vector3& N) const
 	{
 		return;
 	}
+
 	TriangleMesh::TupleI3 ti3;								// Get pointer and index for the mesh
 	TriangleMesh* theMesh = obj->m_mesh;
 	u_int meshIndex       = obj->m_index;
@@ -54,6 +65,7 @@ const void HitInfo::getGeoNormal(Vector3& geoN) const
 	{
 		return;
 	}
+
 	TriangleMesh::TupleI3 ti3;								// Get pointer and index for the mesh
 	TriangleMesh* theMesh = obj->m_mesh;
 	u_int meshIndex       = obj->m_index;
@@ -70,6 +82,7 @@ const void HitInfo::getUVs(float& uCoord, float &vCoord) const
 	{
 		return;
 	}
+
 	TriangleMesh::TupleI3 ti3;								// Get pointer and index for the mesh
 	TriangleMesh* theMesh = obj->m_mesh;
 	u_int meshIndex       = obj->m_index;

@@ -44,12 +44,12 @@ public:
 	void setLightEmittedIntensity(float le) { m_lightEmitted = le; }
 	void setLightEmittedColor(const Vector3 & le) { m_Le = le; }
 
-	const Vector3 calculatePathTracing(const unsigned int threadID, const Ray& ray, const HitInfo& hit, 
+	const Vector3 calculatePathTracing(const unsigned int threadID, const Ray& ray, const HitInfo &hit, 
 		                               const Vector3& P, const Vector3& theNormal, const Scene& scene, const Vector3& diffuseColor) const;
 
     virtual void preCalc() {}
     
-	const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo& hit, const Scene& scene) const;
+	const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const;
 
 protected:
     Vector3 m_kd;			// Diffuse Color

@@ -1049,10 +1049,10 @@ float BVH_Node::calcSAHCost(int leftNum, float leftArea, int rightNum, float rig
 }
 
 #ifdef USE_TRI_PACKETS
-const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
+const bool intersect4(const unsigned int threadID, HitInfo* result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
 #endif
 
-const bool BVH::intersect(const unsigned int threadID, HitInfo& minHit, const Ray& ray, const float tMin) const 
+const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ray& ray, const float tMin) const 
 {
 	if (!use_BVH)
 	{
@@ -1198,7 +1198,7 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo& minHit, const Ra
 #endif
 }
 
-const bool BVH_Node::intersect(HitInfo& result, const Ray& ray, const float tMin) const
+const bool BVH_Node::intersect(HitInfo &result, const Ray& ray, const float tMin) const
 {
 /*#ifndef NO_SSE												// Implementation of Manny Ko's algorithm, from http://tog.acm.org/resources/RTNews/html/rtnv23n1.html#art7
 																// Had to guess as to a few details, but works great.

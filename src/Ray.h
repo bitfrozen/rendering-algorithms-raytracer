@@ -1,6 +1,7 @@
 #ifndef CSE168_RAY_H_INCLUDED
 #define CSE168_RAY_H_INCLUDED
 
+#include "ProxyObject.h"
 #include <vector>
 #include "Vector3.h"
 #include "SSE.h"
@@ -138,7 +139,7 @@ public:
 	{
 		Vector3 P;
 #ifndef NO_SSE
-		storeps(addps(_o, mulps(setSSE(t), _d)), &P.x);	// Hit position
+		storeps(addps(_o, mulps(setSSE(t), _d)), P.v);	// Hit position
 #else
 		P = Vector3(o[0] + t*d[0], o[1] + t*d[1], o[2] + t*d[2]);
 #endif
@@ -155,14 +156,15 @@ ALIGN_SSE class HitInfo
 {
 public:
 	Object* obj;						//!< Pointer to intersected object
+	ProxyObject* m_proxy;
     float t, a, b;                      //!< The hit distance, a and b barycentric coordinates
 
     //! Default constructor.
-    explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f, Object* obj = NULL) : t(t), a(a), b(b), obj(obj) {};
-	const void getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float &vCoord) const;
-	const void getInterpolatedNormal(Vector3& N) const;
-	const void getGeoNormal(Vector3& geoN) const;
-	const void getUVs(float& uCoord, float &vCood) const;
+    explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f, Object* obj = NULL, ProxyObject* proxy = NULL) : t(t), a(a), b(b), obj(obj), m_proxy(proxy){};
+	const virtual void getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float &vCoord) const;
+	const virtual void getInterpolatedNormal(Vector3& N) const;
+	const virtual void getGeoNormal(Vector3& geoN) const;
+	const virtual void getUVs(float& uCoord, float &vCood) const;
 };
 
 #endif // CSE168_RAY_H_INCLUDED

@@ -11,13 +11,11 @@
 #pragma warning(disable:4244)
 #endif
 
-
 class Vector4
 {
 
 public:
-    float x, y, z, w;       // The x & y & z & w coordinates.
-
+	union {float v[4]; __m128 _v; struct { float x, y, z, w; }; };       // The x & y & z & w coordinates.
 
     Vector4() :
         x(0), y(0), z(0), w(0) {}
@@ -28,8 +26,9 @@ public:
     Vector4(float x, float y, float z, float w) :
         x(x), y(y), z(z), w(w) {}
 
-    Vector4(const Vector3& v) : x(v.x), y(v.y), z(v.z), w(1) {}
+    Vector4(const Vector3& a) : x(a.x), y(a.y), z(a.z), w(1) {}
 
+	Vector4(const __m128& vec) : _v(vec) {}
 
     //! Assignment operator.
     /*!
@@ -47,7 +46,7 @@ public:
     void set(float a) {x = y = z = w = a;}
     void set(float a, float b, float c) {x = a; y = b; z = c;}
     void set(float a, float b, float c, float d) {x = a; y = b; z = c; w = d;}
-    void set(const Vector4 v) {x = v.x; y = v.y; z = v.z; w = v.w;}
+    void set(const Vector4 a) {x = a.x; y = a.y; z = a.z; w = a.w;}
     
 
     //! Access operator.        
@@ -56,7 +55,7 @@ public:
         \param i The component to return.
         \warning i must be either 0, 1, 2 or 3 in order to get expected results.
     */
-    float & operator[](int i) {return(&x)[i];}
+    float & operator[](int i) {return v[i];}
     
     //! Constant access operator.
     /*!
@@ -64,20 +63,18 @@ public:
         \param i The component to return.
         \warning i must be either 0, 1, 2 or 3 in order to get expected results.
     */
-    const float & operator[](int i) const {return(&x)[i];}
-
-
+    const float & operator[](int i) const {return v[i];}
 
     //! Component-wise vector addition operator.
-    Vector4 operator+(const Vector4& v) const
+    Vector4 operator+(const Vector4& a) const
     {
-        return Vector4(x + v.x, y + v.y, z + v.z, w + v.w);
+        return Vector4(x + a.x, y + a.y, z + a.z, w + a.w);
     }
     
     //! Component-wise vector addition-assignment operator.
-    const Vector4 & operator+=(const Vector4& v)
+    const Vector4 & operator+=(const Vector4& a)
     {
-        x += v.x; y += v.y; z += v.z; w += v.w; return *this;
+        x += a.x; y += a.y; z += a.z; w += a.w; return *this;
     }
 
     //! Scalar addition-assignment operator.
@@ -86,15 +83,15 @@ public:
 
 
     //! Component-wise vector subtraction operator.
-    Vector4 operator-(const Vector4& v) const
+    Vector4 operator-(const Vector4& a) const
     {
-        return Vector4(x - v.x, y - v.y, z - v.z, w - v.w);
+        return Vector4(x - a.x, y - a.y, z - a.z, w - a.w);
     }
     
     //! Component-wise vector subtraction-assignment operator.
-    const Vector4 & operator-=(const Vector4& v)
+    const Vector4 & operator-=(const Vector4& a)
     {
-        x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this;
+        x -= a.x; y -= a.y; z -= a.z; w -= a.w; return *this;
     }
     
     //! Component-wise scalar subtraction assignment operator.
@@ -106,18 +103,18 @@ public:
     Vector4 operator*(float a) const {return Vector4(x * a, y * a, z * a, w * a);}
     
     //! Component-wise vector multiplication operator.
-    Vector4 operator*(const Vector4& v) const
+    Vector4 operator*(const Vector4& a) const
     {
-        return Vector4(x * v.x, y * v.y, z * v.z, z * v.z);
+        return Vector4(x * a.x, y * a.y, z * a.z, z * a.z);
     }
     
     //! Scalar multiplication-assignment operator.
     const Vector4 & operator*=(float a) {x *= a; y *= a; z *= a; w *= a; return *this;}
     
     //! Component-wise vector multiplication-assignment operator.
-    const Vector4 & operator*=(const Vector4& v)
+    const Vector4 & operator*=(const Vector4& a)
     {
-        x *= v.x; y *= v.y; z *= v.z; z *= v.z; w *= v.w; return *this;
+        x *= a.x; y *= a.y; z *= a.z; w *= a.w; return *this;
     }
     
     //! Negation operator.
@@ -134,9 +131,9 @@ public:
     }
     
     //! Component-wise vector division operator.
-    Vector4 operator/(const Vector4 & v) const
+    Vector4 operator/(const Vector4 & a) const
     {
-        return Vector4(x / v.x, y / v.y, z / v.z, w / v.w);
+        return Vector4(x / a.x, y / a.y, z / a.z, w / a.w);
     }
     
     //! Scalar division-assignment operator.
@@ -148,9 +145,9 @@ public:
     }
     
     //! Component-wise vector division-assignment operator.
-    const Vector4 & operator/=(const Vector4 & v)
+    const Vector4 & operator/=(const Vector4 & a)
     {
-        x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this;
+        x /= a.x; y /= a.y; z /= a.z; w /= a.w; return *this;
     }
 
 
@@ -159,18 +156,18 @@ public:
         Tests to see if each component of \a v is equal to each component of
         this Vector4.
     */
-    bool operator==(const Vector4 & v) const
+    bool operator==(const Vector4 & a) const
     {
-        return(v.x == x && v.y == y && v.z == z && v.w == w);
+        return(a.x == x && a.y == y && a.z == z && a.w == w);
     }
     
     //! Vector difference operator.
     /*!
         Tests to see if any component is different between the two Vector4s.
     */
-    bool operator!=(const Vector4 & v) const
+    bool operator!=(const Vector4 & a) const
     {
-        return(v.x != x || v.y != y || v.z != z || v.w != w);
+        return(a.x != x || a.y != y || a.z != z || a.w != w);
     }
     //@}
 
@@ -218,14 +215,24 @@ public:
     {
         return(*this / length());
     }
+
+	Vector4 divideByW()
+	{
+		return *this / w;
+	}
+
+	Vector3 dividedByW()
+	{
+		return Vector3(divideByW()._v);
+	}
 };
 
 
 //! Multiply a scalar by a Vector4.
 inline Vector4
-operator*(float s, const Vector4 & v)
+operator*(float s, const Vector4 & a)
 {
-    return Vector4(v.x * s, v.y * s, v.z * s, v.w * s);
+    return Vector4(a.x * s, a.y * s, a.z * s, a.w * s);
 }
 
 
@@ -245,9 +252,9 @@ Vector4::length2() const
 
 
 inline std::ostream &
-operator<<(std::ostream& out, const Vector4& v)
+operator<<(std::ostream& out, const Vector4& a)
 {
-    return out << v.x << " " << v.y << " " << v.z << " " << v.w;
+    return out << a.x << " " << a.y << " " << a.z << " " << a.w;
 }
 
 #endif // CSE168_VECTOR4_H_INCLUDED

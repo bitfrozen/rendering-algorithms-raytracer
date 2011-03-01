@@ -744,10 +744,10 @@ inline Matrix4x4
 scale(float x, float y, float z)
 {
     Matrix4x4 m;
-    m.m11 = x;
-    m.m22 = y;
-    m.m33 = z;
-    return m;
+    m.m1[0] = x;
+    m.m2[1] = y;
+	m.m3[2] = z;
+	return m;
 }
 
 // angle is in degrees

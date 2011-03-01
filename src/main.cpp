@@ -6,6 +6,7 @@
 #include "Console.h"
 #include "PointLight.h"
 #include "Object.h"
+#include "ProxyObject.h"
 #include "MBObject.h"
 #include "TriangleMesh.h"
 #include "Lambert.h"
@@ -16,6 +17,7 @@
 #include "StoneTexture.h"
 #include "Assignment1.h"
 #include "Assignment2.h"
+#include "BVH.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
 void makeMBMeshObjs(TriangleMesh* mesh, TriangleMesh* mesh2, Material* mat);
@@ -27,6 +29,7 @@ void makeStoneFloorScene();
 void makeSponzaScene();
 void makeTestScene();
 void makeMBTestScene();
+void makeProxyTestScene();
 
 int main(int argc, char*argv[])
 {
@@ -43,7 +46,8 @@ int main(int argc, char*argv[])
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
-	makeMBTestScene();
+	//makeMBTestScene();
+	makeProxyTestScene();
 
 	//assignment 2
 	//makePathTracingScene3();
@@ -189,6 +193,73 @@ void makeMBTestScene()
 	mesh->load("Models/bulletMB_01.obj");
 	mesh2->load("Models/bulletMB_02.obj");
 	makeMBMeshObjs(mesh, mesh2, mat);
+
+	// let objects do pre-calculations if needed
+	g_scene->preCalc();
+}
+
+void makeProxyTestScene()
+{
+	g_camera = new Camera;
+	g_scene = new Scene;
+	g_image = new Image;
+
+	g_image->resize(512, 512);
+
+	g_scene->m_pathTrace = true;
+	g_scene->m_numPaths = 1;
+	g_scene->m_maxBounces = 5;
+	g_scene->m_minSubdivs = 1;
+	g_scene->m_maxSubdivs = 6;
+	g_scene->setNoise(0.01f);
+
+	// set up the camera
+	g_scene->setBGColor(Vector3(0));
+	g_camera->setEye(Vector3(-5, 4, 3));
+	g_camera->setLookAt(Vector3(0, 0, 0));
+	g_camera->setUp(Vector3(0, 1, 0));
+	g_camera->setFOV(60);
+
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Topanga_Forest_B_3k.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(1.0f);
+
+	// create a spiral of spheres
+	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
+	mat->setSpecExp(30.0f);
+	mat->setSpecAmt(0);
+	mat->setIor(6.0f);
+	mat->setReflectAmt(0.90f);
+	mat->setRefractAmt(0.0f);
+	mat->setReflectGloss(0.98f);
+
+	Blinn* planeMat = new Blinn(Vector3(1.0));
+	planeMat->setSpecExp(20.0f);
+	planeMat->setSpecAmt(0);
+	planeMat->setIor(1.6f);
+	planeMat->setReflectAmt(0.0f);
+	planeMat->setRefractAmt(0.0f);
+	planeMat->setReflectGloss(1.f);
+
+	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *plane = new TriangleMesh;
+
+	mesh->load("Models/bunny.obj");
+	plane->load("Models/plane.obj");
+
+	Matrix4x4 m = Matrix4x4();
+	m.scale(2.0,2.0,0.1);
+
+	BVH* b = new BVH;
+	Objects* o = new Objects;
+	ProxyObject::setupProxy(mesh, mat, o, b);
+	ProxyObject* po = new ProxyObject(o, b, m);
+	g_scene->addObject(po);
+
+	makeMeshObjs(plane, planeMat);
 
 	Object* t = new Object;
 
@@ -351,52 +422,6 @@ void makeEnvironmentMapScene() {
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
 }
-
-/*inline Matrix4x4 translate(float x, float y, float z)
-{
-	Matrix4x4 m;
-	m.setColumn4(Vector4(x, y, z, 1));
-	return m;
-}
-
-
-inline Matrix4x4 scale(float x, float y, float z)
-{
-	Matrix4x4 m;
-	m.m11 = x;
-	m.m22 = y;
-	m.m33 = z;
-	return m;
-}
-
-// angle is in degrees
-inline Matrix4x4 rotate(float angle, float x, float y, float z)
-{
-	float rad = angle*(PI/180.);
-
-	float x2 = x*x;
-	float y2 = y*y;
-	float z2 = z*z;
-	float c = cos(rad);
-	float cinv = 1-c;
-	float s = sin(rad);
-	float xy = x*y;
-	float xz = x*z;
-	float yz = y*z;
-	float xs = x*s;
-	float ys = y*s;
-	float zs = z*s;
-	float xzcinv = xz*cinv;
-	float xycinv = xy*cinv;
-	float yzcinv = yz*cinv;
-
-	Matrix4x4 m;
-	m.set(x2 + c*(1-x2), xy*cinv+zs, xzcinv - ys, 0,
-		xycinv - zs, y2 + c*(1-y2), yzcinv + xs, 0,
-		xzcinv + ys, yzcinv - xs, z2 + c*(1-z2), 0,
-		0, 0, 0, 1);
-	return m;
-}*/
 
 void makeBunny20Scene()
 {

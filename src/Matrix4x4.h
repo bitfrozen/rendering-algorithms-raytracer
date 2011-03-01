@@ -4,6 +4,7 @@
 #include <math.h>
 #include <float.h>
 #include <iostream>
+#include "SSE.h"
 
 #ifdef WIN32
 #pragma warning(disable:4305) // disable useless warnings
@@ -13,22 +14,25 @@
 #include "Vector3.h"
 #include "Vector4.h"
 
-class Matrix4x4
+ALIGN_SSE class Matrix4x4
 {
 
 public:
-    float m11, m12, m13, m14,
-          m21, m22, m23, m24,
-          m31, m32, m33, m34,
-          m41, m42, m43, m44;
+	union {float m1[4]; __m128 _m1; struct { float m11, m12, m13, m14; }; };
+	union {float m2[4]; __m128 _m2; struct { float m21, m22, m23, m24; }; };
+	union {float m3[4]; __m128 _m3; struct { float m31, m32, m33, m34; }; };
+	union {float m4[4]; __m128 _m4; struct { float m41, m42, m43, m44; }; };
 
     // Implements a 4x4 matrix: m_ij - row-i and column-j entry
 
 public:
 
     Matrix4x4();
+	Matrix4x4(const Matrix4x4& M);
     Matrix4x4(const Vector4&, const Vector4&,
               const Vector4&, const Vector4&); // sets by columns!
+	Matrix4x4(const __m128&, const __m128&,
+			  const __m128&, const __m128&); // sets by rows!
     Matrix4x4(float, float, float, float,
               float, float, float, float,
               float, float, float, float,
@@ -62,6 +66,16 @@ public:
     inline Matrix4x4& operator*=(float);
     inline Matrix4x4& operator/=(float);
     inline Matrix4x4& operator*=(const Matrix4x4&);    // Matrix product
+
+	const inline Vector4 multiplyAndDivideByW(const Vector4&) const;
+	const inline Vector3 multiplyAndDivideByW(Vector3&) const;
+#ifndef NO_SSE
+	const inline Vector3 multiplyAndDivideByW(const __m128&) const;
+#endif
+
+	inline void translate(float x, float y, float z);
+	inline void scale(float x, float y, float z);
+	inline void rotate(float angle, float x, float y, float z);
 };
 
 inline std::ostream &
@@ -88,6 +102,34 @@ inline Vector3 operator*(const Matrix4x4&, const Vector3&);
 
 
 inline Matrix4x4::Matrix4x4() {setIdentity();}
+
+inline Matrix4x4::Matrix4x4(const __m128& _M1, const __m128& _M2, const __m128& _M3, const __m128& _M4)
+{
+	_m1 = _M1;
+	_m2 = _M2;
+	_m3 = _M3;
+	_m4 = _M4;
+}
+
+inline Matrix4x4::Matrix4x4(const Matrix4x4& M) // set to the matrix.
+{
+	m11 = M.m11;
+	m12 = M.m12;
+	m13 = M.m13;
+	m14 = M.m14;
+	m21 = M.m21;
+	m22 = M.m22;
+	m23 = M.m23;
+	m24 = M.m24;
+	m31 = M.m31;
+	m32 = M.m32;
+	m33 = M.m33;
+	m34 = M.m34;
+	m41 = M.m41;
+	m42 = M.m42;
+	m43 = M.m43;
+	m44 = M.m44;
+}
 
 inline Matrix4x4::Matrix4x4(const Vector4& u, const Vector4& v,
                             const Vector4& s, const Vector4& t)
@@ -369,7 +411,13 @@ Matrix4x4::invert()          // Converts into inverse.
 inline Matrix4x4&
 Matrix4x4::operator+=(const Matrix4x4& B)
 {
-    m11 += B.m11;
+#ifndef NO_SSE
+    _m1 = addps(_m1, B._m1);
+	_m2 = addps(_m2, B._m2);
+	_m3 = addps(_m3, B._m3);
+	_m4 = addps(_m4, B._m4);
+#else
+	m11 += B.m11;
     m12 += B.m12;
     m13 += B.m13;
     m14 += B.m14;
@@ -385,12 +433,19 @@ Matrix4x4::operator+=(const Matrix4x4& B)
     m42 += B.m42;
     m43 += B.m43;
     m44 += B.m44;
+#endif
     return *this;
 }
 
 inline Matrix4x4&
 Matrix4x4::operator-=(const Matrix4x4& B)
 {
+#ifndef NO_SSE
+	_m1 = subps(_m1, B._m1);
+	_m2 = subps(_m2, B._m2);
+	_m3 = subps(_m3, B._m3);
+	_m4 = subps(_m4, B._m4);
+#else
     m11 -= B.m11;
     m12 -= B.m12;
     m13 -= B.m13;
@@ -407,16 +462,21 @@ Matrix4x4::operator-=(const Matrix4x4& B)
     m42 -= B.m42;
     m43 -= B.m43;
     m44 -= B.m44;
+#endif
     return(*this);
 }
 
 inline Matrix4x4
 operator+(const Matrix4x4& A, const Matrix4x4& B)
 {
+#ifndef NO_SSE
+	return Matrix4x4(addps(A._m1, B._m1), addps(A._m2, B._m2), addps(A._m3, B._m3), addps(A._m4, B._m4));
+#else
     return Matrix4x4(A.m11+B.m11, A.m21+B.m21, A.m31+B.m31, A.m41+B.m41,
                      A.m12+B.m12, A.m22+B.m22, A.m32+B.m32, A.m42+B.m42,
                      A.m13+B.m13, A.m23+B.m23, A.m33+B.m33, A.m43+B.m43,
                      A.m14+B.m14, A.m24+B.m24, A.m34+B.m34, A.m44+B.m44);
+#endif
 }
 
 inline Matrix4x4
@@ -431,15 +491,26 @@ operator-(const Matrix4x4& A)
 inline Matrix4x4
 operator-(const Matrix4x4& A, const Matrix4x4& B)
 {
+#ifndef NO_SSE
+	return Matrix4x4(subps(A._m1, B._m1), subps(A._m2, B._m2), subps(A._m3, B._m3), subps(A._m4, B._m4));
+#else
     return Matrix4x4(A.m11-B.m11, A.m21-B.m21, A.m31-B.m31, A.m41-B.m41,
                      A.m12-B.m12, A.m22-B.m22, A.m32-B.m32, A.m42-B.m42,
                      A.m13-B.m13, A.m23-B.m23, A.m33-B.m33, A.m43-B.m43,
                      A.m14-B.m14, A.m24-B.m24, A.m34-B.m34, A.m44-B.m44);
+#endif
 }
 
 inline Matrix4x4&
 Matrix4x4::operator*=(float b)
 {
+#ifndef NO_SSE
+	const __m128 f = setSSE(b);
+	_m1 = mulps(_m1, f);
+	_m2 = mulps(_m2, f);
+	_m3 = mulps(_m3, f);
+	_m4 = mulps(_m4, f);
+#else
     m11 *= b;
     m12 *= b;
     m13 *= b;
@@ -456,12 +527,24 @@ Matrix4x4::operator*=(float b)
     m42 *= b;
     m43 *= b;
     m44 *= b;
+#endif
     return *this;
 }
 
 inline Matrix4x4&
 Matrix4x4::operator*=(const Matrix4x4& B)    // Matrix product
 {
+#ifndef NO_SSE
+	const __m128 _b1 = _mm_set_ps(B.m41, B.m31, B.m21, B.m11);
+	const __m128 _b2 = _mm_set_ps(B.m42, B.m32, B.m22, B.m12);
+	const __m128 _b3 = _mm_set_ps(B.m43, B.m33, B.m23, B.m13);
+	const __m128 _b4 = _mm_set_ps(B.m44, B.m34, B.m24, B.m14);
+
+	_m1 = shuffleps(_mm_movelh_ps(dotps(_m1, _b1, 0xFF), dotps(_m1, _b2, 0xFF)), _mm_movelh_ps(dotps(_m1, _b3, 0xFF), dotps(_m1, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	_m2 = shuffleps(_mm_movelh_ps(dotps(_m2, _b1, 0xFF), dotps(_m2, _b2, 0xFF)), _mm_movelh_ps(dotps(_m2, _b3, 0xFF), dotps(_m2, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	_m3 = shuffleps(_mm_movelh_ps(dotps(_m3, _b1, 0xFF), dotps(_m3, _b2, 0xFF)), _mm_movelh_ps(dotps(_m3, _b3, 0xFF), dotps(_m3, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	_m4 = shuffleps(_mm_movelh_ps(dotps(_m4, _b1, 0xFF), dotps(_m4, _b2, 0xFF)), _mm_movelh_ps(dotps(_m4, _b3, 0xFF), dotps(_m4, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+#else
     float t1, t2, t3;       // temporary values
     t1 =  m11*B.m11 + m12*B.m21 + m13*B.m31 + m14*B.m41;
     t2 =  m11*B.m12 + m12*B.m22 + m13*B.m32 + m14*B.m42;
@@ -494,13 +577,25 @@ Matrix4x4::operator*=(const Matrix4x4& B)    // Matrix product
     m41 = t1;
     m42 = t2;
     m43 = t3;
+#endif
     return *this;
 }
 
 inline Matrix4x4
 operator*(const Matrix4x4& A, const Matrix4x4& B) // Matrix product
 {
-    Matrix4x4 R;
+	Matrix4x4 R;
+#ifndef NO_SSE
+	const __m128 _b1 = _mm_set_ps(B.m41, B.m31, B.m21, B.m11);
+	const __m128 _b2 = _mm_set_ps(B.m42, B.m32, B.m22, B.m12);
+	const __m128 _b3 = _mm_set_ps(B.m43, B.m33, B.m23, B.m13);
+	const __m128 _b4 = _mm_set_ps(B.m44, B.m34, B.m24, B.m14);
+
+	R._m1 = shuffleps(_mm_movelh_ps(dotps(A._m1, _b1, 0xFF), dotps(A._m1, _b2, 0xFF)), _mm_movelh_ps(dotps(A._m1, _b3, 0xFF), dotps(A._m1, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	R._m2 = shuffleps(_mm_movelh_ps(dotps(A._m2, _b1, 0xFF), dotps(A._m2, _b2, 0xFF)), _mm_movelh_ps(dotps(A._m2, _b3, 0xFF), dotps(A._m2, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	R._m3 = shuffleps(_mm_movelh_ps(dotps(A._m3, _b1, 0xFF), dotps(A._m3, _b2, 0xFF)), _mm_movelh_ps(dotps(A._m3, _b3, 0xFF), dotps(A._m3, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+	R._m4 = shuffleps(_mm_movelh_ps(dotps(A._m4, _b1, 0xFF), dotps(A._m4, _b2, 0xFF)), _mm_movelh_ps(dotps(A._m4, _b3, 0xFF), dotps(A._m4, _b4, 0xFF)), _MM_SHUFFLE(2,0,2,0));
+#else
     float t1, t2, t3;       // temporary values
     t1 =  A.m11*B.m11 + A.m12*B.m21 + A.m13*B.m31 + A.m14*B.m41;
     t2 =  A.m11*B.m12 + A.m12*B.m22 + A.m13*B.m32 + A.m14*B.m42;
@@ -533,25 +628,36 @@ operator*(const Matrix4x4& A, const Matrix4x4& B) // Matrix product
     R.m41 = t1;
     R.m42 = t2;
     R.m43 = t3;
+#endif
     return R;
 }
 
 inline Matrix4x4
 operator*(const Matrix4x4& A, float b)
 {
+#ifndef NO_SSE
+	const __m128 f = setSSE(b);
+	return(Matrix4x4(mulps(A._m1, f), mulps(A._m2, f), mulps(A._m3, f), mulps(A._m4, f)));
+#else
     return(Matrix4x4(A.m11*b, A.m21*b, A.m31*b, A.m41*b,
-                       A.m12*b, A.m22*b, A.m32*b, A.m42*b,
-                       A.m13*b, A.m23*b, A.m33*b, A.m43*b,
-                       A.m14*b, A.m24*b, A.m34*b, A.m44*b));
+                     A.m12*b, A.m22*b, A.m32*b, A.m42*b,
+                     A.m13*b, A.m23*b, A.m33*b, A.m43*b,
+                     A.m14*b, A.m24*b, A.m34*b, A.m44*b));
+#endif
 }
 
 inline Matrix4x4
 operator*(float b, const Matrix4x4& A)
 {
+#ifndef NO_SSE
+	const __m128 f = setSSE(b);
+	return(Matrix4x4(mulps(A._m1, f), mulps(A._m2, f), mulps(A._m3, f), mulps(A._m4, f)));
+#else
     return(Matrix4x4(A.m11*b, A.m21*b, A.m31*b, A.m41*b,
-                       A.m12*b, A.m22*b, A.m32*b, A.m42*b,
-                       A.m13*b, A.m23*b, A.m33*b, A.m43*b,
-                       A.m14*b, A.m24*b, A.m34*b, A.m44*b));
+                     A.m12*b, A.m22*b, A.m32*b, A.m42*b,
+                     A.m13*b, A.m23*b, A.m33*b, A.m43*b,
+                     A.m14*b, A.m24*b, A.m34*b, A.m44*b));
+#endif
 }
 
 inline Matrix4x4
@@ -571,19 +677,104 @@ Matrix4x4::operator/=(float b)
 inline Vector4
 operator*(const Matrix4x4& A, const Vector4& u)
 {
+#ifndef NO_SSE
+	return Vector4(shuffleps(_mm_movelh_ps(dotps(A._m1, u._v, 0xFF), dotps(A._m2, u._v, 0xFF)), _mm_movelh_ps(dotps(A._m3, u._v, 0xFF), dotps(A._m4, u._v, 0xFF)), _MM_SHUFFLE(2,0,2,0)));
+#else
     return Vector4(A.m11*u.x + A.m12*u.y + A.m13*u.z + A.m14*u.w,
                    A.m21*u.x + A.m22*u.y + A.m23*u.z + A.m24*u.w,
                    A.m31*u.x + A.m32*u.y + A.m33*u.z + A.m34*u.w,
                    A.m41*u.x + A.m42*u.y + A.m43*u.z + A.m44*u.w);
+#endif
 }
 
 inline Vector3
 operator*(const Matrix4x4& A, const Vector3& u)
 {
+#ifndef NO_SSE
+	return Vector3(shuffleps(_mm_movelh_ps(dotps(A._m1, u._v, 0xFF), dotps(A._m2, u._v, 0xFF)), _mm_movelh_ps(dotps(A._m3, u._v, 0xFF), setZero), _MM_SHUFFLE(2,0,2,0)));
+#else
     return Vector3(A.m11*u.x + A.m12*u.y + A.m13*u.z + A.m14,
                    A.m21*u.x + A.m22*u.y + A.m23*u.z + A.m24,
                    A.m31*u.x + A.m32*u.y + A.m33*u.z + A.m34);
     // note that this ignores the fourth row in the matrix!
+#endif
+}
+
+const inline Vector4 Matrix4x4::multiplyAndDivideByW(const Vector4& u) const
+{
+#ifndef NO_SSE
+	const __m128 wRecip = recipps(dotps(_m4, u._v, 0xFF));
+	return Vector4(mulps(wRecip, shuffleps(_mm_movelh_ps(dotps(_m1, u._v, 0xFF), dotps(_m2, u._v, 0xFF)), _mm_movelh_ps(dotps(_m3, u._v, 0xFF), _onesps), _MM_SHUFFLE(2,0,2,0))));
+#else
+	const float wRecip = 1.0f / (A.m41*u.x + A.m42*u.y + A.m43*u.z + A.m44*u.w);
+	return Vector4((A.m11*u.x + A.m12*u.y + A.m13*u.z + A.m14*u.w) * wRecip,
+				   (A.m21*u.x + A.m22*u.y + A.m23*u.z + A.m24*u.w) * wRecip,
+				   (A.m31*u.x + A.m32*u.y + A.m33*u.z + A.m34*u.w) * wRecip,
+				   1.0f);
+#endif
+}
+
+const inline Vector3 Matrix4x4::multiplyAndDivideByW(Vector3& u) const
+{
+#ifndef NO_SSE
+	u.__dummy = 1.0f;
+	const __m128 wRecip = recipps(dotps(_m4, u._v, 0xFF));
+	return Vector3(mulps(wRecip, shuffleps(_mm_movelh_ps(dotps(_m1, u._v, 0xFF), dotps(_m2, u._v, 0xFF)), _mm_movelh_ps(dotps(_m3, u._v, 0xFF), setZero), _MM_SHUFFLE(2,0,2,0))));
+#else
+	u.__dummy = 1.0f;
+	const float wRecip = 1.0f / (A.m41*u.x + A.m42*u.y + A.m43*u.z + A.m44);
+	return Vector3((A.m11*u.x + A.m12*u.y + A.m13*u.z + A.m14) * wRecip,
+				   (A.m21*u.x + A.m22*u.y + A.m23*u.z + A.m24) * wRecip,
+				   (A.m31*u.x + A.m32*u.y + A.m33*u.z + A.m34) * wRecip);
+#endif
+}
+
+#ifndef NO_SSE
+const inline Vector3 Matrix4x4::multiplyAndDivideByW(const __m128& u) const
+{
+	const __m128 wRecip = recipps(dotps(_m4, u, 0xFF));
+	return Vector3(mulps(wRecip, shuffleps(_mm_movelh_ps(dotps(_m1, u, 0xFF), dotps(_m2, u, 0xFF)), _mm_movelh_ps(dotps(_m3, u, 0xFF), setZero), _MM_SHUFFLE(2,0,2,0))));
+}
+#endif
+
+inline void Matrix4x4::translate(float x, float y, float z)
+{
+	setColumn4(Vector4(x, y, z, 0) + Vector4(m14, m24, m34, m44));
+}
+
+
+inline void Matrix4x4::scale(float x, float y, float z)
+{
+	m11 *= x;
+	m22 *= y;
+	m33 *= z;
+}
+
+// angle is in degrees
+inline void Matrix4x4::rotate(float angle, float x, float y, float z)
+{
+	float rad = angle*(PI/180.);
+
+	float x2 = x*x;
+	float y2 = y*y;
+	float z2 = z*z;
+	float c = cos(rad);
+	float cinv = 1-c;
+	float s = sin(rad);
+	float xy = x*y;
+	float xz = x*z;
+	float yz = y*z;
+	float xs = x*s;
+	float ys = y*s;
+	float zs = z*s;
+	float xzcinv = xz*cinv;
+	float xycinv = xy*cinv;
+	float yzcinv = yz*cinv;
+
+	set(x2 + c*(1-x2), xy*cinv+zs, xzcinv - ys, 0,
+		xycinv - zs, y2 + c*(1-y2), yzcinv + xs, 0,
+		xzcinv + ys, yzcinv - xs, z2 + c*(1-z2), 0,
+		0, 0, 0, 1);
 }
 
 #endif // CSE168_MATRIX4X4_H_INCLUDED
