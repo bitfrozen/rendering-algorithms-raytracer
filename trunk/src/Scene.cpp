@@ -136,6 +136,8 @@ Scene::raytraceImage(Camera *cam, Image *img)
 							glFinish();
 							printf("Rendering Progress: %.3f%%\r", (float)shownBuckets/float(totalBuckets)*100.0f);
 							fflush(stdout);
+
+							// This is to trap Esc from the console while rendering, to enable aborting the rendering process.
 							PeekConsoleInput(handle, &buffer, 1, &events);
 							if (events > 0)
 							{
