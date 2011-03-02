@@ -5,6 +5,7 @@
 #include "Image.h"
 #include "Console.h"
 #include "PointLight.h"
+#include "DomeLight.h"
 #include "Object.h"
 #include "ProxyObject.h"
 #include "MBObject.h"
@@ -47,10 +48,10 @@ int main(int argc, char*argv[])
 	//makeEnvironmentMapScene();
 	//makeTestScene();
 	//makeMBTestScene();
-	//makeProxyTestScene();
+	makeProxyTestScene();
 
 	//assignment 2
-	makePathTracingScene3();
+	//makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -209,9 +210,9 @@ void makeProxyTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 2;
+	g_scene->m_numPaths = 1;
 	g_scene->m_maxBounces = 3;
-	g_scene->m_minSubdivs = 3;
+	g_scene->m_minSubdivs = 2;
 	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
 
@@ -228,6 +229,18 @@ void makeProxyTestScene()
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
+	g_scene->setSampleEnv(false);
+
+	//make a raw image from hdr file
+	RawImage* hdrImage2 = new RawImage();
+	hdrImage2->loadImage("Images/Topanga_Forest_B_light.hdr");
+	Texture* hdrTex2 = new Texture(hdrImage2);
+
+	DomeLight* domeLight = new DomeLight;
+	domeLight->setTexture(hdrTex2);
+	domeLight->setPower(0.25f);
+	domeLight->setSamples(4);
+	g_scene->addLight(domeLight);
 
 	// create a spiral of spheres
 	Blinn* mat = new Blinn(Vector3(1));//0.09, 0.094, 0.1));
@@ -247,13 +260,10 @@ void makeProxyTestScene()
 	planeMat->setReflectGloss(1.f);
 
 	TriangleMesh *mesh = new TriangleMesh;
-	//TriangleMesh *plane = new TriangleMesh;
+	TriangleMesh *plane = new TriangleMesh;
 
 	mesh->load("Models/bunny.obj");
-	//plane->load("Models/plane.obj");
-
-	Matrix4x4 m = Matrix4x4();
-	m.translate(0,0,2);
+	plane->load("Models/plane.obj");
 
 	BVH* b = new BVH;
 	Objects* o = new Objects;
@@ -261,7 +271,7 @@ void makeProxyTestScene()
 
 	makeProxyGrid(o, b);
 
-	//makeMeshObjs(plane, planeMat);
+	makeMeshObjs(plane, planeMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
@@ -269,12 +279,12 @@ void makeProxyTestScene()
 
 void makeProxyGrid(Objects* o, BVH* b)
 {
-	for (int i = 0; i <= 1000; i++)
+	for (int i = 0; i <= 0; i++)
 	{
-		for (int j = 0; j <= 1000; j++)
+		for (int j = 0; j <= 0; j++)
 		{
 			Matrix4x4 m = Matrix4x4();
-			m.translate(2*(i-500), 0, 2*(j-500));
+			m.translate(2*(i), 0, 2*(j));
 			ProxyObject* po = new ProxyObject(o, b, m);
 			g_scene->addObject(po);
 		}

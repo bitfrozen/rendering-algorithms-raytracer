@@ -55,6 +55,7 @@ const bool use_Bins			= false;
 const int bucket_size		= 32;
 const float epsilon			= 0.001f; 
 const float PI				= 3.1415926f;
+const float PI2				= PI * PI;
 const float _1_PI			= 1.0f / PI;
 const float _1_4PI			= 0.25f / PI;
 const float DegToRad		= PI/180.0f;

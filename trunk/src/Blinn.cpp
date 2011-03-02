@@ -62,7 +62,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 			out += diffuseColor * newHit.obj->m_material->shade(threadID, randRay, newHit, scene);
 		}
 		// If we don't hit anything, add contribution from environment
-		else
+		else if (g_scene->sampleEnv())
 		{
 			out += diffuseColor * getEnvironmentColor(randD, scene);
 		}

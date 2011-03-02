@@ -6,7 +6,7 @@
 #include "Ray.h"
 #include "Scene.h"
 
-enum lightType_t {RECTANGLE_LIGHT, POINT_LIGHT};
+enum lightType_t {RECTANGLE_LIGHT, POINT_LIGHT, DOME_LIGHT};
 
 class Light
 {
