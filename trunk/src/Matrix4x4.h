@@ -700,6 +700,14 @@ operator*(const Matrix4x4& A, const Vector3& u)
 #endif
 }
 
+#ifndef NO_SSE
+inline Vector3
+operator*(const Matrix4x4& A, const __m128& u)
+{
+	return Vector3(shuffleps(_mm_movelh_ps(dotps(A._m1, u, 0xFF), dotps(A._m2, u, 0xFF)), _mm_movelh_ps(dotps(A._m3, u, 0xFF), setZero), _MM_SHUFFLE(2,0,2,0)));
+}
+#endif
+
 const inline Vector4 Matrix4x4::multiplyAndDivideByW(const Vector4& u) const
 {
 #ifndef NO_SSE

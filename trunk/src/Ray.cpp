@@ -24,10 +24,8 @@ const void HitInfo::getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float 
 
 	if (m_proxy)
 	{
-		Vector3 oldGeoN = geoN;
-		Vector3 oldN = N;
-		geoN = m_proxy->getMatrix().m_transpose.multiplyAndDivideByW(oldGeoN);
-		N = m_proxy->getMatrix().m_transpose.multiplyAndDivideByW(oldN);
+		geoN = (m_proxy->getMatrix().m_transpose * geoN).normalized();
+		N = (m_proxy->getMatrix().m_transpose * N).normalized();
 	}
 
 	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates
