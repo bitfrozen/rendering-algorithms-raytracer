@@ -70,6 +70,8 @@ void TriangleMesh::preCalc()
 		}
 		doPreCalc = false;
 	}
+#else
+	doPreCalc = false;
 #endif
 #endif
 }

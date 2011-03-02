@@ -67,7 +67,8 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 			out += diffuseColor * getEnvironmentColor(randD, scene);
 		}
 	}
-	else if (giBounces == scene.m_maxBounces-1)
+	// We directly sample the light at the last bounce...
+	else
 	{
 		// Directly sample lights
 		const Lights *lightList = scene.lights();
@@ -118,12 +119,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		theNormal = -theNormal;
 	}
 	
-	// Get the Indirect Illumination
-	if (scene.m_pathTrace)
-	{	
-		Ld += calculatePathTracing(threadID, ray, hit, P, theNormal, scene, diffuseColor);
-	}
-	
 	// get the reflection vector (for specular hi-light)
 	Vector3 rVec = (rayD + 2*(vDotN)*theNormal);
 
@@ -134,16 +129,32 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();			// get the (randomized) reflection vector
 	}
 
-	// Directly sample lights
-	const Lights *lightList = scene.lights();
-	Lights::const_iterator lightIter;
-	for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
-	{
-		float   lightSpec  = 0;
-		Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, rVec, lightSpec);
+	float rrFloat = Scene::getRand();
 
-		Ls += lightPower * m_ks * m_specAmt * pow(lightSpec, m_specExp);		// Calculate specular component				
-		Ld += lightPower * diffuseColor;										// Calculate Diffuse component
+	// Russian roulette sampling of direct / indirect illumination
+	// This should be weighted depending on the amount of contribution
+	// in the scene of direct / indirect illumination
+	//if (rrFloat < 0.5)
+	{
+		// Get the Indirect Illumination
+		if (scene.m_pathTrace)
+		{	
+			Ld += calculatePathTracing(threadID, ray, hit, P, theNormal, scene, diffuseColor);// * 2.f;
+		}
+	} 
+	//else
+	{
+		// Directly sample lights
+		const Lights *lightList = scene.lights();
+		Lights::const_iterator lightIter;
+		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+		{
+			float   lightSpec  = 0;
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, rVec, lightSpec);
+
+			Ls += lightPower * m_ks * m_specAmt * pow(lightSpec, m_specExp);// * 2.f;		// Calculate specular component				
+			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
+		}
 	}		
 
 	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
@@ -171,48 +182,61 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	bool doEnv  = true;
 
-	if (m_reflectAmt*Rs > 0.0f && bounces < 3)
+	rrFloat = Scene::getRand();
+
+	// Russian Roulette sampling for reflection / refraction.
+	// This helps prevent ray number explosion
+	if (rrFloat < m_reflectAmt*Rs)
 	{
-		Ray rRay = Ray(threadID, P, rVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
-		HitInfo newHit;
-		newHit.t = MIRO_TMAX;
-		if (scene.trace(threadID, newHit, rRay, epsilon))
+		if (m_reflectAmt*Rs > 0.0f && bounces < 3)
 		{
-			Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
-			Lr                += m_ks*m_reflectAmt*Rs*reflection;
-			doEnv              = false;
-		}
-	}
-	if (m_reflectAmt*Rs > 0.0f && doEnv)
-	{
-		Vector3 tmp = getEnvironmentColor(rVec, scene);
-		Lr += m_ks * m_reflectAmt * Rs * getEnvironmentColor(rVec, scene);
-	}
-
-	if (m_refractAmt*Ts > 0.0f)
-	{
-		float snellsQ  = inIOR / outIOR;
-		float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
-		Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
-		doEnv          = true;
-
-		if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
-		{		
-			ray.r_IOR.push(outIOR);
-			Ray tRay = Ray(threadID, P, tVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+			Ray rRay = Ray(threadID, P, rVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 			HitInfo newHit;
 			newHit.t = MIRO_TMAX;
-			if (scene.trace(threadID, newHit, tRay, epsilon))
+			if (scene.trace(threadID, newHit, rRay, epsilon))
 			{
-				Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
-				Lt                += m_ks*m_refractAmt*Ts*refraction;
+				Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
+				Lr                += m_ks*m_reflectAmt*Rs*reflection;
 				doEnv              = false;
 			}
-			ray.r_IOR.pop();
+			Lr /= m_reflectAmt*Rs;
 		}
-		if (doEnv)
+		if (m_reflectAmt*Rs > 0.0f && doEnv)
 		{
-			Lt += m_ks * m_refractAmt * Ts * getEnvironmentColor(rVec, scene);
+			Vector3 tmp = getEnvironmentColor(rVec, scene);
+			Lr += m_ks * m_reflectAmt * Rs * getEnvironmentColor(rVec, scene);
+			Lr /= m_reflectAmt*Rs;
+		}
+	} 
+	else
+	{
+		if (m_refractAmt*Ts > 0.0f)
+		{
+			float snellsQ  = inIOR / outIOR;
+			float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
+			Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+			doEnv          = true;
+
+			if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+			{		
+				ray.r_IOR.push(outIOR);
+				Ray tRay = Ray(threadID, P, tVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+				HitInfo newHit;
+				newHit.t = MIRO_TMAX;
+				if (scene.trace(threadID, newHit, tRay, epsilon))
+				{
+					Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
+					Lt                += m_ks*m_refractAmt*Ts*refraction;
+					Lt				  /= m_refractAmt*Ts;
+					doEnv              = false;
+				}
+				ray.r_IOR.pop();
+			}
+			if (doEnv)
+			{
+				Lt += m_ks * m_refractAmt * Ts * getEnvironmentColor(rVec, scene);
+				Lt /= m_refractAmt*Ts;
+			}
 		}
 	}
 

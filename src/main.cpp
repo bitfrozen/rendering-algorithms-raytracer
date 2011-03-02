@@ -46,11 +46,11 @@ int main(int argc, char*argv[])
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
-	makeMBTestScene();
+	//makeMBTestScene();
 	//makeProxyTestScene();
 
 	//assignment 2
-	//makePathTracingScene3();
+	makePathTracingScene3();
 	//makeTeapotScene2();
 	//makeBunny1Scene2();
 	//makeBunny20Scene2();
@@ -269,12 +269,12 @@ void makeProxyTestScene()
 
 void makeProxyGrid(Objects* o, BVH* b)
 {
-	for (int i = 0; i <= 2; i++)
+	for (int i = 0; i <= 1000; i++)
 	{
-		for (int j = 0; j <= 2; j++)
+		for (int j = 0; j <= 1000; j++)
 		{
 			Matrix4x4 m = Matrix4x4();
-			m.translate(2*(i-1), 0, 2*(j-1));
+			m.translate(2*(i-500), 0, 2*(j-500));
 			ProxyObject* po = new ProxyObject(o, b, m);
 			g_scene->addObject(po);
 		}
