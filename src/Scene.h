@@ -53,6 +53,9 @@ public:
 
 	void setNoise(const float n)	{ m_noiseThreshold = n;}
 	const float noise() const		{ return m_noiseThreshold;}
+
+	void setSampleEnv(bool b)		{ m_sampleLightFromEnv = b;}
+	const bool sampleEnv()			{ return m_sampleLightFromEnv;}
 	
 	bool m_pathTrace;
 	int m_numPaths;
@@ -74,6 +77,7 @@ protected:
 	Texture* m_envMap;
 	float m_envExposure;
 	float m_noiseThreshold;
+	bool m_sampleLightFromEnv;
 };
 
 extern Scene * g_scene;
