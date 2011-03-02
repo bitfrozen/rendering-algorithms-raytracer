@@ -46,8 +46,8 @@ int main(int argc, char*argv[])
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
 	//makeTestScene();
-	//makeMBTestScene();
-	makeProxyTestScene();
+	makeMBTestScene();
+	//makeProxyTestScene();
 
 	//assignment 2
 	//makePathTracingScene3();
@@ -157,10 +157,10 @@ void makeMBTestScene()
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(0));
-	g_camera->setEye(Vector3(-7.536, 9.552, 15.815));
+	g_camera->setEye(Vector3(-5.536, 9.552, 15.815));
 	g_camera->setViewDir(Vector3(-0.034, -0.009, -0.999));
 	g_camera->setUp(Vector3(0, 1, 0));
-	g_camera->setFOV(60);
+	g_camera->setFOV(75);
 	g_camera->m_aperture = 0.001f;
 	g_camera->m_focusPlane = 3.0f;
 	g_camera->setShutterSpeed(0.2f);
@@ -198,6 +198,8 @@ void makeMBTestScene()
 	g_scene->preCalc();
 }
 
+void makeProxyGrid(Objects* o, BVH* b);
+
 void makeProxyTestScene()
 {
 	g_camera = new Camera;
@@ -207,10 +209,10 @@ void makeProxyTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 1;
-	g_scene->m_maxBounces = 5;
-	g_scene->m_minSubdivs = 1;
-	g_scene->m_maxSubdivs = 6;
+	g_scene->m_numPaths = 2;
+	g_scene->m_maxBounces = 3;
+	g_scene->m_minSubdivs = 3;
+	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
 
 	// set up the camera
@@ -228,11 +230,11 @@ void makeProxyTestScene()
 	g_scene->setEnvExposure(1.0f);
 
 	// create a spiral of spheres
-	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
+	Blinn* mat = new Blinn(Vector3(1));//0.09, 0.094, 0.1));
 	mat->setSpecExp(30.0f);
 	mat->setSpecAmt(0);
 	mat->setIor(6.0f);
-	mat->setReflectAmt(0.90f);
+	mat->setReflectAmt(0.0f);
 	mat->setRefractAmt(0.0f);
 	mat->setReflectGloss(0.98f);
 
@@ -245,26 +247,38 @@ void makeProxyTestScene()
 	planeMat->setReflectGloss(1.f);
 
 	TriangleMesh *mesh = new TriangleMesh;
-	TriangleMesh *plane = new TriangleMesh;
+	//TriangleMesh *plane = new TriangleMesh;
 
 	mesh->load("Models/bunny.obj");
-	plane->load("Models/plane.obj");
+	//plane->load("Models/plane.obj");
 
 	Matrix4x4 m = Matrix4x4();
-	m.scale(2.0,2.0,0.1);
+	m.translate(0,0,2);
 
 	BVH* b = new BVH;
 	Objects* o = new Objects;
 	ProxyObject::setupProxy(mesh, mat, o, b);
-	ProxyObject* po = new ProxyObject(o, b, m);
-	g_scene->addObject(po);
 
-	makeMeshObjs(plane, planeMat);
+	makeProxyGrid(o, b);
 
-	Object* t = new Object;
+	//makeMeshObjs(plane, planeMat);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
+}
+
+void makeProxyGrid(Objects* o, BVH* b)
+{
+	for (int i = 0; i <= 2; i++)
+	{
+		for (int j = 0; j <= 2; j++)
+		{
+			Matrix4x4 m = Matrix4x4();
+			m.translate(2*(i-1), 0, 2*(j-1));
+			ProxyObject* po = new ProxyObject(o, b, m);
+			g_scene->addObject(po);
+		}
+	}
 }
 
 void makeBunnyScene2()

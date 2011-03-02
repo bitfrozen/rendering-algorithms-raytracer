@@ -217,24 +217,24 @@ Vector3 Scene::sampleScene(const unsigned int threadID, Ray &ray, HitInfo &hitIn
 {
 	Vector3 result = 0;
 
-	for (int i = 0; i < m_numPaths; i++)
-	{
-		hitInfo.t = MIRO_TMAX;
-
-		if (trace(threadID, hitInfo, ray, epsilon))
-		{					
+	hitInfo.t = MIRO_TMAX;
+	if (trace(threadID, hitInfo, ray, epsilon))
+	{	
+		for (int i = 0; i < m_numPaths; i++)
+		{
 			result += hitInfo.obj->m_material->shade(threadID, ray, hitInfo, *this);
 		}
-		else
-		{
-			if (m_envMap != NULL)	// environment map lookup
-			{
-				result += m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure; 
-			}
-			else result += m_BGColor;
-		}
+		return result * (1.0f / m_numPaths);
 	}
-	return result * (1.0f / m_numPaths);
+	else
+	{
+		if (m_envMap != NULL)	// environment map lookup
+		{
+			result = m_envMap->getLookupXYZ3(ray.d[0], ray.d[1], ray.d[2]) * m_envExposure; 
+		}
+		else result = m_BGColor;
+	}
+	return result;
 }
 
 int getSum(const int n)

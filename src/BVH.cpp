@@ -7,6 +7,7 @@
 #include <time.h>
 #include <omp.h>
 #include "Object.h"
+#include "MBObject.h"
 
 using namespace std;
 
@@ -63,14 +64,23 @@ QBVH_Node::~QBVH_Node()
 BVH_Node::TriCache4* QBVH_Node::buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum)
 {
 	BVH_Node::TriCache4* t = &cacheAlloc[nodeNum];
+	t->doubleTake = false;
 	for (int i = 0; i < 4; i++)
 	{
 		t->Ax[i] = t->Ay[i] = t->Az[i] = t->edge0x[i] = t->edge0y[i] = t->edge0z[i] = t->edge1x[i] = t->edge1y[i] = t->edge1z[i] = 0;
 		t->tris[i] = 0;
+		t->checkOut[i] = false;
 	}
 	Object** tmpObjs = node->objs;
 	for (int i = 0; i < GET_NUMCHILD(node->numChildren); i++)
 	{
+		if (tmpObjs[i]->m_objectType != OBJECT)
+		{
+			t->tris[i] = tmpObjs[i];
+			t->checkOut[i] = true;
+			t->doubleTake = true;
+			continue;
+		}
 		TriangleMesh::TupleI3 ti3;
 		ti3          = tmpObjs[i]->m_mesh->m_vertexIndices[tmpObjs[i]->m_index];
 		t->Ax[i]     = tmpObjs[i]->m_mesh->m_vertices[ti3.x].x;
@@ -103,7 +113,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 	flagsIsValid[0] = flagsIsValid[1] = flagsIsValid[2] = flagsIsValid[3] = false;
 	Children[0]     = Children[1]     = Children[2]     = Children[3]     = NULL;
 
-	if (node->isLeaf & true)
+	if (IS_LEAF(node->flags))
 	{
 		flagsIsValid[0] = flagsIsLeaf[0] = true;
 
@@ -119,7 +129,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 	}
 	else
 	{
-		if ((node->Children[0].isLeaf & true) && (node->Children[1].isLeaf & true))
+		if (IS_LEAF(node->Children[0].flags) && IS_LEAF(node->Children[1].flags))
 		{
 			flagsIsValid[0] = flagsIsLeaf[0] = true;
 			flagsIsValid[1] = flagsIsLeaf[1] = true;
@@ -142,7 +152,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			triCaches[1] = buildTriBundle(&node->Children[1], cacheAlloc, nodeNum++);
 			leafCount++;
 		}
-		else if (node->Children[0].isLeaf & true)
+		else if (IS_LEAF(node->Children[0].flags))
 		{
 			flagsIsValid[0] = flagsIsLeaf[0] = true;
 
@@ -169,7 +179,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 			triCaches[0] = buildTriBundle(&node->Children[0], cacheAlloc, nodeNum++);
 
-			if ((node->Children[1].Children[0].isLeaf & true) && (node->Children[1].Children[1].isLeaf & true)) // Three leaves
+			if (IS_LEAF(node->Children[1].Children[0].flags) && IS_LEAF(node->Children[1].Children[1].flags)) // Three leaves
 			{
 				flagsIsValid[1] = flagsIsLeaf[1] = true;
 				flagsIsValid[2] = flagsIsLeaf[2] = true;
@@ -177,7 +187,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				triCaches[1] = buildTriBundle(&node->Children[1].Children[0], cacheAlloc, nodeNum++);
 				triCaches[2] = buildTriBundle(&node->Children[1].Children[1], cacheAlloc, nodeNum++);
 			}
-			else if (node->Children[1].Children[0].isLeaf & true) // Two leaves
+			else if (IS_LEAF(node->Children[1].Children[0].flags)) // Two leaves
 			{
 				flagsIsValid[1] = flagsIsLeaf[1] = true;
 				flagsIsValid[2] = true;
@@ -187,7 +197,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[2] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[2]->build(&node->Children[1].Children[1], cacheAlloc);
 			}
-			else if (node->Children[1].Children[1].isLeaf & true) // Two leaves
+			else if (IS_LEAF(node->Children[1].Children[1].flags)) // Two leaves
 			{
 				flagsIsValid[1] = true;
 				flagsIsValid[2] = flagsIsLeaf[2] = true;
@@ -209,7 +219,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			}
 			leafCount++;
 		}
-		else if (node->Children[1].isLeaf & true)
+		else if (IS_LEAF(node->Children[1].flags))
 		{
 			flagsIsValid[2] = flagsIsLeaf[2] = true;
 
@@ -236,7 +246,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 			triCaches[2] = buildTriBundle(&node->Children[1], cacheAlloc, nodeNum++);
 
-			if ((node->Children[0].Children[0].isLeaf & true) && (node->Children[0].Children[1].isLeaf & true)) // Three leaves
+			if (IS_LEAF(node->Children[0].Children[0].flags) && IS_LEAF(node->Children[0].Children[1].flags)) // Three leaves
 			{
 				flagsIsValid[0] = flagsIsLeaf[0] = true;
 				flagsIsValid[1] = flagsIsLeaf[1] = true;
@@ -244,7 +254,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				triCaches[0] = buildTriBundle(&node->Children[0].Children[0], cacheAlloc, nodeNum++);
 				triCaches[1] = buildTriBundle(&node->Children[0].Children[1], cacheAlloc, nodeNum++);
 			}
-			else if (node->Children[0].Children[0].isLeaf & true) // Two leaves
+			else if (IS_LEAF(node->Children[0].Children[0].flags)) // Two leaves
 			{
 				flagsIsValid[0] = flagsIsLeaf[0] = true;
 				flagsIsValid[1] = true;
@@ -254,7 +264,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
 			}
-			else if (node->Children[0].Children[1].isLeaf & true) // Two leaves
+			else if (IS_LEAF(node->Children[0].Children[1].flags)) // Two leaves
 			{
 				flagsIsValid[0] = true;
 				flagsIsValid[1] = flagsIsLeaf[1] = true;
@@ -313,7 +323,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 			bool setLeaf = false;
 
-			if (node->Children[0].Children[0].isLeaf & true) 
+			if (IS_LEAF(node->Children[0].Children[0].flags)) 
 			{
 				flagsIsLeaf[0] = true;
 				triCaches[0] = buildTriBundle(&node->Children[0].Children[0], cacheAlloc, nodeNum++);
@@ -325,7 +335,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
 			}
 
-			if (node->Children[0].Children[1].isLeaf & true) 
+			if (IS_LEAF(node->Children[0].Children[1].flags)) 
 			{
 				flagsIsLeaf[1] = true;
 				triCaches[1] = buildTriBundle(&node->Children[0].Children[1], cacheAlloc, nodeNum++);
@@ -337,7 +347,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
 			}
 
-			if (node->Children[1].Children[0].isLeaf & true) 
+			if (IS_LEAF(node->Children[1].Children[0].flags)) 
 			{
 				flagsIsLeaf[2] = true;
 				triCaches[2] = buildTriBundle(&node->Children[1].Children[0], cacheAlloc, nodeNum++);
@@ -349,7 +359,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[2]->build(&node->Children[1].Children[0], cacheAlloc);
 			}
 
-			if (node->Children[1].Children[1].isLeaf & true) 
+			if (IS_LEAF(node->Children[1].Children[1].flags)) 
 			{
 				flagsIsLeaf[3] = true;
 				triCaches[3] = buildTriBundle(&node->Children[1].Children[1], cacheAlloc, nodeNum++);
@@ -395,6 +405,25 @@ const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, bool hit[4], fl
 	hit[0] = mask & 0x01; hit[1] = mask & 0x02; hit[2] = mask & 0x04; hit[3] = mask & 0x08;
 }
 
+AABB QBVH_Node::getAABB()
+{
+	AABB out = AABB();
+	for (int i = 0; i < 4; i++)
+	{
+		out = AABB(out, AABB(Vector3(bbMinX[i], bbMinY[i], bbMinZ[i]), Vector3(bbMaxX[i], bbMaxY[i], bbMaxZ[i])));
+	}
+	return out;
+}
+
+void QBVH_Node::getAABB(AABB* out)
+{
+	*out = AABB();
+	for (int i = 0; i < 4; i++)
+	{
+		*out = AABB(*out, AABB(Vector3(bbMinX[i], bbMinY[i], bbMinZ[i]), Vector3(bbMaxX[i], bbMaxY[i], bbMaxZ[i])));
+	}
+}
+
 #endif
 
 BVH_Node::~BVH_Node()
@@ -409,7 +438,7 @@ BVH_Node::~BVH_Node()
 	_aligned_free(triCache);
 #endif
 #endif
-	if (!(isLeaf & true))
+	if (!IS_LEAF(flags))
 	{
 		Children[0].~BVH_Node();
 		Children[1].~BVH_Node();
@@ -531,7 +560,7 @@ void BVH::build(Objects* objs)
 void BVH_Node::buildTriBundles(TriCache4* cacheAlloc)
 {
 	static int nodeNum = 0;
-	if (!(isLeaf & true))
+	if (!IS_LEAF(flags))
 	{
 		Children[0].buildTriBundles(cacheAlloc);
 		Children[1].buildTriBundles(cacheAlloc);
@@ -539,15 +568,24 @@ void BVH_Node::buildTriBundles(TriCache4* cacheAlloc)
 	else
 	{
 		triCache = &cacheAlloc[nodeNum++];
+		triCache->doubleTake = false;
 		for (int i = 0; i < 4; i++)
 		{
 			triCache->Ax[i] = triCache->Ay[i] = triCache->Az[i] \
 				= triCache->edge0x[i] = triCache->edge0y[i] = triCache->edge0z[i] \
 				= triCache->edge1x[i] = triCache->edge1y[i] = triCache->edge1z[i] = 0;
 			triCache->tris[i] = 0;
+			triCache->checkOut[i] = false;
 		}
 		for (int i = 0; i < GET_NUMCHILD(numChildren); i++)
 		{
+			if (objs[i]->m_objectType != OBJECT)
+			{
+				triCache->tris[i] = objs[i];
+				triCache->checkOut[i] = true;
+				triCache->doubleTake = true;
+				continue;
+			}
 			TriangleMesh::TupleI3 ti3;
 			ti3                 = objs[i]->m_mesh->m_vertexIndices[objs[i]->m_index];
 			triCache->Ax[i]     = objs[i]->m_mesh->m_vertices[ti3.x].x;
@@ -591,7 +629,7 @@ void BVH_Node::buildBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_
 	if (numObjs <= MAX_LEAF_SIZE)		// Make a leaf...
 	{
 		numChildren = PUT_NUMCHILD(numObjs);
-		isLeaf |= true;
+		flags |= SET_IS_LEAF;
 		nodeCount++;
 		leafCount++;
 
@@ -606,10 +644,12 @@ void BVH_Node::buildBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_
 		if (curDepth > maxDepth) maxDepth = curDepth;
 		nodeCount += 2;
 
-		partitionSweepBin(objs, preCalcAABB, centroids, numObjs, partPt, leftArea, rightArea, binIds);		// Find the best place to split the node
+		u_int bestAxis = 0;
+
+		partitionSweepBin(objs, preCalcAABB, centroids, numObjs, partPt, leftArea, rightArea, binIds, bestAxis);		// Find the best place to split the node
 
 		numChildren = PUT_NUMCHILD(NODE_SIZE);															// Check out BVH.h, the first bits of numChildren is used by isLeaf.
-		isLeaf |= false;
+		flags |= SET_AXIS(bestAxis);
 
 		Children = (BVH_Node*)_aligned_malloc(sizeof(BVH_Node)*2, 16);
 
@@ -630,11 +670,10 @@ void BVH_Node::buildBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_
 	}
 }
 
-void BVH_Node::partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds)
+void BVH_Node::partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds, u_int &bestAxis)
 {
 	float bestCost  = INFINITY;
 	float thisCost  = 0;
-	int bestAxis	= -1;
 	int binPart		= 0;
 
 #ifdef USE_TRI_PACKETS
@@ -649,14 +688,14 @@ void BVH_Node::partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* cent
 			binBounds.grow(centroids[i]);
 		}
 		float length[3] = {binBounds.bbMax.x - binBounds.bbMin.x,		// Get dimensions of the bounds.
-			binBounds.bbMax.y - binBounds.bbMin.y,		// We test along all axis to find the best partition
-			binBounds.bbMax.z - binBounds.bbMin.z};
+						   binBounds.bbMax.y - binBounds.bbMin.y,		// We test along all axis to find the best partition
+						   binBounds.bbMax.z - binBounds.bbMin.z};
 
 		for (int axis = 0; axis < 3; axis++)
 		{
 			if (length[axis] < epsilon)
 			{
-				break;
+				continue;
 			}
 			float kl = (float)NUM_BINS*(1.0f-epsilon) / length[axis];		// Coefficients for binning the objects
 			float ko = binBounds.bbMin[axis];								// Bin(centroid[i]) = num_bins*(centroid[i][axis] - bounds.min[axis]) / length[axis]
@@ -873,7 +912,7 @@ void BVH_Node::buildSAH(Object** objs, u_int numObjs, float* leftArea, float* ri
 	if (numObjs <= MAX_LEAF_SIZE)		// Make a leaf...
 	{
 		numChildren = PUT_NUMCHILD(numObjs);
-		isLeaf |= true;
+		flags |= SET_IS_LEAF;
 		nodeCount++;
 		leafCount++;
 
@@ -887,10 +926,13 @@ void BVH_Node::buildSAH(Object** objs, u_int numObjs, float* leftArea, float* ri
 		curDepth++;
 		if (curDepth > maxDepth) maxDepth = curDepth; 
 		nodeCount += 2;
-		partitionSweepSAH(objs, numObjs, partPt, leftArea, rightArea);		// Find the best place to split the node
+
+		u_int bestAxis = 0;
+
+		partitionSweepSAH(objs, numObjs, partPt, leftArea, rightArea, bestAxis);		// Find the best place to split the node
 
 		numChildren = PUT_NUMCHILD(NODE_SIZE);										// Check out BVH.h, the first of numChildren is used by isLeaf.
-		isLeaf |= false;
+		flags |= SET_AXIS(bestAxis);
 
 		Children = (BVH_Node*)_aligned_malloc(sizeof(BVH_Node)*2, 16);
 
@@ -907,11 +949,10 @@ void BVH_Node::buildSAH(Object** objs, u_int numObjs, float* leftArea, float* ri
 	}
 }
 
-void BVH_Node::partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea)
+void BVH_Node::partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, u_int &bestAxis)
 {
 	float bestCost  = MIRO_TMAX;
 	float thisCost  = 0;
-	int bestAxis	= -1;
 
 	// Using ideas from Wald's "Ray Tracing Deformable Scenes Using Dynamic Bounding Volume Hierarchies" (Siggraph, 2007).
 
@@ -943,7 +984,7 @@ void BVH_Node::partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, fl
 		{
 			bestCost = thisCost;
 			partPt = i;
-			bestAxis = 1;
+			bestAxis = 0;
 		}
 	}
 
@@ -973,7 +1014,7 @@ void BVH_Node::partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, fl
 		{
 			bestCost = thisCost;
 			partPt = i;
-			bestAxis = 2;
+			bestAxis = 1;
 		}
 	}
 
@@ -1003,16 +1044,16 @@ void BVH_Node::partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, fl
 		{
 			bestCost = thisCost;
 			partPt = i;
-			bestAxis = 3;
+			bestAxis = 2;
 		}
 	}
 
 	switch (bestAxis)
 	{
-	case 1 :
+	case 0 :
 		qsort(objs, numObjs, sizeof(Object*), Object::sortByXComponent);
 		break;
-	case 2 :
+	case 1 :
 		qsort(objs, numObjs, sizeof(Object*), Object::sortByYComponent);
 		break;
 	}
@@ -1049,7 +1090,7 @@ float BVH_Node::calcSAHCost(int leftNum, float leftArea, int rightNum, float rig
 }
 
 #ifdef USE_TRI_PACKETS
-const bool intersect4(const unsigned int threadID, HitInfo* result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
+const bool intersect4(const unsigned int threadID, HitInfo &result, const Ray& r, float tMin, BVH_Node::TriCache4* triCache);
 #endif
 
 const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ray& ray, const float tMin) const 
@@ -1135,19 +1176,19 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 		int stackIndex = -1;
 		BVH_Node* BVH_Stack[256];
 
-		if (m_baseNode->isLeaf & true)
+		if (IS_LEAF(m_baseNode->flags))
 		{
 			++stackIndex;
 			BVH_Stack[stackIndex] = m_baseNode;
 		}
 		else
 		{
-			// Push children on "stack"
-			for (int i = NODE_SIZE-1; i >= 0; i--)
-			{		
-				++stackIndex;
-				BVH_Stack[stackIndex] = &m_baseNode->Children[i];
-			}
+			// Order the nodes in such a way to minimize traversal.
+			// Note that we need to push elements in the reverse order they'll be traversed (since stack is LIFO)
+			u_int switchOrder = (ray.d[PART_AXIS(m_baseNode->flags)] >= 0.f) ? 0 : 1;
+			
+			BVH_Stack[++stackIndex] = &m_baseNode->Children[1-switchOrder];
+			BVH_Stack[++stackIndex] = &m_baseNode->Children[switchOrder];
 		}
 
 		bool isFirst = true;
@@ -1158,7 +1199,7 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 
 			if (BVH_Stack[stackIndex]->intersect(minHit, ray, tMin))
 			{
-				if (BVH_Stack[stackIndex]->isLeaf & true)		// If this is a leaf, then we need to intersect the objects inside...
+				if (IS_LEAF(BVH_Stack[stackIndex]->flags))		// If this is a leaf, then we need to intersect the objects inside...
 				{
 #ifdef USE_TRI_PACKETS
 					if (intersect4(threadID, minHit, ray, tMin, BVH_Stack[stackIndex]->triCache))
@@ -1180,10 +1221,12 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 				{
 					// Push on stack by overwriting "this" node (same as popping this node before pushing)
 					// I go from last to first - otherwise I'd overwrite the current pointer first and results are wrong.
-					for (int i = NODE_SIZE-1; i >= 0; i--)
-					{				
-						BVH_Stack[stackIndex+i] = &BVH_Stack[stackIndex]->Children[NODE_SIZE-1-i];
-					}
+					// Order the nodes in such a way to minimize traversal.
+					// Note that we need to push elements in the reverse order they'll be traversed (since stack is LIFO)
+					u_int switchOrder = (ray.d[PART_AXIS(BVH_Stack[stackIndex]->flags)] >= 0.f) ? 0 : 1;
+
+					BVH_Stack[stackIndex+1] = &BVH_Stack[stackIndex]->Children[switchOrder];
+					BVH_Stack[stackIndex]   = &BVH_Stack[stackIndex]->Children[1-switchOrder];
 
 					stackIndex += NODE_SIZE-1;
 				}
@@ -1251,6 +1294,43 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 //#pragma omp atomic
 	Ray::rayTriangleIntersections[threadID]++;
 
+	bool proxyIntersect = false;
+
+	if (triCache->doubleTake)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			if (triCache->checkOut[i])
+			{
+				if (triCache->tris[i]->m_objectType == PROXY_OBJECT)
+				{
+					// Intersect proxy
+					if (triCache->tris[i]->intersect(threadID, result, r, tMin)) proxyIntersect = true;
+				}
+				else // Don't really need this yet... if (triCache->tris[i]->m_objectType == MB_OBJECT)
+				{
+					// get geometry for motion blurred geom
+					const MBObject* o = static_cast<MBObject*>(triCache->tris[i]);
+					const float time = r.time;
+					const float _1_time = 1.f - time;
+					
+					TriangleMesh::TupleI3 ti3;
+					ti3                 = o->m_mesh->m_vertexIndices[o->m_index];
+					
+					triCache->Ax[i]     = time*o->m_mesh_t2->m_vertices[ti3.x].x + _1_time*o->m_mesh->m_vertices[ti3.x].x;
+					triCache->Ay[i]     = time*o->m_mesh_t2->m_vertices[ti3.x].y + _1_time*o->m_mesh->m_vertices[ti3.x].y;
+					triCache->Az[i]     = time*o->m_mesh_t2->m_vertices[ti3.x].z + _1_time*o->m_mesh->m_vertices[ti3.x].z;
+					triCache->edge0x[i] = (time*o->m_mesh_t2->m_vertices[ti3.y].x + _1_time*o->m_mesh->m_vertices[ti3.y].x) - triCache->Ax[i];
+					triCache->edge0y[i] = (time*o->m_mesh_t2->m_vertices[ti3.y].y + _1_time*o->m_mesh->m_vertices[ti3.y].y) - triCache->Ay[i];
+					triCache->edge0z[i] = (time*o->m_mesh_t2->m_vertices[ti3.y].z + _1_time*o->m_mesh->m_vertices[ti3.y].z) - triCache->Az[i];
+					triCache->edge1x[i] = (time*o->m_mesh_t2->m_vertices[ti3.z].x + _1_time*o->m_mesh->m_vertices[ti3.z].x) - triCache->Ax[i];
+					triCache->edge1y[i] = (time*o->m_mesh_t2->m_vertices[ti3.z].y + _1_time*o->m_mesh->m_vertices[ti3.z].y) - triCache->Ay[i];
+					triCache->edge1z[i] = (time*o->m_mesh_t2->m_vertices[ti3.z].z + _1_time*o->m_mesh->m_vertices[ti3.z].z) - triCache->Az[i];
+				}
+			}
+		}
+	}
+
 	bool shadow = r.bounces_flags & IS_SHADOW_RAY;
 
 	// Cross product
@@ -1267,7 +1347,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 
 	const __m128 a4			= mulps(invDet4, SoADot(tVecx4, tVecy4, tVecz4, pVecx4, pVecy4, pVecz4));
 	int aMask;
-	if ((aMask = (movemaskps(cmpgteqps(a4, _zerosps)) & movemaskps(cmpleqps(a4, _onesps)))) == 0) return false;
+	if ((aMask = (movemaskps(cmpgteqps(a4, _zerosps)) & movemaskps(cmpleqps(a4, _onesps)))) == 0) return proxyIntersect;
 
 	// Cross product
 	const __m128 qVecx4		= subps(mulps(tVecy4, triCache->edge0z4), mulps(tVecz4, triCache->edge0y4)); 
@@ -1276,14 +1356,14 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 
 	const __m128 b4 = mulps(invDet4, SoADot(r.dx4, r.dy4, r.dz4, qVecx4, qVecy4, qVecz4));
 	int bMask;
-	if ((bMask = (aMask & movemaskps(cmpgteqps(b4, _zerosps)) & movemaskps(cmpleqps(b4, _onesps)) & movemaskps(cmpleqps(addps(a4, b4), _onesps)))) == 0) return false;
+	if ((bMask = (aMask & movemaskps(cmpgteqps(b4, _zerosps)) & movemaskps(cmpleqps(b4, _onesps)) & movemaskps(cmpleqps(addps(a4, b4), _onesps)))) == 0) return proxyIntersect;
 
 	const __m128 tMin4  = setSSE(tMin);
 	const __m128 tMax4  = setSSE(result.t);
 
 	const __m128 newT4 = mulps(invDet4, SoADot(triCache->edge1x4, triCache->edge1y4, triCache->edge1z4, qVecx4, qVecy4, qVecz4));
 	int tMask;
-	if ((tMask = (bMask & movemaskps(cmpgteqps(newT4, tMin4)) & movemaskps(cmplessps(newT4, tMax4)))) == 0) return false;
+	if ((tMask = (bMask & movemaskps(cmpgteqps(newT4, tMin4)) & movemaskps(cmplessps(newT4, tMax4)))) == 0) return proxyIntersect;
 
 	if (shadow) return true;
 

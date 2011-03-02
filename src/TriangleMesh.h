@@ -45,6 +45,7 @@ public:
 	TupleI3* m_vertexIndices;
 	TupleI3* m_texCoordIndices;
 	u_int m_numTris;
+	bool doPreCalc;
 	
 	ALIGN_SSE struct PrecomputedTriangle		// Used for SSE intersection routine
 	{
@@ -56,7 +57,6 @@ public:
 
 protected:
     void loadObj(FILE* fp, const Matrix4x4& ctm);
-	bool doPreCalc;
 };
 
 #endif // CSE168_TRIANGLE_MESH_H_INCLUDED

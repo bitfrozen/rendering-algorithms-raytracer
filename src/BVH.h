@@ -5,8 +5,12 @@
 #include "Object.h"
 #include <vector>
 
-#define GET_NUMCHILD(a) (a)>>1
-#define PUT_NUMCHILD(a) (a)<<1
+#define GET_NUMCHILD(a)		(a>>3)
+#define PUT_NUMCHILD(a)		(a<<3)
+#define SET_IS_LEAF			0x01
+#define IS_LEAF(a)			((a & 0x01) == true)
+#define SET_AXIS(a)			(a & 0x03)<<1
+#define PART_AXIS(a)		((a & 0x06)>>1)
 
 ALIGN_SSE class BVH_Node
 {
@@ -27,7 +31,7 @@ public:
 	};
 	union {
 		u_int numChildren;
-		u_int isLeaf;
+		u_int flags;
 	};
 #ifdef USE_TRI_PACKETS
 	ALIGN_SSE struct TriCache4 {
@@ -41,6 +45,8 @@ public:
 		union {float edge1x[4]; __m128 edge1x4; };
 		union {float edge1y[4]; __m128 edge1y4; };
 		union {float edge1z[4]; __m128 edge1z4; };
+		bool checkOut[4];
+		bool doubleTake;
 	};
 	TriCache4* triCache;
 	void buildTriBundles(TriCache4* cacheAlloc);
@@ -49,10 +55,10 @@ public:
 	const bool intersect(HitInfo &result, const Ray& ray, const float tMin = epsilon) const;
 
 	void buildSAH(Object** objs, u_int numObjs, float* leftArea, float* rightArea);
-	void partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea);
+	void partitionSweepSAH(Object** objs, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, u_int &bestAxis);
 
 	void buildBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, float* leftArea, float* rightArea, int* binIds);
-	void partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds);
+	void partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_int numObjs, u_int& partPt, float* leftArea, float* rightArea, int* binIds, u_int &bestAxis);
 
 	float calcSAHCost(int leftNum, float leftArea, int rightNum, float rightArea);
 };
@@ -81,6 +87,8 @@ public:
 	const void intersect(HitInfo &result, const Ray& ray, bool hit[4], const float tMin = epsilon) const;
 	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc);
 	BVH_Node::TriCache4* buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum);
+	AABB getAABB();
+	void getAABB(AABB* out);
 };
 
 #endif
@@ -104,12 +112,14 @@ public:
 
 	void getAABB(AABB* outBox) {
 #ifdef USE_QBVH
+		m_baseQNode->getAABB(outBox);
 #else
 		outBox = m_baseNode->bBox;
 #endif
 	}
 	AABB getAABB() {
 #ifdef USE_QBVH
+		return m_baseQNode->getAABB();
 #else
 		return *m_baseNode->bBox;
 #endif
