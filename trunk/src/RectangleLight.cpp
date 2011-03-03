@@ -39,7 +39,7 @@ void RectangleLight::setPower(float f)
 	m_power = f * surfAreaRecip;
 }
 
-const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const
+const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const
 {
 	Ray sampleRay(threadID);
 	HitInfo sampleHit;
@@ -84,7 +84,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 				sampleHit.t = distance - epsilon;									// We need this to account for the fact that we CAN hit geometry, to avoid false positives.
 				if (m_fastShadows)
 				{
-					sampleRay.set(threadID, from, randDir, g_camera->getTimeSample(), 1.0f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
+					sampleRay.set(threadID, from, randDir, time, 1.001f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
 					if (scene.trace(threadID, sampleHit, sampleRay, epsilon))					// Quick method, returns any hit
 					{
 						attenuate = 0.0f;
@@ -93,7 +93,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 				else																// Full method, accounts for transparency effects
 				{
 					float distanceTraversed = 0.0f;
-					sampleRay.set(threadID, from, randDir, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
+					sampleRay.set(threadID, from, randDir, time, 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
 					while (distanceTraversed < distance && attenuate > epsilon)
 					{
 						if (scene.trace(threadID, sampleHit, sampleRay, epsilon))				
@@ -105,7 +105,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 								attenuate *= sampleHit.obj->m_material->refractAmt();
 							}
 							Vector3 newP = Vector3(sampleRay.o[0], sampleRay.o[1], sampleRay.o[2]) + sampleHit.t * randDir;
-							sampleRay.set(threadID, newP, randDir, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);
+							sampleRay.set(threadID, newP, randDir, time, 1.001f, 0, 0, IS_PRIMARY_RAY);
 							distanceTraversed += sampleHit.t;
 						}
 						else
@@ -128,7 +128,7 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 		cutOff = (E * samplesDoneRecip).average() < m_noiseThreshold;		// Stop sampling if contribution is below the noise threshold
 
 		tmpResult += E * attenuate;
-		tmpSpec   += dot(rVec, randDir) * attenuate;
+		tmpSpec   += max(0.f, dot(rVec, randDir)) * attenuate;
 
 	}  while (samplesDone < m_numSamples && !cutOff);
 

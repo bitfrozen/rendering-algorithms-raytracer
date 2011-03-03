@@ -161,10 +161,12 @@ public:
 
     //! Default constructor.
     explicit HitInfo(float t = MIRO_TMAX, float a = 0.0f, float b = 0.0f, Object* obj = NULL, ProxyObject* proxy = NULL) : t(t), a(a), b(b), obj(obj), m_proxy(proxy){};
-	const virtual void getAllInfos(Vector3 &N, Vector3 &geoN, float &uCoord, float &vCoord) const;
-	const virtual void getInterpolatedNormal(Vector3& N) const;
-	const virtual void getGeoNormal(Vector3& geoN) const;
-	const virtual void getUVs(float& uCoord, float &vCood) const;
+	const void getAllInfos(Vector3 &N, Vector3 &geoN, Vector3 &T, Vector3 &BT, float &uCoord, float &vCoord) const;
+	const void getInterpolatedNormal(Vector3& N) const;
+	const void getInterpolatedTangent(Vector3& T) const;
+	const void getInterpolatedBiTangent(Vector3& BT) const;
+	const void getGeoNormal(Vector3& geoN) const;
+	const void getUVs(float& uCoord, float &vCood) const;
 };
 
 #endif // CSE168_RAY_H_INCLUDED

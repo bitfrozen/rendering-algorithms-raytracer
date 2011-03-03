@@ -15,6 +15,7 @@ public:
 	const virtual float getWidth() {return m_image->m_width;}
 	const virtual float getHeight() {return m_image->m_height;}
 	const virtual Vector4 getLookup(float u, float v) const;
+	const virtual float   getLookupAlpha(float u, float v) const;
 	const virtual Vector3 getLookup3(float u, float v) const;
 	/* Lookup for environment map. assumes texture is latitude-longitude map. */
 	const virtual Vector3 getLookupXYZ3(float x, float y, float z) const;

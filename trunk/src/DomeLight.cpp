@@ -73,7 +73,7 @@ void DomeLight::setTexture(Texture* t)
 	}
 }
 
-const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const
+const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const
 {
 	Ray sampleRay(threadID);
 	HitInfo sampleHit;
@@ -110,7 +110,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		sampleHit.t = MIRO_TMAX;
 		if (m_fastShadows)
 		{
-			sampleRay.set(threadID, from, direction, g_camera->getTimeSample(), 1.001f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
+			sampleRay.set(threadID, from, direction, time, 1.001f, 0, 0, IS_SHADOW_RAY);		// Create shadow ray
 			if (scene.trace(threadID, sampleHit, sampleRay, epsilon))					// Quick method, returns any hit
 			{
 				attenuate = 0.0f;
@@ -119,7 +119,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		else																// Full method, accounts for transparency effects
 		{
 			float distanceTraversed = 0.0f;
-			sampleRay.set(threadID, from, direction, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
+			sampleRay.set(threadID, from, direction, time, 1.001f, 0, 0, IS_PRIMARY_RAY);		// Create primary ray
 			while (distanceTraversed < MIRO_TMAX && attenuate > epsilon)
 			{
 				if (scene.trace(threadID, sampleHit, sampleRay, epsilon))				
@@ -131,7 +131,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 						attenuate *= sampleHit.obj->m_material->refractAmt();
 					}
 					Vector3 newP = Vector3(sampleRay.o[0], sampleRay.o[1], sampleRay.o[2]) + sampleHit.t * direction;
-					sampleRay.set(threadID, newP, direction, g_camera->getTimeSample(), 1.001f, 0, 0, IS_PRIMARY_RAY);
+					sampleRay.set(threadID, newP, direction, time, 1.001f, 0, 0, IS_PRIMARY_RAY);
 					distanceTraversed += sampleHit.t;
 				}
 				else

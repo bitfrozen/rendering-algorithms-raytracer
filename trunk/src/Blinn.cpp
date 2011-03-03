@@ -53,7 +53,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 	{
 		getCosineDistributedSamples(theNormal, randD);
 
-		randRay.set(threadID, P, randD, g_camera->getTimeSample(), ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
+		randRay.set(threadID, P, randD, ray.time, ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
 		newHit.t = MIRO_TMAX;
 
 		// Trace the random ray; Do the next bounce
@@ -62,7 +62,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 			out += diffuseColor * newHit.obj->m_material->shade(threadID, randRay, newHit, scene);
 		}
 		// If we don't hit anything, add contribution from environment
-		else if (g_scene->sampleEnv())
+		else if (m_sampleEnv)
 		{
 			out += diffuseColor * getEnvironmentColor(randD, scene);
 		}
@@ -76,7 +76,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
 		{
 			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, Vector3(0), lightSpec);
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, Vector3(0), lightSpec);
 		
 			out += lightPower * diffuseColor;										// Calculate Diffuse component
 		}	
@@ -93,15 +93,49 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	Vector3 rayD	= Vector3(ray.d[0],ray.d[1],ray.d[2]);		// Ray direction
 	Vector3 viewDir	= -rayD;									// View direction
 	float u, v;
-	Vector3 N, geoN;
+	Vector3 N, geoN, T, BT;
 	Vector3 diffuseColor = m_kd;
+	float localSpecExp = m_specExp;
+	float localSpecAmt = m_specAmt;
+	float localReflectAmt = m_reflectAmt;
+	float localRefractAmt = m_refractAmt;
+	float alpha = 1.0f;
 
-	hit.getAllInfos(N, geoN, u, v);
+	hit.getAllInfos(N, geoN, T, BT, u, v);
 
-	if (m_texture != NULL) 
+	if (m_colorMap) 
 	{
-		Vector4 texCol = m_texture->getLookup(u, v);
+		Vector4 texCol = m_colorMap->getLookup(u, v);
 		diffuseColor = Vector3(texCol.x, texCol.y, texCol.z);
+	}
+
+	if (m_alphaMap)
+	{
+		alpha = m_alphaMap->getLookupAlpha(u, v);
+	}
+
+	if (m_normalMap)
+	{
+		Vector4 texN = m_normalMap->getLookup(u, v);
+		N = (texN.x*T + texN.y*BT + texN.z*N);
+	}
+
+	if (m_specularMap)
+	{
+		Vector4 texS = m_specularMap->getLookup(u, v);
+		localSpecAmt = (texS.x+texS.y+texS.z) * 0.3333333f * localSpecAmt;
+	}
+
+	if (m_reflectMap)
+	{
+		Vector4 texR = m_reflectMap->getLookup(u, v);
+		localReflectAmt = (texR.x+texR.y+texR.z) * 0.3333333f * localReflectAmt;
+	}
+
+	if (m_refractMap)
+	{
+		Vector4 texR = m_refractMap->getLookup(u, v);
+		localRefractAmt = (texR.x+texR.y+texR.z) * 0.3333333f * localRefractAmt;
 	}
 
 	Vector3 P = ray.getPoint(hit.t);
@@ -150,9 +184,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
 		{
 			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, scene, rVec, lightSpec);
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, rVec, lightSpec);
 
-			Ls += lightPower * m_ks * m_specAmt * pow(lightSpec, m_specExp);// * 2.f;		// Calculate specular component				
+			Ls += lightPower * m_ks * localSpecAmt * pow(lightSpec, localSpecExp);// * 2.f;		// Calculate specular component
 			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
 		}
 	}		
@@ -186,31 +220,29 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	// Russian Roulette sampling for reflection / refraction.
 	// This helps prevent ray number explosion
-	if (rrFloat < m_reflectAmt*Rs)
+	if (rrFloat < localReflectAmt*Rs)
 	{
-		if (m_reflectAmt*Rs > 0.0f && bounces < 3)
+		if (localReflectAmt*Rs > 0.0f && bounces < 3)
 		{
-			Ray rRay = Ray(threadID, P, rVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
+			Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 			HitInfo newHit;
 			newHit.t = MIRO_TMAX;
 			if (scene.trace(threadID, newHit, rRay, epsilon))
 			{
 				Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
-				Lr                += m_ks*m_reflectAmt*Rs*reflection;
+				Lr                += m_ks*reflection;
 				doEnv              = false;
 			}
-			Lr /= m_reflectAmt*Rs;
 		}
-		if (m_reflectAmt*Rs > 0.0f && doEnv)
+		if (localReflectAmt*Rs > 0.0f && doEnv)
 		{
 			Vector3 tmp = getEnvironmentColor(rVec, scene);
-			Lr += m_ks * m_reflectAmt * Rs * getEnvironmentColor(rVec, scene);
-			Lr /= m_reflectAmt*Rs;
+			Lr += m_ks * getEnvironmentColor(rVec, scene);
 		}
 	} 
 	else
 	{
-		if (m_refractAmt*Ts > 0.0f)
+		if (localRefractAmt*Ts > 0.0f)
 		{
 			float snellsQ  = inIOR / outIOR;
 			float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
@@ -220,29 +252,46 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 			{		
 				ray.r_IOR.push(outIOR);
-				Ray tRay = Ray(threadID, P, tVec, g_camera->getTimeSample(), ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+				Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
 				HitInfo newHit;
 				newHit.t = MIRO_TMAX;
 				if (scene.trace(threadID, newHit, tRay, epsilon))
 				{
 					Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
-					Lt                += m_ks*m_refractAmt*Ts*refraction;
-					Lt				  /= m_refractAmt*Ts;
+					Lt                += m_ks*refraction;
 					doEnv              = false;
 				}
 				ray.r_IOR.pop();
 			}
 			if (doEnv)
 			{
-				Lt += m_ks * m_refractAmt * Ts * getEnvironmentColor(rVec, scene);
-				Lt /= m_refractAmt*Ts;
+				Lt += m_ks * getEnvironmentColor(rVec, scene);
 			}
 		}
 	}
 
 	Ld += m_ka;
 
-	return (Ld + Ls) * (1.0f - Rs*m_reflectAmt - Ts*m_refractAmt) + Lr + Lt + m_Le; // Make sure we keep energy constant
+	if (alpha >= 1.f-epsilon)
+	{
+		return (Ld + Ls) * (1.0f - Rs*localReflectAmt - Ts*localRefractAmt) + Lr + Lt + m_Le; // Make sure we keep energy constant
+	}
+	else
+	{
+		Ray newRay = Ray(threadID, (P + epsilon*rayD), rayD, ray.time, ray.r_IOR, bounces+1, giBounces+1, IS_REFLECT_RAY);
+		HitInfo newHit;
+		newHit.t = MIRO_TMAX;
+		Vector3 next = 0;
+		if (scene.trace(threadID, newHit, newRay, epsilon))
+		{
+			next  = newHit.obj->m_material->shade(threadID, newRay, newHit, scene);
+		}	
+		else
+		{
+			next = getEnvironmentColor(rayD, scene);
+		}
+		return alpha*((Ld + Ls) * (1.0f - Rs*localReflectAmt - Ts*localRefractAmt) + Lr + Lt + m_Le) + (1.f-alpha)*next;
+	}
 }
 
 /*Vector3 Blinn::shadeSSE(const Ray& ray, const HitInfo& hit, const Scene& scene) const

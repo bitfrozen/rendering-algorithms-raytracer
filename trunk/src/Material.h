@@ -17,15 +17,29 @@ public:
     
     const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const = 0;
 	void setEnvMap(Texture* map)					{m_envMap = map;}
+	void setColorMap(Texture* map)					{m_colorMap = map;}
+	void setAlphaMap(Texture* map)					{m_alphaMap = map;}
+	void setNormalMap(Texture* map)					{m_normalMap = map;}
+	void setSpecularMap(Texture* map)				{m_specularMap = map;}
+	void setReflectMap(Texture* map)				{m_reflectMap = map;}
+	void setRefractMap(Texture* map)				{m_refractMap = map;}
 	void setEnvExposure(float exp)					{m_envExposure = exp;}
+	void setSampleEnv(bool b)						{m_sampleEnv = b;}
+	const bool sampleEnv()							{return m_sampleEnv;}
 	const float refractAmt() const					{return m_refractAmt;}
 
 	void setRefractAmt(const float refractAmt)		{m_refractAmt = refractAmt;}
 	const Vector3 getEnvironmentColor(const Vector3& direction, const Scene& scene) const;
 
-	Texture* m_texture;
+	Texture* m_colorMap;
+	Texture* m_alphaMap;
+	Texture* m_specularMap;
+	Texture* m_reflectMap;
+	Texture* m_refractMap;
+	Texture* m_normalMap;
 	Texture* m_envMap;
 	float m_envExposure;
+	bool m_sampleEnv;
 
 	__forceinline static float fresnel(const float n1, const float n2, const float cosThetaI) 
 	{

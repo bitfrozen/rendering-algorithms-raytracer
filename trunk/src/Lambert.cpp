@@ -22,16 +22,16 @@ const Vector3 Lambert::shade(const unsigned int threadID, const Ray& ray, const 
 	Vector3 rayD	= Vector3(ray.d[0],ray.d[1],ray.d[2]);		// Ray direction
 	Vector3 viewDir	= -rayD;									// View direction
 	float u, v;
-	Vector3 N, geoN;
+	Vector3 N, geoN, T, BT;
 	Vector3 diffuseColor = m_kd;
 
 	Vector3 P = ray.getPoint(hit.t);
 
-	hit.getAllInfos(N, geoN, u, v);
+	hit.getAllInfos(N, geoN, T, BT, u, v);
 
-	if (m_texture != NULL) 
+	if (m_colorMap != NULL) 
 	{
-		Vector4 texCol = m_texture->getLookup(u, v);
+		Vector4 texCol = m_colorMap->getLookup(u, v);
 		diffuseColor = Vector3(texCol.x, texCol.y, texCol.z);
 	}
 
@@ -42,7 +42,7 @@ const Vector3 Lambert::shade(const unsigned int threadID, const Ray& ray, const 
     for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
     {
 		float discard;
-		Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, N, scene, 0, discard);		
+		Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, N, ray.time, scene, 0, discard);		
 		L += lightPower * diffuseColor;								// Calculate Diffuse component
     }
     
