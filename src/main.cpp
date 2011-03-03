@@ -31,6 +31,7 @@ void makeSponzaScene();
 void makeTestScene();
 void makeMBTestScene();
 void makeProxyTestScene();
+void makeProxyGrid(Objects* o, BVH* b);
 
 int main(int argc, char*argv[])
 {
@@ -46,9 +47,9 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
-	//makeTestScene();
+	makeTestScene();
 	//makeMBTestScene();
-	makeProxyTestScene();
+	//makeProxyTestScene();
 
 	//assignment 2
 	//makePathTracingScene3();
@@ -71,12 +72,12 @@ void makeTestScene()
 
 	g_image->resize(512, 512);
 
-	g_scene->m_pathTrace = true;
+	g_scene->m_pathTrace = false;
 	g_scene->m_numPaths = 1;
-	g_scene->m_maxBounces = 5;
+	g_scene->m_maxBounces = 2;
 	g_scene->m_minSubdivs = 1;
-	g_scene->m_maxSubdivs = 6;
-	g_scene->setNoise(0.03f);
+	g_scene->m_maxSubdivs = 1;
+	g_scene->setNoise(0.01f);
 
 	// set up the camera
 	g_scene->setBGColor(Vector3(0));
@@ -84,7 +85,7 @@ void makeTestScene()
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(60);
-	g_camera->m_aperture = 0.1f;
+	g_camera->m_aperture = 0.001f;
 	g_camera->m_focusPlane = 3.0f;
 
 	//make a raw image from hdr file
@@ -93,6 +94,26 @@ void makeTestScene()
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
+	g_scene->setSampleEnv(false);
+
+	
+	//make a raw image from hdr file
+	RawImage* hdrImage2 = new RawImage();
+	hdrImage2->loadImage("Images/Topanga_Forest_B_light.hdr");
+	Texture* hdrTex2 = new Texture(hdrImage2);
+
+	DomeLight* domeLight = new DomeLight;
+	domeLight->setTexture(hdrTex2);
+	domeLight->setPower(0.2f);
+	domeLight->setSamples(4);
+	g_scene->addLight(domeLight);
+
+	/*// create and place a point light source
+	PointLight * light2 = new PointLight;
+	light2->setPosition(Vector3(5, 5, 5));
+	light2->setColor(Vector3(1, 1, 1));
+	light2->setPower(500);
+	g_scene->addLight(light2);*/
 
 	// create a spiral of spheres
 	Blinn* mat = new Blinn(Vector3(0.09, 0.094, 0.1));
@@ -113,29 +134,83 @@ void makeTestScene()
 	mat2->setReflectGloss(0.98f);
 
 	Blinn* planeMat = new Blinn(Vector3(1.0));
-	planeMat->setSpecExp(20.0f);
+	planeMat->setSpecExp(10.0f);
 	planeMat->setSpecAmt(0);
 	planeMat->setIor(1.6f);
-	planeMat->setReflectAmt(1.0f);
+	planeMat->setReflectAmt(0.0f);
 	planeMat->setRefractAmt(0.0f);
-	planeMat->setReflectGloss(0.97f);
+	planeMat->setReflectGloss(1.0f);
+
+	RawImage* barkImg = new RawImage();
+	barkImg->loadImage("Textures/bark_COLOR.tga");
+	Texture* barkTex = new Texture(barkImg);
+
+	RawImage* barkNrmImg = new RawImage();
+	barkNrmImg->loadImage("Textures/bark_NRM.tga");
+	Texture* barkNrmTex = new Texture(barkNrmImg);
+
+	RawImage* barkSpecImg = new RawImage();
+	barkSpecImg->loadImage("Textures/bark_SPEC.tga");
+	Texture* barkSpecTex = new Texture(barkSpecImg);
+
+	Blinn* barkMtl = new Blinn(Vector3(1.0));
+	barkMtl->setSpecExp(10.0f);
+	barkMtl->setSpecAmt(0.5);
+	barkMtl->setIor(1.6f);
+	barkMtl->setReflectAmt(0.0f);
+	barkMtl->setRefractAmt(0.0f);
+	barkMtl->setReflectGloss(1.0f);
+	barkMtl->setColorMap(barkTex);
+	barkMtl->setNormalMap(barkNrmTex);
+	barkMtl->setSpecularMap(barkSpecTex);
+
+	RawImage* leavesImg = new RawImage();
+	leavesImg->loadImage("Textures/testTreeLeaves.tga");
+	Texture* leavesTex = new Texture(leavesImg);
+
+	Blinn* leavesMtl = new Blinn(Vector3(1.0));
+	leavesMtl->setSpecExp(10.0f);
+	leavesMtl->setSpecAmt(0.5);
+	leavesMtl->setColorMap(leavesTex);
+	leavesMtl->setAlphaMap(leavesTex);
+
+	RawImage* grassImg = new RawImage();
+	grassImg->loadImage("Textures/grassblade2.tga");
+	Texture* grassTex = new Texture(grassImg);
+
+	Blinn* grassMtl = new Blinn(Vector3(1.0));
+	grassMtl->setSpecExp(10.0f);
+	grassMtl->setSpecAmt(0.5);
+	grassMtl->setColorMap(grassTex);
 
 	Matrix4x4 xform;
-	xform *= scale(0.8, 0.8, 0.8);
-	xform *= rotate(30, 0, 1, 0);
-	xform *= translate(-5, 0, 0);
-
-	TriangleMesh *mesh = new TriangleMesh;
-	TriangleMesh *mesh2 = new TriangleMesh;
+	xform.rotate(30, 0, 1, 0);
+	xform.translate(-3.5, 0, -2);
+	xform.scale(0.8, 0.8, 0.8);
+	
+	//TriangleMesh *mesh = new TriangleMesh;
+	//TriangleMesh *mesh2 = new TriangleMesh;
+	TriangleMesh* tree = new TriangleMesh;
+	TriangleMesh* leaves = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
-	mesh->load("Models/bunny.obj");
-	mesh2->load("Models/bunny.obj", xform);
+	TriangleMesh *grass = new TriangleMesh;
+	//mesh->load("Models/bunny.obj");
+	//mesh2->load("Models/bunny.obj", xform);
+	//tree->load("Models/testTree.obj");
+	//leaves->load("Models/testTreeLeaves.obj");
 	plane->load("Models/plane.obj");
-	makeMeshObjs(mesh, mat);
-	makeMeshObjs(mesh2, mat2);
+	grass->load("Models/testGrass.obj");
+	//makeMeshObjs(mesh, mat);
+	//makeMeshObjs(mesh2, mat2);
+	//makeMeshObjs(tree, barkMtl);
+	//makeMeshObjs(leaves, leavesMtl);
 	makeMeshObjs(plane, planeMat);
 
-	Object* t = new Object;
+	BVH* b = new BVH;
+	Objects* o = new Objects;
+	ProxyObject::setupProxy(grass, grassMtl, o, b);
+
+	makeProxyGrid(o, b);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
@@ -199,8 +274,6 @@ void makeMBTestScene()
 	g_scene->preCalc();
 }
 
-void makeProxyGrid(Objects* o, BVH* b);
-
 void makeProxyTestScene()
 {
 	g_camera = new Camera;
@@ -239,7 +312,7 @@ void makeProxyTestScene()
 	DomeLight* domeLight = new DomeLight;
 	domeLight->setTexture(hdrTex2);
 	domeLight->setPower(0.25f);
-	domeLight->setSamples(4);
+	domeLight->setSamples(2);
 	g_scene->addLight(domeLight);
 
 	// create a spiral of spheres
@@ -279,12 +352,14 @@ void makeProxyTestScene()
 
 void makeProxyGrid(Objects* o, BVH* b)
 {
-	for (int i = 0; i <= 0; i++)
+	for (int i = 0; i <= 50; i++)
 	{
-		for (int j = 0; j <= 0; j++)
+		for (int j = 0; j <= 50; j++)
 		{
 			Matrix4x4 m = Matrix4x4();
-			m.translate(2*(i), 0, 2*(j));
+			m.rotate(Scene::getRand()*360.f, 0, 1, 0);
+			m.scale(Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85);
+			m.translate((i-25)*0.25, 0, (j-25)*0.25);
 			ProxyObject* po = new ProxyObject(o, b, m);
 			g_scene->addObject(po);
 		}
@@ -386,7 +461,7 @@ void makeStoneFloorScene()
 	//some texture stuff
 	Material* stoneMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
 	StoneTexture* stoneTex = new StoneTexture(100);
-	stoneMat->m_texture = stoneTex;
+	stoneMat->m_colorMap = stoneTex;
 	//end
 
 	// create sphere
@@ -432,7 +507,7 @@ void makeEnvironmentMapScene() {
 	//generate stone texture
 	Material* stoneMat = new Lambert(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.06,0.06,0.06));
 	StoneTexture* stoneTex = new StoneTexture(150);
-	stoneMat->m_texture = stoneTex;
+	stoneMat->m_colorMap = stoneTex;
 	//end
 
 	// create sphere

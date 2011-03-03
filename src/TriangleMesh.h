@@ -38,6 +38,8 @@ public:
 	AABB getAABB(u_int index);
 
 	ALIGN_SSE Vector3* m_normals;
+	ALIGN_SSE Vector3* m_tangents;
+	ALIGN_SSE Vector3* m_biTangents;
 	ALIGN_SSE Vector3* m_vertices;
 	ALIGN_SSE VectorR2* m_texCoords;
 

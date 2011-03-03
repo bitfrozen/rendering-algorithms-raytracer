@@ -9,6 +9,37 @@ Texture::~Texture()
 {
 }
 
+const float Texture::getLookupAlpha(float u, float v) const
+{
+	//force to be between 0 and 1
+	u = u - float(int(u));
+	v = v - float(int(v));
+	if (u < 0.0f)
+		u = u + 1.0f;
+	if (v < 0.0f)
+		v = v + 1.0f;
+
+	//textures start with v = 0 at the top, so reverse our v:
+	v = 1.0f - v;
+
+	//use bilinear lookup
+	float px = u*(m_image->m_width);
+	float py = v*(m_image->m_height);
+	float x1 = floor(px);
+	float x2 = x1 + 1.0f;
+	float dx = px - x1;
+	float y1 = floor(py);
+	float y2 = y1 + 1.0f;
+	float dy = py - y1;
+
+	//interpolate in the x direction:
+	Vector4 q1 = getPixel(x1, y1)*(1.0f - dx) + getPixel(x2, y1)*dx;
+	Vector4 q2 = getPixel(x1, y2)*(1.0f - dx) + getPixel(x2, y2)*dx;
+
+	//interpolate those two points
+	return q1.w*(1.0f - dy) + q2.w*dy;
+}
+
 const Vector4 Texture::getLookup(float u, float v) const
 {
 	//force to be between 0 and 1

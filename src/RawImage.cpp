@@ -1,4 +1,4 @@
-
+#include "Image.h"
 #include "RawImage.h"
 #include "hdrloader.h"
 #include <iostream>
@@ -141,9 +141,16 @@ void RawImage::loadTGA(char* filename) {
 	fread(imageArray,sizeof(unsigned char),total,file);
 
 	//convert from a char array to a float array
+	//Gamma correct loaded data
 	m_rawData = new float[total];
 	for (int i = total-1; i >= 0; i--) {
-		m_rawData[i] = ((float) imageArray[i])/255;
+		m_rawData[i] = float(Image::gamma_to_linear[imageArray[i]]) / 32768.f;//((float) imageArray[i])/255;
+	}
+	if (mode == 4)
+	{
+		for (int i = 3; i < total; i+=4) {
+			m_rawData[i] = float(imageArray[i]) / 255.f;//((float) imageArray[i])/255;
+		}
 	}
 	delete[] imageArray;
 
@@ -168,5 +175,4 @@ void RawImage::loadTGA(char* filename) {
 			m_rawData[i+2] = aux;
 		}
 	}
-
 }

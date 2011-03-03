@@ -165,7 +165,7 @@ TriangleMesh::loadObj(FILE* fp, const Matrix4x4& ctm)
                 float x, y, z;
                 sscanf(&line[1], "%f %f %f\n", &x, &y, &z);
                 Vector3 v(x, y, z);
-                m_vertices[nvertices] = ctm*v;
+                m_vertices[nvertices] = ctm.multiplyAndDivideByW(v._v);
                 nvertices++;
             }
         }

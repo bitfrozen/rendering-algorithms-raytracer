@@ -32,7 +32,7 @@ public:
 	bool fastShadows() const			{return m_fastShadows;}
 	float noiseThreshold() const		{return m_noiseThreshold;}
 
-	const virtual Vector3 sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const Scene &scene, const Vector3 &rVec, float &outSpec) const = 0;
+	const virtual Vector3 sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const = 0;
 
     virtual void preCalc()				{}
 

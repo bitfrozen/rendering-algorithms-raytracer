@@ -693,10 +693,6 @@ void BVH_Node::partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* cent
 
 		for (int axis = 0; axis < 3; axis++)
 		{
-			if (length[axis] < epsilon)
-			{
-				continue;
-			}
 			float kl = (float)NUM_BINS*(1.0f-epsilon) / length[axis];		// Coefficients for binning the objects
 			float ko = binBounds.bbMin[axis];								// Bin(centroid[i]) = num_bins*(centroid[i][axis] - bounds.min[axis]) / length[axis]
 
@@ -1387,10 +1383,13 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 		lindex = i;
 	}
 
-	result.t	=			newT[lindex];
-	result.a	=			   a[lindex];
-	result.b	=			   b[lindex];
-	result.obj	= triCache->tris[lindex];
+	if (newT[lindex] < result.t)
+	{
+		result.t	=			newT[lindex];
+		result.a	=			   a[lindex];
+		result.b	=			   b[lindex];
+		result.obj	= triCache->tris[lindex];
+	}
 
 	return true;
 }

@@ -19,13 +19,13 @@ public:
 	union {float v[4]; __m128 _v; struct {float x, y, z, __dummy;}; };      // The x & y & z coordinates.
 
     Vector3() :
-        x(0), y(0), z(0), __dummy(0) {}
+        x(0), y(0), z(0), __dummy(1) {}
 
     Vector3(float s) :
-        x(s), y(s), z(s), __dummy(0) {}
+        x(s), y(s), z(s), __dummy(1) {}
 
     Vector3(float xVal, float yVal, float zVal) :
-        x(xVal), y(yVal), z(zVal), __dummy(0) {}
+        x(xVal), y(yVal), z(zVal), __dummy(1) {}
 
 	Vector3(const __m128& vec) : _v(vec) {}
 
