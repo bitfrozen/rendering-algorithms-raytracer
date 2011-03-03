@@ -102,16 +102,35 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	float alpha = 1.0f;
 
 	hit.getAllInfos(N, geoN, T, BT, u, v);
+	Vector3 P = ray.getPoint(hit.t);
+	int bounces   = GET_BOUNCES(ray.bounces_flags);
+	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
+
+	if (m_alphaMap)
+	{
+		alpha = m_alphaMap->getLookupAlpha(u, v);
+		if (alpha < 0.5f)
+		{
+			Ray newRay = Ray(threadID, (P + epsilon*rayD), rayD, ray.time, ray.r_IOR, bounces, giBounces, IS_REFLECT_RAY);
+			HitInfo newHit;
+			newHit.t = MIRO_TMAX;
+			Vector3 next = 0;
+			if (scene.trace(threadID, newHit, newRay, epsilon))
+			{
+				next  = newHit.obj->m_material->shade(threadID, newRay, newHit, scene);
+			}	
+			else
+			{
+				next = getEnvironmentColor(rayD, scene);
+			}
+			return next;
+		}
+	}
 
 	if (m_colorMap) 
 	{
 		Vector4 texCol = m_colorMap->getLookup(u, v);
 		diffuseColor = Vector3(texCol.x, texCol.y, texCol.z);
-	}
-
-	if (m_alphaMap)
-	{
-		alpha = m_alphaMap->getLookupAlpha(u, v);
 	}
 
 	if (m_normalMap)
@@ -137,8 +156,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		Vector4 texR = m_refractMap->getLookup(u, v);
 		localRefractAmt = (texR.x+texR.y+texR.z) * 0.3333333f * localRefractAmt;
 	}
-
-	Vector3 P = ray.getPoint(hit.t);
 
 	bool flip = false;
 	float vDotN			= dot(viewDir, N);						// Find if the interpolated normal points back while
@@ -210,9 +227,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		Rs = fresnel(inIOR, outIOR, vDotN);					// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
 		Ts = 1.0f-Rs;										// Energy conservation
 	}
-	
-	int bounces   = GET_BOUNCES(ray.bounces_flags);
-	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
 
 	bool doEnv  = true;
 
