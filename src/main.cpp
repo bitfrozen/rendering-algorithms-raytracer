@@ -72,11 +72,11 @@ void makeTestScene()
 
 	g_image->resize(512, 512);
 
-	g_scene->m_pathTrace = false;
+	g_scene->m_pathTrace = true;
 	g_scene->m_numPaths = 1;
-	g_scene->m_maxBounces = 2;
+	g_scene->m_maxBounces = 5;
 	g_scene->m_minSubdivs = 1;
-	g_scene->m_maxSubdivs = 1;
+	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
 
 	// set up the camera
@@ -196,21 +196,21 @@ void makeTestScene()
 	TriangleMesh *grass = new TriangleMesh;
 	//mesh->load("Models/bunny.obj");
 	//mesh2->load("Models/bunny.obj", xform);
-	//tree->load("Models/testTree.obj");
-	//leaves->load("Models/testTreeLeaves.obj");
+	tree->load("Models/testTree.obj");
+	leaves->load("Models/testTreeLeaves.obj");
 	plane->load("Models/plane.obj");
-	grass->load("Models/testGrass.obj");
+	//grass->load("Models/testGrass.obj");
 	//makeMeshObjs(mesh, mat);
 	//makeMeshObjs(mesh2, mat2);
-	//makeMeshObjs(tree, barkMtl);
-	//makeMeshObjs(leaves, leavesMtl);
+	makeMeshObjs(tree, barkMtl);
+	makeMeshObjs(leaves, leavesMtl);
 	makeMeshObjs(plane, planeMat);
 
-	BVH* b = new BVH;
-	Objects* o = new Objects;
-	ProxyObject::setupProxy(grass, grassMtl, o, b);
+	//BVH* b = new BVH;
+	//Objects* o = new Objects;
+	//ProxyObject::setupProxy(grass, grassMtl, o, b);
 
-	makeProxyGrid(o, b);
+	//makeProxyGrid(o, b);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
