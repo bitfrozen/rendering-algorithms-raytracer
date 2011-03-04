@@ -14,17 +14,59 @@ ProxyObject::ProxyObject(Objects* m, BVH* b, Matrix4x4& t)
 void ProxyObject::getAABB(AABB* outBox)
 {
 	AABB tmpBox = m_BVH->getAABB();
+	Vector3 A	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMin.y, tmpBox.bbMax.z);
+	Vector3 B	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMax.y, tmpBox.bbMin.z);
+	Vector3 C	 = Vector3(tmpBox.bbMax.x, tmpBox.bbMin.y, tmpBox.bbMin.z);
+	Vector3 D	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMax.y, tmpBox.bbMax.z);
+	Vector3 E    = Vector3(tmpBox.bbMax.x, tmpBox.bbMax.y, tmpBox.bbMin.z);
+	Vector3 F    = Vector3(tmpBox.bbMax.x, tmpBox.bbMin.y, tmpBox.bbMax.z);
+	A            = m_Matrix->m_transform.multiplyAndDivideByW(A);
+	B            = m_Matrix->m_transform.multiplyAndDivideByW(B);
+	C            = m_Matrix->m_transform.multiplyAndDivideByW(C);
+	D            = m_Matrix->m_transform.multiplyAndDivideByW(D);
+	E            = m_Matrix->m_transform.multiplyAndDivideByW(E);
+	F            = m_Matrix->m_transform.multiplyAndDivideByW(F);
 	tmpBox.bbMin = m_Matrix->m_transform.multiplyAndDivideByW(tmpBox.bbMin);
 	tmpBox.bbMax = m_Matrix->m_transform.multiplyAndDivideByW(tmpBox.bbMax);
-	*outBox = tmpBox;
+	AABB newBox = AABB();
+	newBox.grow(A);
+	newBox.grow(B);
+	newBox.grow(C);
+	newBox.grow(D);
+	newBox.grow(E);
+	newBox.grow(F);
+	newBox.grow(tmpBox.bbMin);
+	newBox.grow(tmpBox.bbMax);
+	*outBox = newBox;
 }
 
 AABB ProxyObject::getAABB()
 {
 	AABB tmpBox = m_BVH->getAABB();
+	Vector3 A	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMin.y, tmpBox.bbMax.z);
+	Vector3 B	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMax.y, tmpBox.bbMin.z);
+	Vector3 C	 = Vector3(tmpBox.bbMax.x, tmpBox.bbMin.y, tmpBox.bbMin.z);
+	Vector3 D	 = Vector3(tmpBox.bbMin.x, tmpBox.bbMax.y, tmpBox.bbMax.z);
+	Vector3 E    = Vector3(tmpBox.bbMax.x, tmpBox.bbMax.y, tmpBox.bbMin.z);
+	Vector3 F    = Vector3(tmpBox.bbMax.x, tmpBox.bbMin.y, tmpBox.bbMax.z);
+	A            = m_Matrix->m_transform.multiplyAndDivideByW(A);
+	B            = m_Matrix->m_transform.multiplyAndDivideByW(B);
+	C            = m_Matrix->m_transform.multiplyAndDivideByW(C);
+	D            = m_Matrix->m_transform.multiplyAndDivideByW(D);
+	E            = m_Matrix->m_transform.multiplyAndDivideByW(E);
+	F            = m_Matrix->m_transform.multiplyAndDivideByW(F);
 	tmpBox.bbMin = m_Matrix->m_transform.multiplyAndDivideByW(tmpBox.bbMin);
 	tmpBox.bbMax = m_Matrix->m_transform.multiplyAndDivideByW(tmpBox.bbMax);
-	return tmpBox;
+	AABB newBox = AABB();
+	newBox.grow(A);
+	newBox.grow(B);
+	newBox.grow(C);
+	newBox.grow(D);
+	newBox.grow(E);
+	newBox.grow(F);
+	newBox.grow(tmpBox.bbMin);
+	newBox.grow(tmpBox.bbMax);
+	return newBox;
 }
 
 const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, const Ray& ray, const float tMin)
@@ -50,7 +92,7 @@ const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, 
 
 void ProxyObject::renderGL()
 {
-	for (int i = 0; i < m_objects->size(); i+=50)
+	for (int i = 0; i < m_objects->size(); i+=500)
 	{
 		Vector3 v0, v1, v2;
 		TriangleMesh::TupleI3 ti3 = (*m_objects)[i]->m_mesh->m_vertexIndices[(*m_objects)[i]->m_index];// [m_index];

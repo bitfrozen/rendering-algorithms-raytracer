@@ -160,10 +160,11 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	bool flip = false;
 	float vDotN			= dot(viewDir, N);						// Find if the interpolated normal points back while
-	float vDotGeoN		= dot(viewDir, geoN);					// geometric normal is fine.
-	bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);				// True if both are equal
-	Vector3 theNormal	= nEqGeoN ? N : geoN;					// Use geometric normal if interpolated one points away
-	vDotN				= nEqGeoN ? vDotN : vDotGeoN;			// from object
+	//float vDotGeoN		= dot(viewDir, geoN);					// geometric normal is fine.
+	//bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);				// True if both are equal
+	//Vector3 theNormal	= nEqGeoN ? N : geoN;					// Use geometric normal if interpolated one points away
+	//vDotN				= nEqGeoN ? vDotN : vDotGeoN;			// from object
+	Vector3 theNormal = N;
 	if (vDotN < 0.0)
 	{
 		flip = true;

@@ -73,10 +73,10 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 2;
-	g_scene->m_maxBounces = 5;
-	g_scene->m_minSubdivs = 2;
-	g_scene->m_maxSubdivs = 6;
+	g_scene->m_numPaths = 1;
+	g_scene->m_maxBounces = 1;
+	g_scene->m_minSubdivs = 1;
+	g_scene->m_maxSubdivs = 1;
 	g_scene->setNoise(0.01f);
 
 	// set up the camera
@@ -85,7 +85,7 @@ void makeTestScene()
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(60);
-	g_camera->m_aperture = 0.001f;
+	g_camera->m_aperture = 0.1f;
 	g_camera->m_focusPlane = 3.0f;
 
 	//make a raw image from hdr file
@@ -95,7 +95,6 @@ void makeTestScene()
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
 	g_scene->setSampleEnv(false);
-
 	
 	//make a raw image from hdr file
 	RawImage* hdrImage2 = new RawImage();
@@ -105,12 +104,12 @@ void makeTestScene()
 	DomeLight* domeLight = new DomeLight;
 	domeLight->setTexture(hdrTex2);
 	domeLight->setPower(0.5f);
-	domeLight->setSamples(4);
+	domeLight->setSamples(8);
 	g_scene->addLight(domeLight);
 
 	/*// create and place a point light source
 	PointLight * light2 = new PointLight;
-	light2->setPosition(Vector3(5, 5, 5));
+	light2->setPosition(Vector3(-5, 5, 0));
 	light2->setColor(Vector3(1, 1, 1));
 	light2->setPower(500);
 	g_scene->addLight(light2);*/
@@ -178,42 +177,58 @@ void makeTestScene()
 	grassImg->loadImage("Textures/grassblade2.tga");
 	Texture* grassTex = new Texture(grassImg);
 
-	Blinn* grassMtl = new Blinn(Vector3(1.0));
+	Blinn* grassMtl = new Blinn(Vector3(0.5));
 	grassMtl->setSpecExp(10.0f);
 	grassMtl->setSpecAmt(0.5);
 	grassMtl->setColorMap(grassTex);
 
 	Matrix4x4 xform;
 	xform.rotate(30, 0, 1, 0);
-	xform.translate(-3.5, 0, -2);
+	xform.translate(-3.5, 0.05, -2);
 	xform.scale(0.8, 0.8, 0.8);
 	
-	//TriangleMesh *mesh = new TriangleMesh;
-	//TriangleMesh *mesh2 = new TriangleMesh;
+	TriangleMesh *mesh = new TriangleMesh;
+	TriangleMesh *mesh2 = new TriangleMesh;
 	TriangleMesh* tree = new TriangleMesh;
 	TriangleMesh* leaves = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
-	//TriangleMesh *grass = new TriangleMesh;
+	TriangleMesh *grass = new TriangleMesh;
 	//mesh->load("Models/bunny.obj");
-	//mesh2->load("Models/bunny.obj", xform);
+	mesh2->load("Models/bunny.obj", xform);
 	tree->load("Models/testTree.obj");
 	leaves->load("Models/testTreeLeaves.obj");
 	plane->load("Models/plane.obj");
-	//grass->load("Models/testGrass.obj");
+	grass->load("Models/testGrass2.obj");
 	//makeMeshObjs(mesh, mat);
-	//makeMeshObjs(mesh2, mat2);
+	makeMeshObjs(mesh2, mat);
 	makeMeshObjs(tree, barkMtl);
 	makeMeshObjs(leaves, leavesMtl);
 	makeMeshObjs(plane, planeMat);
 
-	//BVH* b = new BVH;
-	//Objects* o = new Objects;
-	//ProxyObject::setupProxy(grass, grassMtl, o, b);
+	BVH* b = new BVH;
+	Objects* o = new Objects;
+	ProxyObject::setupProxy(grass, grassMtl, o, b);
 
-	//makeProxyGrid(o, b);
+	makeProxyGrid(o, b);
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
+}
+
+void makeProxyGrid(Objects* o, BVH* b)
+{
+	for (int i = 0; i <= 50; i++)
+	{
+		for (int j = 0; j <= 50; j++)
+		{
+			Matrix4x4 m = Matrix4x4();
+			m.rotate(Scene::getRand()*360.f, 0, 1, 0);
+			m.scale(Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85);
+			m.translate((i-25)*(Scene::getRand()*0.2+0.2), 0, (j-25)*(Scene::getRand()*0.2+0.2));
+			ProxyObject* po = new ProxyObject(o, b, m);
+			g_scene->addObject(po);
+		}
+	}
 }
 
 void makeMBTestScene()
@@ -285,7 +300,7 @@ void makeProxyTestScene()
 	g_scene->m_pathTrace = true;
 	g_scene->m_numPaths = 1;
 	g_scene->m_maxBounces = 3;
-	g_scene->m_minSubdivs = 2;
+	g_scene->m_minSubdivs = 1;
 	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
 
@@ -348,22 +363,6 @@ void makeProxyTestScene()
 
 	// let objects do pre-calculations if needed
 	g_scene->preCalc();
-}
-
-void makeProxyGrid(Objects* o, BVH* b)
-{
-	for (int i = 0; i <= 50; i++)
-	{
-		for (int j = 0; j <= 50; j++)
-		{
-			Matrix4x4 m = Matrix4x4();
-			m.rotate(Scene::getRand()*360.f, 0, 1, 0);
-			m.scale(Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85);
-			m.translate((i-25)*0.25, 0, (j-25)*0.25);
-			ProxyObject* po = new ProxyObject(o, b, m);
-			g_scene->addObject(po);
-		}
-	}
 }
 
 void makeBunnyScene2()

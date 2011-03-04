@@ -8,7 +8,7 @@ ALIGN_SSE class ProxyMatrix
 public:
 	ALIGN_SSE Matrix4x4 m_transform;
 	ALIGN_SSE Matrix4x4 m_inverse;
-	ALIGN_SSE Matrix4x4 m_transpose;
+	ALIGN_SSE Matrix4x4 m_invTranspose;
 	ProxyMatrix(const Matrix4x4& M);
 	ProxyMatrix();
 	void set(const Matrix4x4& M);
