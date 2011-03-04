@@ -268,8 +268,12 @@ Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Ima
 		float numSamplesNow = curLevel*curLevel;
 
 		Vector3 newResult = (shadeResult*numSamplesPre + curResult) * (1.0f / (numSamplesPre + numSamplesNow));
-		Vector3 newResultGamma = Vector3(pow(newResult.x, 1.f/2.2f), pow(newResult.y, 1.f/2.2f), pow(newResult.y, 1.f/2.2f));
-		Vector3 oldResultGamma = Vector3(pow(shadeResult.x, 1.f/2.2f), pow(shadeResult.y, 1.f/2.2f), pow(shadeResult.y, 1.f/2.2f));
+		Vector3 newResultGamma = Vector3(Image::linear_to_gammaF[int(((newResult.x > 1.f) ? 1.f : newResult.x) * 32768.f)],
+										 Image::linear_to_gammaF[int(((newResult.y > 1.f) ? 1.f : newResult.y) * 32768.f)],
+										 Image::linear_to_gammaF[int(((newResult.z > 1.f) ? 1.f : newResult.z) * 32768.f)]);
+		Vector3 oldResultGamma = Vector3(Image::linear_to_gammaF[int(((shadeResult.x > 1.f) ? 1.f : shadeResult.x) * 32768.f)],
+										 Image::linear_to_gammaF[int(((shadeResult.y > 1.f) ? 1.f : shadeResult.y) * 32768.f)],
+										 Image::linear_to_gammaF[int(((shadeResult.z > 1.f) ? 1.f : shadeResult.z) * 32768.f)]);
 
 		Vector3 test = oldResultGamma - newResultGamma;
 		cutOff = max(fabsf(test.x), max(fabsf(test.y), fabsf(test.z))) < m_noiseThreshold;

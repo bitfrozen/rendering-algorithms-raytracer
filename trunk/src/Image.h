@@ -39,6 +39,7 @@ public:
 	static const float GAMMA;
 	static unsigned short gamma_to_linear[256];
 	static unsigned char linear_to_gamma[32769];
+	static float linear_to_gammaF[32769];
 
 private:
     Pixel* m_pixels;

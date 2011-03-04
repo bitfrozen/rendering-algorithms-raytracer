@@ -14,10 +14,12 @@ Image * g_image = 0;
 const float Image::GAMMA = 2.2f;
 unsigned short Image::gamma_to_linear[256] = {0};
 unsigned char Image::linear_to_gamma[32769] = {0};
+float Image::linear_to_gammaF[32769] = {0.f};
 
 void Image::generateGammaTables()
 {
 	int result;
+	float r2;
 
 	for (int i = 0; i < 256; i++) {
 		result = (int)(pow(i/255.0f, GAMMA)*32768.0 + 0.5);
@@ -25,7 +27,9 @@ void Image::generateGammaTables()
 	}
 
 	for (int i = 0; i < 32769; i++) {
-		result = (int)(pow(i/32768.0f, 1/GAMMA)*255.0 + 0.5);
+		r2 = pow(i/32768.0f, 1/GAMMA)*255.0 + 0.5;
+		linear_to_gammaF[i] = r2;
+		result = (int)r2;
 		linear_to_gamma[i] = (unsigned char)result;
 	}
 }
