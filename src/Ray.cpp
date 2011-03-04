@@ -17,15 +17,17 @@ const void HitInfo::getAllInfos(Vector3 &N, Vector3 &geoN, Vector3 &T, Vector3 &
 	Vector3 edge0 = theMesh->m_vertices[ti3.y] - theMesh->m_vertices[ti3.x];
 	Vector3 edge1 = theMesh->m_vertices[ti3.z] - theMesh->m_vertices[ti3.x];
 	geoN		  = cross(edge0, edge1).normalized();
+	geoN.__dummy  = 0.f;
 
 	ti3       = theMesh->m_normalIndices[meshIndex];		// Get the interpolated normal
 	float c   = 1.0f-a-b;
 	N		  = Vector3((theMesh->m_normals[ti3.x]*c+theMesh->m_normals[ti3.y]*a+theMesh->m_normals[ti3.z]*b).normalized());
+	N.__dummy = 0.f;
 
 	if (m_proxy)
 	{
-		geoN = (m_proxy->getMatrix().m_transpose * geoN).normalized();
-		N = (m_proxy->getMatrix().m_transpose * N).normalized();
+		geoN = (m_proxy->getMatrix().m_invTranspose * geoN).normalized();
+		N = (m_proxy->getMatrix().m_invTranspose * N).normalized();
 	}
 
 	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates

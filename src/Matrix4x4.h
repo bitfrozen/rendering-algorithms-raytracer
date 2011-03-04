@@ -690,14 +690,14 @@ operator*(const Matrix4x4& A, const Vector4& u)
 inline Vector3
 operator*(const Matrix4x4& A, const Vector3& u)
 {
-#ifndef NO_SSE
+/*#ifndef NO_SSE
 	return Vector3(shuffleps(_mm_movelh_ps(dotps(A._m1, u._v, 0xFF), dotps(A._m2, u._v, 0xFF)), _mm_movelh_ps(dotps(A._m3, u._v, 0xFF), setZero), _MM_SHUFFLE(2,0,2,0)));
-#else
-    return Vector3(A.m11*u.x + A.m12*u.y + A.m13*u.z + A.m14,
-                   A.m21*u.x + A.m22*u.y + A.m23*u.z + A.m24,
-                   A.m31*u.x + A.m32*u.y + A.m33*u.z + A.m34);
+#else*/
+    return Vector3(A.m11*u.x + A.m12*u.y + A.m13*u.z,
+                   A.m21*u.x + A.m22*u.y + A.m23*u.z,
+                   A.m31*u.x + A.m32*u.y + A.m33*u.z);
     // note that this ignores the fourth row in the matrix!
-#endif
+//#endif
 }
 
 #ifndef NO_SSE

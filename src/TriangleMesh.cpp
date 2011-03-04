@@ -108,8 +108,8 @@ void TriangleMesh::preCalc()
 	{
 		Vector3 A, B, C, AC, AB;
 		VectorR2 Edge1uv, Edge2uv;
-		m_tangents = (Vector3*)_aligned_malloc(sizeof(Vector3)*m_numTris, 16);
-		m_biTangents = (Vector3*)_aligned_malloc(sizeof(Vector3)*m_numTris, 16);
+		m_tangents = (Vector3*)_aligned_malloc(sizeof(Vector3)*m_numTris*3, 16);
+		m_biTangents = (Vector3*)_aligned_malloc(sizeof(Vector3)*m_numTris*3, 16);
 
 		TriangleMesh::TupleI3 ti3;
 		for (u_int i = 0; i < m_numTris; i++)
