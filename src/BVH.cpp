@@ -1292,6 +1292,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 
 	bool proxyIntersect = false;
 
+	// Hijack this call if we are doing instance or motion blurred object intersection
 	if (triCache->doubleTake)
 	{
 		for (int i = 0; i < 4; i++)
@@ -1361,7 +1362,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 	int tMask;
 	if ((tMask = (bMask & movemaskps(cmpgteqps(newT4, tMin4)) & movemaskps(cmplessps(newT4, tMax4)))) == 0) return proxyIntersect;
 
-	if (shadow) return true;
+	//if (shadow) return true;
 
 	ALIGN_SSE float newT[4];
 	ALIGN_SSE float a[4];
@@ -1382,13 +1383,67 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 		lowest = newT[i];
 		lindex = i;
 	}
+	newT[lindex] = MIRO_TMAX;
 
-	if (newT[lindex] < result.t)
+	for (int i = 0; i < 4; i++)
 	{
-		result.t	=			newT[lindex];
-		result.a	=			   a[lindex];
-		result.b	=			   b[lindex];
-		result.obj	= triCache->tris[lindex];
+		if (lowest < result.t)
+		{
+			if (triCache->tris[lindex]->m_material->m_alphaMap)
+			{
+				const float c = 1.0f-a[lindex]-b[lindex];
+				float uCoord, vCoord;
+				if (triCache->tris[lindex]->m_mesh->m_texCoordIndices)			// If possible, get the interpolated u, v coordinates
+				{
+					const TriangleMesh::TupleI3 ti3 = triCache->tris[lindex]->m_mesh->m_texCoordIndices[triCache->tris[lindex]->m_index];
+					uCoord = triCache->tris[lindex]->m_mesh->m_texCoords[ti3.x].x*c +
+						     triCache->tris[lindex]->m_mesh->m_texCoords[ti3.y].x*a[lindex] + 
+							 triCache->tris[lindex]->m_mesh->m_texCoords[ti3.z].x*b[lindex];
+					vCoord = triCache->tris[lindex]->m_mesh->m_texCoords[ti3.x].y*c + 
+						     triCache->tris[lindex]->m_mesh->m_texCoords[ti3.y].y*a[lindex] + 
+							 triCache->tris[lindex]->m_mesh->m_texCoords[ti3.z].y*b[lindex];
+				}
+				else													// We always return texture coordinates
+				{
+					uCoord = a[lindex];
+					vCoord = b[lindex];
+				}
+				float alpha = triCache->tris[lindex]->m_material->m_alphaMap->getLookupAlpha(uCoord, vCoord);
+				if (alpha < 0.5f)
+				{
+					if (i==3) return proxyIntersect;
+
+					lowest = newT[0];
+					int lindex = 0;
+					for (int j = 1; j < 4; j++ ) if (newT[j] < lowest)
+					{
+						lowest = newT[j];
+						lindex = j;
+					}
+					if (newT[lindex] == MIRO_TMAX) return proxyIntersect;
+					newT[lindex] = MIRO_TMAX;
+					continue;
+				}
+
+				result.t = lowest;
+				if (shadow) return true;
+
+				result.a = a[lindex];
+				result.b = b[lindex];
+				result.obj = triCache->tris[lindex];
+				result.m_proxy = NULL;
+				return true;
+			}
+
+			result.t = lowest;
+			if (shadow) return true;
+
+			result.a = a[lindex];
+			result.b = b[lindex];
+			result.obj = triCache->tris[lindex];
+			result.m_proxy = NULL;
+			return true;
+		}
 	}
 
 	return true;

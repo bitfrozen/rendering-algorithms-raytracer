@@ -106,7 +106,8 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	int bounces   = GET_BOUNCES(ray.bounces_flags);
 	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
 
-	if (m_alphaMap)
+	// Doing this during triangle intersection now
+	/*if (m_alphaMap)
 	{
 		alpha = m_alphaMap->getLookupAlpha(u, v);
 		if (alpha < 0.5f)
@@ -125,7 +126,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			}
 			return next;
 		}
-	}
+	}*/
 
 	if (m_colorMap) 
 	{
@@ -180,34 +181,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();			// get the (randomized) reflection vector
 	}
 
-	float rrFloat = Scene::getRand();
-
-	// Russian roulette sampling of direct / indirect illumination
-	// This should be weighted depending on the amount of contribution
-	// in the scene of direct / indirect illumination
-	//if (rrFloat < 0.5)
-	{
-		// Get the Indirect Illumination
-		if (scene.m_pathTrace)
-		{	
-			Ld += calculatePathTracing(threadID, ray, hit, P, theNormal, scene, diffuseColor);// * 2.f;
-		}
-	} 
-	//else
-	{
-		// Directly sample lights
-		const Lights *lightList = scene.lights();
-		Lights::const_iterator lightIter;
-		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
-		{
-			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, rVec, lightSpec);
-
-			Ls += lightPower * m_ks * localSpecAmt * pow(lightSpec, localSpecExp);// * 2.f;		// Calculate specular component
-			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
-		}
-	}		
-
 	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (flip)										// If this is true, then we've hit a back-facing polygon:
@@ -228,69 +201,100 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		Ts = 1.0f-Rs;										// Energy conservation
 	}
 
-	bool doEnv  = true;
+	float rrFloat = Scene::getRand();
+	float rrWeight = (1.0f - Rs*localReflectAmt - Ts*localRefractAmt);
+	float rrWeightRecip = (rrWeight > 0.f) ? 1.f / rrWeight : 1.f;
+	float rrWeightRecipSpec = (1.f-rrWeight > 0.f) ? 1.f / (1.f-rrWeight) : 1.f;
 
-	rrFloat = Scene::getRand();
-
-	// Russian Roulette sampling for reflection / refraction.
-	// This helps prevent ray number explosion
-	if (rrFloat < localReflectAmt*Rs)
+	// Russian roulette sampling of direct vs specular illumination
+	// This is weighted by the respective diffuse/specular balance of
+	// the material at the shaded point
+	
+	if (rrFloat <= rrWeight)
 	{
-		if (localReflectAmt*Rs > 0.0f && bounces < 3)
-		{
-			Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
-			HitInfo newHit;
-			newHit.t = MIRO_TMAX;
-			if (scene.trace(threadID, newHit, rRay, epsilon))
-			{
-				Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
-				Lr                += m_ks*reflection;
-				doEnv              = false;
-			}
+		// Get the Indirect Illumination
+		if (scene.m_pathTrace)
+		{	
+			Ld += calculatePathTracing(threadID, ray, hit, P, theNormal, scene, diffuseColor);// * 2.f;
 		}
-		if (localReflectAmt*Rs > 0.0f && doEnv)
+
+		// Directly sample lights
+		const Lights *lightList = scene.lights();
+		Lights::const_iterator lightIter;
+		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
 		{
-			Vector3 tmp = getEnvironmentColor(rVec, scene);
-			Lr += m_ks * getEnvironmentColor(rVec, scene);
+			float   lightSpec  = 0;
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, rVec, lightSpec);
+
+			Ls += lightPower * m_ks * localSpecAmt * pow(lightSpec, localSpecExp);// * 2.f;		// Calculate specular component
+			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
 		}
-	} 
+	}	
 	else
 	{
-		if (localRefractAmt*Ts > 0.0f)
-		{
-			float snellsQ  = inIOR / outIOR;
-			float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
-			Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
-			doEnv          = true;
+		bool doEnv  = true;
 
-			if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
-			{		
-				ray.r_IOR.push(outIOR);
-				Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+		rrFloat = Scene::getRand();
+
+		// Russian Roulette sampling for reflection / refraction.
+		// This helps prevent ray number explosion
+		if (rrFloat < localReflectAmt*Rs)
+		{
+			if (localReflectAmt*Rs > 0.0f && bounces < 3)
+			{
+				Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 				HitInfo newHit;
 				newHit.t = MIRO_TMAX;
-				if (scene.trace(threadID, newHit, tRay, epsilon))
+				if (scene.trace(threadID, newHit, rRay, epsilon))
 				{
-					Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
-					Lt                += m_ks*refraction;
+					Vector3 reflection = newHit.obj->m_material->shade(threadID, rRay, newHit, scene);				
+					Lr                += m_ks*reflection;
 					doEnv              = false;
 				}
-				ray.r_IOR.pop();
 			}
-			if (doEnv)
+			if (localReflectAmt*Rs > 0.0f && doEnv)
 			{
-				Lt += m_ks * getEnvironmentColor(rVec, scene);
+				Lr += m_ks * getEnvironmentColor(rVec, scene);
+			}
+		} 
+		else
+		{
+			if (localRefractAmt*Ts > 0.0f)
+			{
+				float snellsQ  = inIOR / outIOR;
+				float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
+				Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+				doEnv          = true;
+
+				if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+				{		
+					ray.r_IOR.push(outIOR);
+					Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+					HitInfo newHit;
+					newHit.t = MIRO_TMAX;
+					if (scene.trace(threadID, newHit, tRay, epsilon))
+					{
+						Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
+						Lt                += m_ks*refraction;
+						doEnv              = false;
+					}
+					ray.r_IOR.pop();
+				}
+				if (doEnv)
+				{
+					Lt += m_ks * getEnvironmentColor(rVec, scene);
+				}
 			}
 		}
 	}
 
 	Ld += m_ka;
 
-	if (alpha >= 1.f-epsilon)
-	{
-		return (Ld + Ls) * (1.0f - Rs*localReflectAmt - Ts*localRefractAmt) + Lr + Lt + m_Le; // Make sure we keep energy constant
-	}
-	else
+	//if (alpha >= 1.f-epsilon)
+	//{
+		return (Ld + Ls)*rrWeightRecip + (Lr + Lt)*rrWeightRecipSpec + m_Le; // Make sure we keep energy constant
+	//}
+	/*else
 	{
 		Ray newRay = Ray(threadID, (P + epsilon*rayD), rayD, ray.time, ray.r_IOR, bounces+1, giBounces+1, IS_REFLECT_RAY);
 		HitInfo newHit;
@@ -304,8 +308,8 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		{
 			next = getEnvironmentColor(rayD, scene);
 		}
-		return alpha*((Ld + Ls) * (1.0f - Rs*localReflectAmt - Ts*localRefractAmt) + Lr + Lt + m_Le) + (1.f-alpha)*next;
-	}
+		return alpha*((Ld + Ls) + (Lr + Lt) + m_Le) + (1.f-alpha)*next;
+	}*/
 }
 
 /*Vector3 Blinn::shadeSSE(const Ray& ray, const HitInfo& hit, const Scene& scene) const

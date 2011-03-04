@@ -73,10 +73,10 @@ void makeTestScene()
 	g_image->resize(512, 512);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 1;
+	g_scene->m_numPaths = 2;
 	g_scene->m_maxBounces = 5;
-	g_scene->m_minSubdivs = 1;
-	g_scene->m_maxSubdivs = 4;
+	g_scene->m_minSubdivs = 2;
+	g_scene->m_maxSubdivs = 6;
 	g_scene->setNoise(0.01f);
 
 	// set up the camera
@@ -104,7 +104,7 @@ void makeTestScene()
 
 	DomeLight* domeLight = new DomeLight;
 	domeLight->setTexture(hdrTex2);
-	domeLight->setPower(0.2f);
+	domeLight->setPower(0.5f);
 	domeLight->setSamples(4);
 	g_scene->addLight(domeLight);
 
@@ -133,7 +133,7 @@ void makeTestScene()
 	mat2->setRefractAmt(0.0f);
 	mat2->setReflectGloss(0.98f);
 
-	Blinn* planeMat = new Blinn(Vector3(1.0));
+	Blinn* planeMat = new Blinn(Vector3(0.5f));
 	planeMat->setSpecExp(10.0f);
 	planeMat->setSpecAmt(0);
 	planeMat->setIor(1.6f);
@@ -193,7 +193,7 @@ void makeTestScene()
 	TriangleMesh* tree = new TriangleMesh;
 	TriangleMesh* leaves = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
-	TriangleMesh *grass = new TriangleMesh;
+	//TriangleMesh *grass = new TriangleMesh;
 	//mesh->load("Models/bunny.obj");
 	//mesh2->load("Models/bunny.obj", xform);
 	tree->load("Models/testTree.obj");

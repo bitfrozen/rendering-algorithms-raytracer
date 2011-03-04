@@ -63,6 +63,36 @@ const bool Object::intersect(const unsigned int threadID, HitInfo &result, const
 				storess(mulss(dett, inv_det), &newT);
 				if (newT >= tMin && newT < result.t)
 				{
+					if (m_material->m_alphaMap)
+					{
+						ALIGN_SSE float a;
+						ALIGN_SSE float b;
+						storess(mulss(detu, inv_det), &a);
+						storess(mulss(detv, inv_det), &b);
+						const float c = 1.0f-a-b;
+						float uCoord, vCoord;
+						if (m_mesh->m_texCoordIndices)			// If possible, get the interpolated u, v coordinates
+						{
+							const TriangleMesh::TupleI3 ti3 = m_mesh->m_texCoordIndices[m_index];
+							uCoord = m_mesh->m_texCoords[ti3.x].x*c+m_mesh->m_texCoords[ti3.y].x*a+m_mesh->m_texCoords[ti3.z].x*b;
+							vCoord = m_mesh->m_texCoords[ti3.x].y*c+m_mesh->m_texCoords[ti3.y].y*a+m_mesh->m_texCoords[ti3.z].y*b;
+						}
+						else													// We always return texture coordinates
+						{
+							uCoord = a;
+							vCoord = b;
+						}
+						float alpha = m_material->m_alphaMap->getLookupAlpha(uCoord, vCoord);
+						if (alpha < 0.5f) return false;
+						result.t = newT;
+						if (shadow) return true;
+
+						result.a = a;
+						result.b = b;
+						result.obj = this;
+						result.m_proxy = NULL;
+						return true;
+					}
 					result.t = newT;
 					if (shadow) return true;
 
@@ -116,7 +146,34 @@ const bool Object::intersect(const unsigned int threadID, HitInfo &result, const
 	newT = dot(edge[1], qvec)*inv_det;
 #endif
 	if (newT >= tMin && newT < result.t)
-	{		
+	{	
+		if (m_material->m_alphaMap)
+		{
+			const float c = 1.0f-a-b;
+			float uCoord, vCoord;
+			if (m_mesh->m_texCoordIndices)			// If possible, get the interpolated u, v coordinates
+			{
+				const TriangleMesh::TupleI3 ti3 = m_mesh->m_texCoordIndices[m_index];
+				uCoord = m_mesh->m_texCoords[ti3.x].x*c+m_mesh->m_texCoords[ti3.y].x*a+m_mesh->m_texCoords[ti3.z].x*b;
+				vCoord = m_mesh->m_texCoords[ti3.x].y*c+m_mesh->m_texCoords[ti3.y].y*a+m_mesh->m_texCoords[ti3.z].y*b;
+			}
+			else													// We always return texture coordinates
+			{
+				uCoord = a;
+				vCoord = b;
+			}
+			float alpha = m_material->m_alphaMap->getLookupAlpha(uCoord, vCoord);
+			if (alpha < 0.5f) return false;
+
+			result.t = newT;
+			if (shadow) return true;
+
+			result.a = a;
+			result.b = b;
+			result.obj = this;
+			result.m_proxy = NULL;
+			return true;
+		}
 		result.t = newT;
 		if (shadow) return true;
 		result.a = a;
