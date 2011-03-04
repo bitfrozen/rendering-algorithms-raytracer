@@ -256,6 +256,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			if (localReflectAmt*Rs > 0.0f && doEnv)
 			{
 				Lr += m_ks * getEnvironmentColor(rVec, scene);
+				if (Lr.average() > 10000.f)
+				{
+					int tmp = 0;
+				}
 			}
 		} 
 		else

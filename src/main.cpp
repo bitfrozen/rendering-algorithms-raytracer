@@ -74,9 +74,9 @@ void makeTestScene()
 
 	g_scene->m_pathTrace = true;
 	g_scene->m_numPaths = 1;
-	g_scene->m_maxBounces = 1;
+	g_scene->m_maxBounces = 2;
 	g_scene->m_minSubdivs = 1;
-	g_scene->m_maxSubdivs = 1;
+	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
 
 	// set up the camera
@@ -85,26 +85,26 @@ void makeTestScene()
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(60);
-	g_camera->m_aperture = 0.1f;
-	g_camera->m_focusPlane = 3.0f;
+	g_camera->m_aperture = 0.01f;
+	g_camera->m_focusPlane = 8.0f;
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
-	hdrImage->loadImage("Images/Topanga_Forest_B_3k.hdr");
+	hdrImage->loadImage("Images/sky.hdr");
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
-	g_scene->setEnvExposure(1.0f);
+	g_scene->setEnvExposure(1.f);
 	g_scene->setSampleEnv(false);
 	
 	//make a raw image from hdr file
 	RawImage* hdrImage2 = new RawImage();
-	hdrImage2->loadImage("Images/Topanga_Forest_B_light.hdr");
+	hdrImage2->loadImage("Images/sky.hdr");
 	Texture* hdrTex2 = new Texture(hdrImage2);
 
-	DomeLight* domeLight = new DomeLight;
+	DomeLight* domeLight = new DomeLight; 
 	domeLight->setTexture(hdrTex2);
-	domeLight->setPower(0.5f);
-	domeLight->setSamples(8);
+	domeLight->setPower(0.15f);
+	domeLight->setSamples(6);
 	g_scene->addLight(domeLight);
 
 	/*// create and place a point light source
@@ -135,7 +135,7 @@ void makeTestScene()
 	Blinn* planeMat = new Blinn(Vector3(0.5f));
 	planeMat->setSpecExp(10.0f);
 	planeMat->setSpecAmt(0);
-	planeMat->setIor(1.6f);
+	planeMat->setIor(10.f);
 	planeMat->setReflectAmt(0.0f);
 	planeMat->setRefractAmt(0.0f);
 	planeMat->setReflectGloss(1.0f);
@@ -167,7 +167,7 @@ void makeTestScene()
 	leavesImg->loadImage("Textures/testTreeLeaves.tga");
 	Texture* leavesTex = new Texture(leavesImg);
 
-	Blinn* leavesMtl = new Blinn(Vector3(1.0));
+	Blinn* leavesMtl = new Blinn(Vector3(0.5));
 	leavesMtl->setSpecExp(10.0f);
 	leavesMtl->setSpecAmt(0.5);
 	leavesMtl->setColorMap(leavesTex);
@@ -178,8 +178,8 @@ void makeTestScene()
 	Texture* grassTex = new Texture(grassImg);
 
 	Blinn* grassMtl = new Blinn(Vector3(0.5));
-	grassMtl->setSpecExp(10.0f);
-	grassMtl->setSpecAmt(0.5);
+	grassMtl->setSpecExp(20.0f);
+	grassMtl->setSpecAmt(0.8);
 	grassMtl->setColorMap(grassTex);
 
 	Matrix4x4 xform;
@@ -187,27 +187,27 @@ void makeTestScene()
 	xform.translate(-3.5, 0.05, -2);
 	xform.scale(0.8, 0.8, 0.8);
 	
-	TriangleMesh *mesh = new TriangleMesh;
-	TriangleMesh *mesh2 = new TriangleMesh;
+// 	TriangleMesh *mesh = new TriangleMesh;
+ 	TriangleMesh *mesh2 = new TriangleMesh;
 	TriangleMesh* tree = new TriangleMesh;
 	TriangleMesh* leaves = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
-	TriangleMesh *grass = new TriangleMesh;
-	//mesh->load("Models/bunny.obj");
-	mesh2->load("Models/bunny.obj", xform);
+ 	TriangleMesh *grass = new TriangleMesh;
+// 	mesh->load("Models/bunny.obj");
+ 	mesh2->load("Models/bunny.obj", xform);
 	tree->load("Models/testTree.obj");
 	leaves->load("Models/testTreeLeaves.obj");
 	plane->load("Models/plane.obj");
-	grass->load("Models/testGrass2.obj");
-	//makeMeshObjs(mesh, mat);
-	makeMeshObjs(mesh2, mat);
-	makeMeshObjs(tree, barkMtl);
-	makeMeshObjs(leaves, leavesMtl);
+ 	grass->load("Models/testGrass2.obj");
+// 	makeMeshObjs(mesh, mat);
+ 	makeMeshObjs(mesh2, mat);
+ 	makeMeshObjs(tree, barkMtl);
+ 	makeMeshObjs(leaves, leavesMtl);
 	makeMeshObjs(plane, planeMat);
-
-	BVH* b = new BVH;
-	Objects* o = new Objects;
-	ProxyObject::setupProxy(grass, grassMtl, o, b);
+ 
+ 	BVH* b = new BVH;
+ 	Objects* o = new Objects;
+ 	ProxyObject::setupProxy(grass, grassMtl, o, b);
 
 	makeProxyGrid(o, b);
 
@@ -217,14 +217,14 @@ void makeTestScene()
 
 void makeProxyGrid(Objects* o, BVH* b)
 {
-	for (int i = 0; i <= 50; i++)
+	for (int i = 0; i <= 200; i++)
 	{
-		for (int j = 0; j <= 50; j++)
+		for (int j = 0; j <= 200; j++)
 		{
 			Matrix4x4 m = Matrix4x4();
 			m.rotate(Scene::getRand()*360.f, 0, 1, 0);
 			m.scale(Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85, Scene::getRand()*0.3+0.85);
-			m.translate((i-25)*(Scene::getRand()*0.2+0.2), 0, (j-25)*(Scene::getRand()*0.2+0.2));
+			m.translate((i-100)*(Scene::getRand()*0.2+0.2), 0, (j-100)*(Scene::getRand()*0.2+0.2));
 			ProxyObject* po = new ProxyObject(o, b, m);
 			g_scene->addObject(po);
 		}

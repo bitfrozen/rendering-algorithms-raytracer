@@ -92,7 +92,7 @@ const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, 
 
 void ProxyObject::renderGL()
 {
-	for (int i = 0; i < m_objects->size(); i+=500)
+	for (int i = 0; i < m_objects->size(); i+=5000)
 	{
 		Vector3 v0, v1, v2;
 		TriangleMesh::TupleI3 ti3 = (*m_objects)[i]->m_mesh->m_vertexIndices[(*m_objects)[i]->m_index];// [m_index];

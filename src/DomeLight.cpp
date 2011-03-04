@@ -32,6 +32,10 @@ void DomeLight::setTexture(Texture* t)
 			float vp = (float)v / (float)nv;
 			Vector3 light = m_lightMap->getLookup3(up, vp);
 			img[v+u*nv] = light.average();
+			if (img[v+u*nv] > 10000)
+			{
+				int tmp = 0;
+			}
 		}
 	}
 
@@ -97,15 +101,18 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		cosTheta = cosTableV[int(fv)], sinTheta = sinTableV[int(fv)];
 		sinPhi = sinTableU[int(fu)], cosPhi = cosTableU[int(fu)];
 
-		direction = Vector3(sinTheta*cosPhi, sinTheta*sinPhi, cosTheta).normalized();
+		direction = Vector3(-sinTheta*cosPhi,  -cosTheta, -sinTheta*sinPhi).normalized();
 		if (dot(normal, direction) < 0.0f) continue;
 
 		pdf = (pdfs[0] * pdfs[1]) / (2.f * PI2 * sinTheta);
 
 		Vector3 E       = 0;
 		float attenuate = 1.0f;
-		Vector4 tmp = m_lightMap->getLookup(fu * uDistrib->invCount, fv * vDistribs[u]->invCount);
-		imageSample = Vector3(tmp.x, tmp.y, tmp.z);
+		imageSample = m_lightMap->getLookupXYZ3(direction);//m_lightMap->getLookup(fu * uDistrib->invCount, fv * vDistribs[u]->invCount);
+		if (imageSample.average() > 100.f)
+		{
+			int tmp = 0;
+		}
 
 		sampleHit.t = MIRO_TMAX;
 		if (m_fastShadows)
@@ -150,7 +157,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		tmpResult += E * attenuate;
 		tmpSpec   += dot(rVec, direction) * attenuate;
 
-	}  while (samplesDone < m_numSamples);// && !cutOff);
+	}  while (samplesDone < m_numSamples && !cutOff);
 
 	outSpec = tmpSpec * samplesDoneRecip;
 	return tmpResult * samplesDoneRecip;
