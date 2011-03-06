@@ -16,7 +16,7 @@ Lambert::~Lambert()
 {
 }
 
-const Vector3 Lambert::shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const
+const Vector3 Lambert::shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene, bool isSecondary) const
 {
     Vector3 L		= Vector3(0.0f, 0.0f, 0.0f);
 	Vector3 rayD	= Vector3(ray.d[0],ray.d[1],ray.d[2]);		// Ray direction

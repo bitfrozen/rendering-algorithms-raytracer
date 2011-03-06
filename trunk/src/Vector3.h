@@ -278,7 +278,13 @@ __forceinline Vector3 operator*(float s, const Vector3& a)
 //! The dot product of two Vec3s.
 __forceinline float dot(const Vector3 & a, const Vector3 & b)
 {
+#ifndef NO_SSE
+	ALIGN_SSE float r;
+	storess(dotps(a._v, b._v, 0x71), &r);
+	return r;
+#else
     return a.x * b.x + a.y * b.y + a.z * b.z;
+#endif
 }
 
 

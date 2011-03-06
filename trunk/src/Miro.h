@@ -52,12 +52,13 @@ const bool use_Bins			= true;
 const bool use_Bins			= false;
 #endif
 
-const int bucket_size		= 32;
+const int bucket_size		= 16;
 const float epsilon			= 0.001f; 
 const float PI				= 3.1415926f;
 const float PI2				= PI * PI;
 const float _1_PI			= 1.0f / PI;
 const float _1_4PI			= 0.25f / PI;
+const float _2_PI2			= 2.f * PI2;
 const float DegToRad		= PI/180.0f;
 const float RadToDeg		= 180.0f/PI;
 const float IntRecip		= (1. / 4294967296.);

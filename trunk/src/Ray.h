@@ -24,7 +24,7 @@
 #define GI_BOUNCES_MASK		0xFF0000	// 8-bit mask, up to 255 bounces
 #define GET_GI_BOUNCES(a)	(a & GI_BOUNCES_MASK)>>16
 
-ALIGN_SSE class Ray
+ALIGN_64 class Ray
 {
 public:
 	union {float  o[4]; __m128  _o;};	//!< Origin of ray
@@ -74,11 +74,20 @@ public:
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
-#ifndef NO_SSE
-		_id = recipps(_d);		// This is faster if we have SSE...
-#else
-		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
-#endif
+
+		id[0] = 1.0f/d[0]; if (d[0] == 0.f)
+		{
+			id[0] = (id[0] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[1] = 1.0f/d[1]; if (d[1] == 0.f)
+		{
+			id[1] = (id[1] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[2] = 1.0f/d[2]; if (d[2] == 0.f)
+		{
+			id[2] = (id[2] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[3] = 1.0f;
 #ifdef USE_TRI_PACKETS
 		 ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
 		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
@@ -98,11 +107,21 @@ public:
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
-#ifndef NO_SSE
-		_id = recipps(_d);		// This is faster if we have SSE...
-#else
-		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
-#endif
+
+		id[0] = 1.0f/d[0]; if (d[0] == 0.f)
+		{
+			id[0] = (id[0] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[1] = 1.0f/d[1]; if (d[1] == 0.f)
+		{
+			id[1] = (id[1] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[2] = 1.0f/d[2]; if (d[2] == 0.f)
+		{
+			id[2] = (id[2] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[3] = 1.0f;
+
 #ifdef USE_TRI_PACKETS
 		 ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
 		 dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);
@@ -119,11 +138,21 @@ public:
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
-#ifndef NO_SSE
-		_id = recipps(_d);		// This is faster if we have SSE...
-#else
-		id[0] = 1.0f/d[0]; id[1] = 1.0f/d[1]; id[2] = 1.0f/d[2]; id[3] = 1.0f;
-#endif
+
+		id[0] = 1.0f/d[0]; if (d[0] == 0.f)
+		{
+			id[0] = (id[0] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[1] = 1.0f/d[1]; if (d[1] == 0.f)
+		{
+			id[1] = (id[1] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[2] = 1.0f/d[2]; if (d[2] == 0.f)
+		{
+			id[2] = (id[2] < -0.f) ? -MIRO_TMAX : MIRO_TMAX;
+		}
+		id[3] = 1.0f;
+
 #ifdef USE_TRI_PACKETS
 		ox4 = setSSE( o[0]);  oy4 = setSSE( o[1]);  oz4 = setSSE( o[2]);
 		dx4 = setSSE( d[0]);  dy4 = setSSE (d[1]);  dz4 = setSSE( d[2]);

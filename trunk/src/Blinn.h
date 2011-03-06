@@ -49,7 +49,7 @@ public:
 
     virtual void preCalc() {}
     
-	const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const;
+	const Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene, bool isSecondary = false) const;
 
 protected:
     Vector3 m_kd;			// Diffuse Color
