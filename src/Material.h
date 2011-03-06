@@ -15,7 +15,7 @@ public:
 
     virtual void preCalc() {}
     
-    const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const = 0;
+    const virtual Vector3 shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene, bool isSecondary = false) const = 0;
 	void setEnvMap(Texture* map)					{m_envMap = map;}
 	void setColorMap(Texture* map)					{m_colorMap = map;}
 	void setAlphaMap(Texture* map)					{m_alphaMap = map;}

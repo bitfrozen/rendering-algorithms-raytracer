@@ -70,11 +70,11 @@ void makeTestScene()
 	g_scene = new Scene;
 	g_image = new Image;
 
-	g_image->resize(512, 512);
+	g_image->resize(256, 256);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 1;
-	g_scene->m_maxBounces = 2;
+	g_scene->m_numPaths = 2;
+	g_scene->m_maxBounces = 3;
 	g_scene->m_minSubdivs = 1;
 	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
@@ -85,8 +85,8 @@ void makeTestScene()
 	g_camera->setLookAt(Vector3(0, 0, 0));
 	g_camera->setUp(Vector3(0, 1, 0));
 	g_camera->setFOV(60);
-	g_camera->m_aperture = 0.01f;
-	g_camera->m_focusPlane = 8.0f;
+	g_camera->m_aperture = 0.001f;
+	g_camera->m_focusPlane = 4.0f;
 
 	//make a raw image from hdr file
 	RawImage* hdrImage = new RawImage();
@@ -132,7 +132,7 @@ void makeTestScene()
 	mat2->setRefractAmt(0.0f);
 	mat2->setReflectGloss(0.98f);
 
-	Blinn* planeMat = new Blinn(Vector3(0.5f));
+	Blinn* planeMat = new Blinn(Vector3(0.2f));
 	planeMat->setSpecExp(10.0f);
 	planeMat->setSpecAmt(0);
 	planeMat->setIor(10.f);
@@ -188,21 +188,21 @@ void makeTestScene()
 	xform.scale(0.8, 0.8, 0.8);
 	
 // 	TriangleMesh *mesh = new TriangleMesh;
- 	TriangleMesh *mesh2 = new TriangleMesh;
+	TriangleMesh *mesh2 = new TriangleMesh;
 	TriangleMesh* tree = new TriangleMesh;
 	TriangleMesh* leaves = new TriangleMesh;
 	TriangleMesh *plane = new TriangleMesh;
- 	TriangleMesh *grass = new TriangleMesh;
-// 	mesh->load("Models/bunny.obj");
- 	mesh2->load("Models/bunny.obj", xform);
+	TriangleMesh *grass = new TriangleMesh;
+//	mesh->load("Models/bunny.obj");
+	mesh2->load("Models/bunny.obj", xform);
 	tree->load("Models/testTree.obj");
 	leaves->load("Models/testTreeLeaves.obj");
 	plane->load("Models/plane.obj");
- 	grass->load("Models/testGrass2.obj");
-// 	makeMeshObjs(mesh, mat);
- 	makeMeshObjs(mesh2, mat);
- 	makeMeshObjs(tree, barkMtl);
- 	makeMeshObjs(leaves, leavesMtl);
+	grass->load("Models/testGrass2.obj");
+//  	makeMeshObjs(mesh, mat);
+	makeMeshObjs(mesh2, mat);
+	makeMeshObjs(tree, barkMtl);
+	makeMeshObjs(leaves, leavesMtl);
 	makeMeshObjs(plane, planeMat);
  
  	BVH* b = new BVH;

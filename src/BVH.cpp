@@ -97,9 +97,10 @@ BVH_Node::TriCache4* QBVH_Node::buildTriBundle(BVH_Node* node, BVH_Node::TriCach
 	return t;
 }
 
-void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
+void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, bool reset)
 {
 	static int nodeNum = 0;
+	if (reset) nodeNum = 0;
 	nodeCount++;
 	maxDepth++;
 
@@ -112,6 +113,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 	flagsIsLeaf[0]  = flagsIsLeaf[1]  = flagsIsLeaf[2]  = flagsIsLeaf[3]  = false;
 	flagsIsValid[0] = flagsIsValid[1] = flagsIsValid[2] = flagsIsValid[3] = false;
 	Children[0]     = Children[1]     = Children[2]     = Children[3]     = NULL;
+	axisFlags = 0;
 
 	if (IS_LEAF(node->flags))
 	{
@@ -126,9 +128,12 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 		triCaches[0] = buildTriBundle(node, cacheAlloc, nodeNum++);
 		leafCount++;
+		axisFlags |= Q_SET_TOPLEAF(true);
 	}
 	else
 	{
+		axisFlags |= Q_SETAXIS_TOP( PART_AXIS(node->flags));
+
 		if (IS_LEAF(node->Children[0].flags) && IS_LEAF(node->Children[1].flags))
 		{
 			flagsIsValid[0] = flagsIsLeaf[0] = true;
@@ -150,7 +155,8 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 			triCaches[0] = buildTriBundle(&node->Children[0], cacheAlloc, nodeNum++);
 			triCaches[1] = buildTriBundle(&node->Children[1], cacheAlloc, nodeNum++);
-			leafCount++;
+			axisFlags |= Q_SET_LEFTLEAF(true) | Q_SET_RIGHTLEAF(true);
+			leafCount += 2;
 		}
 		else if (IS_LEAF(node->Children[0].flags))
 		{
@@ -178,6 +184,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			bbMaxZ[2] = node->Children[1].Children[1].bBox->bbMax.z;
 
 			triCaches[0] = buildTriBundle(&node->Children[0], cacheAlloc, nodeNum++);
+			axisFlags |= Q_SETAXIS_RIGHT( PART_AXIS(node->Children[1].flags)) | Q_SET_LEFTLEAF(true);
 
 			if (IS_LEAF(node->Children[1].Children[0].flags) && IS_LEAF(node->Children[1].Children[1].flags)) // Three leaves
 			{
@@ -186,6 +193,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				
 				triCaches[1] = buildTriBundle(&node->Children[1].Children[0], cacheAlloc, nodeNum++);
 				triCaches[2] = buildTriBundle(&node->Children[1].Children[1], cacheAlloc, nodeNum++);
+				leafCount += 3;
 			}
 			else if (IS_LEAF(node->Children[1].Children[0].flags)) // Two leaves
 			{
@@ -196,6 +204,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 				Children[2] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[2]->build(&node->Children[1].Children[1], cacheAlloc);
+				leafCount += 2;
 			}
 			else if (IS_LEAF(node->Children[1].Children[1].flags)) // Two leaves
 			{
@@ -206,6 +215,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[1]->build(&node->Children[1].Children[0], cacheAlloc);
 
 				triCaches[2] = buildTriBundle(&node->Children[1].Children[1], cacheAlloc, nodeNum++);
+				leafCount += 2;
 			}
 			else // One leaf
 			{
@@ -216,8 +226,8 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[1]->build(&node->Children[1].Children[0], cacheAlloc);
 				Children[2] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[2]->build(&node->Children[1].Children[1], cacheAlloc);
+				leafCount++;
 			}
-			leafCount++;
 		}
 		else if (IS_LEAF(node->Children[1].flags))
 		{
@@ -245,6 +255,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			bbMaxZ[2] = node->Children[1].bBox->bbMax.z;
 
 			triCaches[2] = buildTriBundle(&node->Children[1], cacheAlloc, nodeNum++);
+			axisFlags |= Q_SETAXIS_LEFT( PART_AXIS(node->Children[0].flags)) | Q_SET_RIGHTLEAF(true);
 
 			if (IS_LEAF(node->Children[0].Children[0].flags) && IS_LEAF(node->Children[0].Children[1].flags)) // Three leaves
 			{
@@ -253,6 +264,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 				triCaches[0] = buildTriBundle(&node->Children[0].Children[0], cacheAlloc, nodeNum++);
 				triCaches[1] = buildTriBundle(&node->Children[0].Children[1], cacheAlloc, nodeNum++);
+				leafCount += 3;
 			}
 			else if (IS_LEAF(node->Children[0].Children[0].flags)) // Two leaves
 			{
@@ -263,6 +275,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 
 				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
+				leafCount += 2;
 			}
 			else if (IS_LEAF(node->Children[0].Children[1].flags)) // Two leaves
 			{
@@ -273,6 +286,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
 
 				triCaches[1] = buildTriBundle(&node->Children[0].Children[1], cacheAlloc, nodeNum++);
+				leafCount += 2;
 			}
 			else
 			{
@@ -283,8 +297,8 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 				Children[0]->build(&node->Children[0].Children[0], cacheAlloc);
 				Children[1] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[1]->build(&node->Children[0].Children[1], cacheAlloc);
+				leafCount++;
 			}
-			leafCount++;
 		}
 		else
 		{
@@ -321,13 +335,13 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			bbMaxY[3] = node->Children[1].Children[1].bBox->bbMax.y;
 			bbMaxZ[3] = node->Children[1].Children[1].bBox->bbMax.z;
 
-			bool setLeaf = false;
+			axisFlags |= Q_SETAXIS_LEFT( PART_AXIS(node->Children[0].flags)) | Q_SETAXIS_RIGHT( PART_AXIS(node->Children[1].flags)) | Q_SET_NOLEAF(true);
 
 			if (IS_LEAF(node->Children[0].Children[0].flags)) 
 			{
 				flagsIsLeaf[0] = true;
 				triCaches[0] = buildTriBundle(&node->Children[0].Children[0], cacheAlloc, nodeNum++);
-				setLeaf = true;
+				leafCount++;
 			}
 			else
 			{
@@ -339,7 +353,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			{
 				flagsIsLeaf[1] = true;
 				triCaches[1] = buildTriBundle(&node->Children[0].Children[1], cacheAlloc, nodeNum++);
-				setLeaf = true;
+				leafCount++;
 			}
 			else
 			{
@@ -351,7 +365,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			{
 				flagsIsLeaf[2] = true;
 				triCaches[2] = buildTriBundle(&node->Children[1].Children[0], cacheAlloc, nodeNum++);
-				setLeaf = true;
+				leafCount++;
 			}
 			else
 			{
@@ -363,46 +377,40 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc)
 			{
 				flagsIsLeaf[3] = true;
 				triCaches[3] = buildTriBundle(&node->Children[1].Children[1], cacheAlloc, nodeNum++);
-				setLeaf = true;
+				leafCount++;
 			}
 			else
 			{
 				Children[3] = (QBVH_Node*)_aligned_malloc(sizeof(QBVH_Node), 64);
 				Children[3]->build(&node->Children[1].Children[1], cacheAlloc);
 			}
-
-			if (setLeaf) leafCount++;
 		}
 	}
 }
 
-const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, bool hit[4], float tMin) const
-{
-	const __m128 _tMax = setSSE(result.t);
-	const __m128 _tMin = setSSE(tMin);
-	
+const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, __m128 &hit, float tMin) const
+{	
 	const __m128 t0vX = mulps(subps(bbMinX4, ray.ox4), ray.idx4);
-	const __m128 t0vY = mulps(subps(bbMinY4, ray.oy4), ray.idy4);
-	const __m128 t0vZ = mulps(subps(bbMinZ4, ray.oz4), ray.idz4);
 	const __m128 t1vX = mulps(subps(bbMaxX4, ray.ox4), ray.idx4);
+	const __m128 t0vY = mulps(subps(bbMinY4, ray.oy4), ray.idy4);
 	const __m128 t1vY = mulps(subps(bbMaxY4, ray.oy4), ray.idy4);
+	const __m128 t0vZ = mulps(subps(bbMinZ4, ray.oz4), ray.idz4);
 	const __m128 t1vZ = mulps(subps(bbMaxZ4, ray.oz4), ray.idz4);
 
 	const __m128 t0vX_n = minps(t0vX, t1vX);
-	const __m128 t0vY_n = minps(t0vY, t1vY);
-	const __m128 t0vZ_n = minps(t0vZ, t1vZ);
 	const __m128 t1vX_n = maxps(t0vX, t1vX);
+	const __m128 t0vY_n = minps(t0vY, t1vY);
 	const __m128 t1vY_n = maxps(t0vY, t1vY);
+	const __m128 t0vZ_n = minps(t0vZ, t1vZ);
 	const __m128 t1vZ_n = maxps(t0vZ, t1vZ);
 
 	const __m128 t0 = maxps(t0vX_n, maxps(t0vY_n, t0vZ_n));
 	const __m128 t1 = minps(t1vX_n, minps(t1vY_n, t1vZ_n));
 
-	const __m128 interval_min = maxps(t0, _tMin);
-	const __m128 interval_max = minps(t1, _tMax);
+	const __m128 interval_min = maxps(t0, setSSE(tMin));
+	const __m128 interval_max = minps(t1, setSSE(result.t));
 
-	int mask = movemaskps(cmpleqps(interval_min, interval_max));
-	hit[0] = mask & 0x01; hit[1] = mask & 0x02; hit[2] = mask & 0x04; hit[3] = mask & 0x08;
+	hit = cmpleqps(interval_min, interval_max);
 }
 
 AABB QBVH_Node::getAABB()
@@ -454,6 +462,10 @@ void BVH::build(Objects* objs)
 		return;
 	}
 
+ 	BVH_Node::leafCount = 0;
+ 	BVH_Node::nodeCount = 0;
+ 	BVH_Node::maxDepth  = 0;
+
 	u_int numObjs = objs->size();
 
 #ifdef USE_BINS
@@ -480,8 +492,11 @@ void BVH::build(Objects* objs)
 
 #ifdef USE_QBVH
 
+	QBVH_Node::leafCount = 0;
+	QBVH_Node::nodeCount = 0;
+
 	BVH_Node::TriCache4* cacheAlloc = (BVH_Node::TriCache4*)_aligned_malloc(sizeof(BVH_Node::TriCache4)*BVH_Node::leafCount, 16);
-	m_baseQNode->build(m_baseNode, cacheAlloc);
+	m_baseQNode->build(m_baseNode, cacheAlloc, true);
 	m_baseNode->~BVH_Node();
 	_aligned_free(m_baseNode);
 
@@ -489,7 +504,7 @@ void BVH::build(Objects* objs)
 #ifdef USE_TRI_PACKETS
 
 	BVH_Node::TriCache4* cacheAlloc = (BVH_Node::TriCache4*)_aligned_malloc(sizeof(BVH_Node::TriCache4)*BVH_Node::leafCount, 16);
-	m_baseNode->buildTriBundles(cacheAlloc);
+	m_baseNode->buildTriBundles(cacheAlloc, true);
 
 #endif
 #endif
@@ -521,8 +536,11 @@ void BVH::build(Objects* objs)
 
 #ifdef USE_QBVH
 
+	QBVH_Node::leafCount = 0;
+	QBVH_Node::nodeCount = 0;
+
 	BVH_Node::TriCache4* cacheAlloc = (BVH_Node::TriCache4*)_aligned_malloc(sizeof(BVH_Node::TriCache4)*BVH_Node::leafCount, 16);
-	m_baseQNode->build(m_baseNode, cacheAlloc);
+	m_baseQNode->build(m_baseNode, cacheAlloc, true);
 	m_baseNode->~BVH_Node();
 	_aligned_free(m_baseNode);
 
@@ -530,7 +548,7 @@ void BVH::build(Objects* objs)
 #ifdef USE_TRI_PACKETS
 
 	BVH_Node::TriCache4* cacheAlloc = (BVH_Node::TriCache4*)_aligned_malloc(sizeof(BVH_Node::TriCache4)*BVH_Node::leafCount, 16);
-	m_baseNode->buildTriBundles(cacheAlloc);
+	m_baseNode->buildTriBundles(cacheAlloc, true);
 
 #endif
 #endif
@@ -557,13 +575,14 @@ void BVH::build(Objects* objs)
 }
 
 #ifdef USE_TRI_PACKETS
-void BVH_Node::buildTriBundles(TriCache4* cacheAlloc)
+void BVH_Node::buildTriBundles(TriCache4* cacheAlloc, bool reset)
 {
 	static int nodeNum = 0;
+	if (reset) nodeNum = 0;
 	if (!IS_LEAF(flags))
 	{
-		Children[0].buildTriBundles(cacheAlloc);
-		Children[1].buildTriBundles(cacheAlloc);
+		Children[0].buildTriBundles(cacheAlloc, false);
+		Children[1].buildTriBundles(cacheAlloc, false);
 	}
 	else
 	{
@@ -634,7 +653,6 @@ void BVH_Node::buildBin(Object** objs, AABB* preCalcAABB, Vector3* centroids, u_
 		leafCount++;
 
 		this->objs = objs;
-		qsort(objs, numObjs, sizeof(Object*), Object::sortByArea);
 	}
 	else
 	{
@@ -1060,23 +1078,25 @@ float BVH_Node::calcSAHCost(int leftNum, float leftArea, int rightNum, float rig
 #ifdef USE_TRI_PACKETS	// Try to force full 4-leaves if using SIMD to intersect 4 tris at same time.
 						// These values have to be tested, it's very dependent on scene structure. 
 						// Current values are pretty good for Sponza using full SAH build (works OK for binned build also)
-	if (leftNum + rightNum >= 256)
+	if (leftNum + rightNum >= 32)
 	{
 		return ((float)leftNum)*leftArea + ((float)rightNum)*rightArea;
 	}
 
-	else if (leftNum + rightNum >= 64)
-	{
-		float penaltyMult = 1.0;
-		if (leftNum % 16 != 0 && rightNum % 16 != 0) penaltyMult = 1.25;	// Try to maintain multiple of 16 nodes by (slightly) penalizing other node sizes
-		return penaltyMult*(((float)leftNum)*leftArea + ((float)rightNum)*rightArea);
-	}
+	float rightPenaltyMult = 1.0;
+	float leftPenaltyMult  = 1.0;
 
-	float penaltyMult = 1.0;
-	if (leftNum % 16 != 0 && rightNum % 16 != 0) penaltyMult = 1.25;	// Try to maintain multiple of 16 nodes by (slightly) penalizing other node sizes
-	if (leftNum % 4 != 0 && rightNum % 4 != 0) penaltyMult *= 2;		// Try to maintain multiple of 4 leaves by penalizing other node sizes (slightly more)
+	if (leftNum % 4 == 0) leftPenaltyMult = 0.5f;		// Try to maintain multiple of 4 leaves by penalizing other node sizes (slightly more)
+	else if (leftNum % 3 == 0) leftPenaltyMult = 10.f;
+	else if (leftNum % 2 == 0) leftPenaltyMult = 100.f;
+	else leftPenaltyMult = 1000.f;
 
-	return penaltyMult*(((float)leftNum)*leftArea + ((float)rightNum)*rightArea);
+	if (rightNum % 4 == 0) rightPenaltyMult = 0.5f;		// Try to maintain multiple of 4 leaves by penalizing other node sizes (slightly more)
+	else if (rightNum % 3 == 0) rightPenaltyMult = 10.f;
+	else if (rightNum % 2 == 0) rightPenaltyMult = 100.f;
+	else rightPenaltyMult = 1000.f;
+
+	return ((float)leftNum)*leftArea*leftPenaltyMult + ((float)rightNum)*rightArea*rightPenaltyMult;
 
 #else
 
@@ -1107,20 +1127,25 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 	else
 #ifdef USE_QBVH
 	{
+		union {u_int boxHit[4]; __m128 _boxHit;};
+		_mm_prefetch((char *)m_baseQNode, _MM_HINT_T0);
+		_mm_prefetch((char *)&ray, _MM_HINT_T0);
+		_mm_prefetch((char *)&ray.dz4, _MM_HINT_T0);
 		bool hit = false;
-		int stackIndex = 0;
+		int stackIndex = 1;
 	    QBVH_Node* BVH_Stack[256];
 
 		// Push children on "stack"
 		BVH_Stack[0] = m_baseQNode;
 
 		bool isFirst = true;
-		while (stackIndex >= 0)
+		while (--stackIndex >= 0)
 		{
+			if (!BVH_Stack[stackIndex]) continue;
 			// Intersect box bundle
 			BVH::rayBoxIntersections[threadID]++;
-			bool boxHit[4] = {false};
-			BVH_Stack[stackIndex]->intersect(minHit, ray, boxHit, tMin);
+			_boxHit = setZero;
+			BVH_Stack[stackIndex]->intersect(minHit, ray, _boxHit, tMin);
 
 			bool leafsHit = false;
 			int childHit = 0;
@@ -1132,6 +1157,7 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 				{
 					if (BVH_Stack[stackIndex]->flagsIsLeaf[i])
 					{
+						_mm_prefetch((char *)BVH_Stack[stackIndex]->triCaches[i], _MM_HINT_NTA);
 						if (intersect4(threadID, minHit, ray, tMin, BVH_Stack[stackIndex]->triCaches[i]))
 						{
 							hit = true;
@@ -1145,24 +1171,13 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 					}
 				}
 			}
+			_mm_prefetch((char *)BVH_Stack[stackIndex+3], _MM_HINT_T0);
 
-			if (leafsHit && !childHit)	// We only hit leaves, so we pop the current node from the stack
+			for (int i = 0; i < 4; i++)
 			{
-				stackIndex--;
+				BVH_Stack[stackIndex+i] = tempStack[i];
 			}
-			else if (childHit)			// We hit leaves and / or nodes, add the nodes to the stack
-			{
-				for (int i = 0; i < childHit; i++)
-				{
-					BVH_Stack[stackIndex+i] = tempStack[i];
-				}
-				stackIndex += childHit-1;
-			}
-			else
-			{
-				BVH_Stack[stackIndex] = NULL;
-				stackIndex--;
-			}
+			stackIndex += 4;
 		}
 		return hit;
 	}
@@ -1344,7 +1359,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 
 	const __m128 a4			= mulps(invDet4, SoADot(tVecx4, tVecy4, tVecz4, pVecx4, pVecy4, pVecz4));
 	int aMask;
-	if ((aMask = (movemaskps(cmpgteqps(a4, _zerosps)) & movemaskps(cmpleqps(a4, _onesps)))) == 0) return proxyIntersect;
+	if ((aMask = (movemaskps(_mm_and_ps(cmpgteqps(a4, _zerosps), cmpleqps(a4, _onesps))))) == 0) return proxyIntersect;
 
 	// Cross product
 	const __m128 qVecx4		= subps(mulps(tVecy4, triCache->edge0z4), mulps(tVecz4, triCache->edge0y4)); 
@@ -1353,14 +1368,14 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 
 	const __m128 b4 = mulps(invDet4, SoADot(r.dx4, r.dy4, r.dz4, qVecx4, qVecy4, qVecz4));
 	int bMask;
-	if ((bMask = (aMask & movemaskps(cmpgteqps(b4, _zerosps)) & movemaskps(cmpleqps(b4, _onesps)) & movemaskps(cmpleqps(addps(a4, b4), _onesps)))) == 0) return proxyIntersect;
+	if ((bMask = (aMask & movemaskps(_mm_and_ps(_mm_and_ps(cmpgteqps(b4, _zerosps), cmpleqps(b4, _onesps)), cmpleqps(addps(a4, b4), _onesps))))) == 0) return proxyIntersect;
 
 	const __m128 tMin4  = setSSE(tMin);
 	const __m128 tMax4  = setSSE(result.t);
 
 	const __m128 newT4 = mulps(invDet4, SoADot(triCache->edge1x4, triCache->edge1y4, triCache->edge1z4, qVecx4, qVecy4, qVecz4));
 	int tMask;
-	if ((tMask = (bMask & movemaskps(cmpgteqps(newT4, tMin4)) & movemaskps(cmplessps(newT4, tMax4)))) == 0) return proxyIntersect;
+	if ((tMask = (bMask & movemaskps(_mm_and_ps(cmpgteqps(newT4, tMin4), cmplessps(newT4, tMax4))))) == 0) return proxyIntersect;
 
 	//if (shadow) return true;
 

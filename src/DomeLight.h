@@ -51,7 +51,7 @@ public:
 	void setColor(const Vector3& v) {m_Color = v;}
 	void setPower(float f) {m_Gain = f;}
 
-	const Vector3 sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const;
+	const Vector3 sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec, bool isSecondary = false) const;
 
 protected:
 	Texture* m_lightMap;

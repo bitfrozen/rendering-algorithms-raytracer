@@ -59,10 +59,10 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 		// Trace the random ray; Do the next bounce
 		if (scene.trace(threadID, newHit, randRay, epsilon))
 		{
-			out += diffuseColor * newHit.obj->m_material->shade(threadID, randRay, newHit, scene);
+			out += diffuseColor * newHit.obj->m_material->shade(threadID, randRay, newHit, scene, true);
 		}
 		// If we don't hit anything, add contribution from environment
-		else if (m_sampleEnv)
+		else if (m_sampleEnv && g_scene->sampleEnv())
 		{
 			out += diffuseColor * getEnvironmentColor(randD, scene);
 		}
@@ -72,19 +72,18 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 	{
 		// Directly sample lights
 		const Lights *lightList = scene.lights();
-		Lights::const_iterator lightIter;
-		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+		for (int i = 0; i < lightList->size(); i++)
 		{
 			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, Vector3(0), lightSpec);
+			Vector3 lightPower = (*lightList)[i]->sampleLight(threadID, P, theNormal, ray.time, scene, Vector3(0), lightSpec, true);
 		
 			out += lightPower * diffuseColor;										// Calculate Diffuse component
-		}	
+		}
 	}
 	return out;
 }
 
-const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene) const
+const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const HitInfo &hit, const Scene& scene, bool isSecondary) const
 {
 	Vector3 Ld		= 0.0f;										// Diffuse	
 	Vector3 Lr		= 0.0f;										// Reflection
@@ -176,9 +175,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	Vector3 rVec = (rayD + 2*(vDotN)*theNormal);
 
 	Vector3 randD;																// If we have glossy reflections, randomize the reflection vector.
-	getCosineDistributedSamples(theNormal, randD);
 	if (m_specGloss < 1.0)
 	{
+		getCosineDistributedSamples(theNormal, randD);
 		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();			// get the (randomized) reflection vector
 	}
 
@@ -221,11 +220,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 		// Directly sample lights
 		const Lights *lightList = scene.lights();
-		Lights::const_iterator lightIter;
-		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+		for (int i = 0; i < lightList->size(); i++)
 		{
 			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, theNormal, ray.time, scene, rVec, lightSpec);
+			Vector3 lightPower = (*lightList)[i]->sampleLight(threadID, P, theNormal, ray.time, scene, rVec, lightSpec, isSecondary);
 
 			Ls += lightPower * m_ks * localSpecAmt * pow(lightSpec, localSpecExp);// * 2.f;		// Calculate specular component
 			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component

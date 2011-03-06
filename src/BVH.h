@@ -49,7 +49,7 @@ public:
 		bool doubleTake;
 	};
 	TriCache4* triCache;
-	void buildTriBundles(TriCache4* cacheAlloc);
+	void buildTriBundles(TriCache4* cacheAlloc, bool reset = false);
 #endif
 	static unsigned int nodeCount, leafCount, maxDepth;
 	const bool intersect(HitInfo &result, const Ray& ray, const float tMin = epsilon) const;
@@ -64,6 +64,21 @@ public:
 };
 
 #ifdef USE_QBVH
+
+#define Q_GETAXIS_TOP(a)		(a & 0x003)
+#define Q_GETAXIS_LEFT(a)		(a & 0x00C)>>2
+#define Q_GETAXIS_RIGHT(a)		(a & 0x030)>>4
+#define Q_SETAXIS_TOP(a)		(a & 0x003)
+#define Q_SETAXIS_LEFT(a)		(a & 0x003)<<2
+#define Q_SETAXIS_RIGHT(a)		(a & 0x003)<<4
+#define Q_ISTOPLEAF(a)		    (a & 0x040)
+#define Q_SET_TOPLEAF(a)		(a & 0x001)<<7
+#define Q_ISLEFTLEAF(a)			(a & 0x080)
+#define Q_SET_LEFTLEAF(a)		(a & 0x001)<<8
+#define Q_ISRIGHTLEAF(a)		(a & 0x100)
+#define Q_SET_RIGHTLEAF(a)		(a & 0x001)<<9
+#define Q_ISNOLEAF(a)			(a & 0x200)
+#define Q_SET_NOLEAF(a)			(a & 0x001)<<10
 
 ALIGN_64 class QBVH_Node
 {
@@ -82,10 +97,11 @@ public:
 	};
 	bool flagsIsValid[4];
 	bool flagsIsLeaf[4];
+	u_int axisFlags;
 	static unsigned int nodeCount, leafCount, maxDepth;
 
-	const void intersect(HitInfo &result, const Ray& ray, bool hit[4], const float tMin = epsilon) const;
-	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc);
+	const void intersect(HitInfo &result, const Ray& ray, __m128 &hit, const float tMin = epsilon) const;
+	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, bool reset = false);
 	BVH_Node::TriCache4* buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum);
 	AABB getAABB();
 	void getAABB(AABB* out);

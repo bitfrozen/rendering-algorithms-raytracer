@@ -39,7 +39,7 @@ void RectangleLight::setPower(float f)
 	m_power = f * surfAreaRecip;
 }
 
-const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const
+const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec, bool isSecondary) const
 {
 	Ray sampleRay(threadID);
 	HitInfo sampleHit;

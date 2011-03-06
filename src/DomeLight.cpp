@@ -77,7 +77,7 @@ void DomeLight::setTexture(Texture* t)
 	}
 }
 
-const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec) const
+const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 &from, const Vector3 &normal, const float time, const Scene &scene, const Vector3 &rVec, float &outSpec, bool isSecondary) const
 {
 	Ray sampleRay(threadID);
 	HitInfo sampleHit;
@@ -86,6 +86,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 	bool cutOff = false;
 	int samplesDone = 0;
 	float samplesDoneRecip = 1.0f;
+	int numSamples = isSecondary ? 1 : m_numSamples;
 
 	do
 	{
@@ -95,24 +96,20 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		int u = ((int)fu == uDistrib->count) ? (int)fu-1 : (int)fu;
 		fv = vDistribs[u]->sample(e2, &pdfs[1]);
 
-		theta = fv * vDistribs[u]->invCount * PI;
-		phi   = fu * uDistrib->invCount * 2.f * PI;
+		//theta = fv * vDistribs[u]->invCount * PI;
+		//phi   = fu * uDistrib->invCount * 2.f * PI;
 
 		cosTheta = cosTableV[int(fv)], sinTheta = sinTableV[int(fv)];
 		sinPhi = sinTableU[int(fu)], cosPhi = cosTableU[int(fu)];
 
-		direction = Vector3(-sinTheta*cosPhi,  -cosTheta, -sinTheta*sinPhi).normalized();
+		direction = Vector3(-sinTheta*cosPhi, -cosTheta, -sinTheta*sinPhi);
 		if (dot(normal, direction) < 0.0f) continue;
 
-		pdf = (pdfs[0] * pdfs[1]) / (2.f * PI2 * sinTheta);
+		pdf = (pdfs[0] * pdfs[1]) / (_2_PI2 * sinTheta);
 
 		Vector3 E       = 0;
 		float attenuate = 1.0f;
-		imageSample = m_lightMap->getLookupXYZ3(direction);//m_lightMap->getLookup(fu * uDistrib->invCount, fv * vDistribs[u]->invCount);
-		if (imageSample.average() > 100.f)
-		{
-			int tmp = 0;
-		}
+		imageSample = m_lightMap->getLookupXYZ3(direction);
 
 		sampleHit.t = MIRO_TMAX;
 		if (m_fastShadows)
@@ -157,7 +154,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 		tmpResult += E * attenuate;
 		tmpSpec   += dot(rVec, direction) * attenuate;
 
-	}  while (samplesDone < m_numSamples && !cutOff);
+	}  while (samplesDone < numSamples && !cutOff);
 
 	outSpec = tmpSpec * samplesDoneRecip;
 	return tmpResult * samplesDoneRecip;
