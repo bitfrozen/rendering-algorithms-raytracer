@@ -49,7 +49,7 @@ public:
 	};
 	mutable IORList r_IOR;							// History of IOR this ray has traversed..
 
-    Ray(const unsigned int threadID, const float t = 0.f)
+    Ray(const unsigned int threadID = 0, const float t = 0.f)
     {
 		//#pragma omp atomic
 		counter[threadID]++;

@@ -48,7 +48,7 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
-	//makeTestScene();
+	makeTestScene();
 	//makeMBTestScene();
 	//makeProxyTestScene();
 
@@ -59,10 +59,10 @@ int main(int argc, char*argv[])
 	//makeBunny20Scene2();
 	//makeSponzaScene2();
 
-	makeAlphaTest();
-//testSceneTree();
+	//makeAlphaTest();
+	//testSceneTree();
 
-//makeTestScene();
+	//makeTestScene();
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
 
