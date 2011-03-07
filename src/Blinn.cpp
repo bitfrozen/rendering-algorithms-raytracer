@@ -135,21 +135,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		diffuseColor = Vector3(texCol.x, texCol.y, texCol.z);
 	}
 
-	if (m_translucency > 0.01f) {
-		//sample light to get translucent color, or should we shot more rays?
-		Vector3 lightTotal(0.0f);
-		const Lights *lightList = scene.lights();
-		Lights::const_iterator lightIter;
-		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
-		{
-			float   lightSpec  = 0;
-			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, -N, .0001f, scene, N, lightSpec);
-			lightTotal += lightPower;
-		}
-		//update the light with the new color
-		translucency += m_translucency * lightTotal * diffuseColor;
-	}
-
 	if (m_normalMap)
 	{
 		Vector4 texN = m_normalMap->getLookup(u, v);
@@ -176,11 +161,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	bool flip = false;
 	float vDotN			= dot(viewDir, N);						// Find if the interpolated normal points back while
-	//float vDotGeoN		= dot(viewDir, geoN);					// geometric normal is fine.
-	//bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);				// True if both are equal
-	//Vector3 theNormal	= nEqGeoN ? N : geoN;					// Use geometric normal if interpolated one points away
-	//vDotN				= nEqGeoN ? vDotN : vDotGeoN;			// from object
-	Vector3 theNormal = N;
+	float vDotGeoN		= dot(viewDir, geoN);					// geometric normal is fine.
+	bool nEqGeoN		= (vDotN*vDotGeoN >= 0.0);				// True if both are equal
+	Vector3 theNormal	= nEqGeoN ? N : geoN;					// Use geometric normal if interpolated one points away
+	vDotN				= nEqGeoN ? vDotN : vDotGeoN;			// from object
 	if (vDotN < 0.0)
 	{
 		flip = true;
@@ -244,6 +228,21 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 			Ls += lightPower * m_ks * localSpecAmt * pow(lightSpec, localSpecExp);// * 2.f;		// Calculate specular component
 			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
+		}
+
+		if (m_translucency > 0.01f) {
+			//sample light to get translucent color, or should we shot more rays?
+			Vector3 lightTotal(0.0f);
+			const Lights *lightList = scene.lights();
+			Lights::const_iterator lightIter;
+			for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+			{
+				float   lightSpec  = 0;
+				Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, -theNormal, .001f, scene, rVec, lightSpec, isSecondary);
+				lightTotal += lightPower;
+			}
+			//update the light with the new color
+			translucency += m_translucency * lightTotal * diffuseColor;
 		}
 	}	
 	else

@@ -16,7 +16,7 @@ class Vector3
 {
 
 public:
-	union {float v[4]; __m128 _v; struct {float x, y, z, __dummy;}; };      // The x & y & z coordinates.
+	union {__m128 _v; float v[4]; struct {float x, y, z, __dummy;}; };      // The x & y & z coordinates.
 
     Vector3() :
         x(0), y(0), z(0), __dummy(1) {}

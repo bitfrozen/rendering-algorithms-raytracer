@@ -1429,7 +1429,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 					if (i==3) return proxyIntersect;
 
 					lowest = newT[0];
-					int lindex = 0;
+					lindex = 0;
 					for (int j = 1; j < 4; j++ ) if (newT[j] < lowest)
 					{
 						lowest = newT[j];
