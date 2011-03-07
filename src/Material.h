@@ -27,6 +27,7 @@ public:
 	void setSampleEnv(bool b)						{m_sampleEnv = b;}
 	const bool sampleEnv()							{return m_sampleEnv;}
 	const float refractAmt() const					{return m_refractAmt;}
+	void setTranslucency(float t)						{m_translucency = t;}
 
 	void setRefractAmt(const float refractAmt)		{m_refractAmt = refractAmt;}
 	const Vector3 getEnvironmentColor(const Vector3& direction, const Scene& scene) const;
@@ -40,6 +41,7 @@ public:
 	Texture* m_envMap;
 	float m_envExposure;
 	bool m_sampleEnv;
+	float m_translucency;
 
 	__forceinline static float fresnel(const float n1, const float n2, const float cosThetaI) 
 	{
