@@ -21,15 +21,15 @@ void testSceneTree();
 void
 makeAlphaTest()
 {
-    g_camera = new Camera;
+    g_camera = (Camera*)_aligned_malloc(sizeof(Camera), 16);
     g_scene = new Scene;
     g_image = new Image;
 
     g_image->resize(256, 256);
 
 	g_scene->m_pathTrace = true;
-	g_scene->m_numPaths = 2;
-	g_scene->m_maxBounces = 3;
+	g_scene->m_numPaths = 20;
+	g_scene->m_maxBounces = 20;
 	g_scene->m_minSubdivs = 1;
 	g_scene->m_maxSubdivs = 4;
 	g_scene->setNoise(0.01f);
@@ -53,7 +53,7 @@ makeAlphaTest()
 	PointLight * light2 = new PointLight;
     light2->setPosition(Vector3(-10, -10, -10));
     light2->setColor(Vector3(1, 1, 1));
-    light2->setPower(1000);
+    light2->setPower(4000);
     g_scene->addLight(light2);
 
     Material* leafMaterial = new Blinn(Vector3(1.0f));
@@ -64,9 +64,9 @@ makeAlphaTest()
 	leafMaterial->setColorMap(leafTex);
 	leafMaterial->setAlphaMap(leafTex);
 
-    TriangleMesh * leafMesh = new TriangleMesh;
-    leafMesh->load("Models/leaf_test.obj");
-    makeMeshObjs(leafMesh, leafMaterial);
+//     TriangleMesh * leafMesh = new TriangleMesh;
+//     leafMesh->load("Models/leaf_test.obj");
+//     makeMeshObjs(leafMesh, leafMaterial);
 
 	Material* leafMaterial2 = new Blinn(Vector3(1.0f));
 	leafMaterial2->setTranslucency(.90f);
@@ -90,7 +90,7 @@ makeAlphaTest()
 	Texture* hdrTex = new Texture(hdrImage);
 	g_scene->setEnvMap(hdrTex);
 	g_scene->setEnvExposure(1.0f);
-	g_scene->setSampleEnv(false);
+	g_scene->setSampleEnv(true);
     
     // let objects do pre-calculations if needed
     g_scene->preCalc();
