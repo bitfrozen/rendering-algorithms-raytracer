@@ -230,15 +230,15 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			Ld += lightPower * diffuseColor;// * 2.f;										// Calculate Diffuse component
 		}
 
-		if (m_translucency > 0.01f) {
+		if (m_translucency > 0.01f) 
+		{
 			//sample light to get translucent color, or should we shot more rays?
 			Vector3 lightTotal(0.0f);
 			const Lights *lightList = scene.lights();
-			Lights::const_iterator lightIter;
-			for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+			for (int i = 0; i < lightList->size(); i++)
 			{
 				float   lightSpec  = 0;
-				Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, -theNormal, .001f, scene, rVec, lightSpec, isSecondary);
+				Vector3 lightPower = (*lightList)[i]->sampleLight(threadID, P, -theNormal, .001f, scene, rVec, lightSpec, isSecondary);
 				lightTotal += lightPower;
 			}
 			//update the light with the new color
