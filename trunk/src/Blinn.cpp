@@ -25,6 +25,7 @@ Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 	m_lightEmitted = 0.0f;
 	m_Le = Vector3(0.0f);
 	m_refractAmt = refractAmt;
+	m_translucency = 1.0f;
 }
 
 Blinn::~Blinn()
@@ -104,6 +105,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	Vector3 P = ray.getPoint(hit.t);
 	int bounces   = GET_BOUNCES(ray.bounces_flags);
 	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
+	Vector3 translucency(0.0f);
 
 	// Doing this during triangle intersection now
 	/*if (m_alphaMap)
@@ -131,6 +133,21 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	{
 		Vector4 texCol = m_colorMap->getLookup(u, v);
 		diffuseColor = Vector3(texCol.x, texCol.y, texCol.z);
+	}
+
+	if (m_translucency > 0.01f) {
+		//sample light to get translucent color, or should we shot more rays?
+		Vector3 lightTotal(0.0f);
+		const Lights *lightList = scene.lights();
+		Lights::const_iterator lightIter;
+		for (lightIter = lightList->begin(); lightIter != lightList->end(); lightIter++)
+		{
+			float   lightSpec  = 0;
+			Vector3 lightPower = (*lightIter)->sampleLight(threadID, P, -N, .0001f, scene, N, lightSpec);
+			lightTotal += lightPower;
+		}
+		//update the light with the new color
+		translucency += m_translucency * lightTotal * diffuseColor;
 	}
 
 	if (m_normalMap)
@@ -295,7 +312,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 	//if (alpha >= 1.f-epsilon)
 	//{
-		return (Ld + Ls)*rrWeightRecip + (Lr + Lt)*rrWeightRecipSpec + m_Le; // Make sure we keep energy constant
+	return (Ld + Ls + translucency)*rrWeightRecip + (Lr + Lt)*rrWeightRecipSpec + m_Le; // Make sure we keep energy constant
 	//}
 	/*else
 	{

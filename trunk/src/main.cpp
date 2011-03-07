@@ -18,6 +18,7 @@
 #include "StoneTexture.h"
 #include "Assignment1.h"
 #include "Assignment2.h"
+#include "Assignment3.h"
 #include "BVH.h"
 
 void makeMeshObjs(TriangleMesh* mesh, Material* mat);
@@ -47,7 +48,7 @@ int main(int argc, char*argv[])
 	//makeStoneFloorScene();
 	//makeSponzaScene();
 	//makeEnvironmentMapScene();
-	makeTestScene();
+	//makeTestScene();
 	//makeMBTestScene();
 	//makeProxyTestScene();
 
@@ -58,6 +59,10 @@ int main(int argc, char*argv[])
 	//makeBunny20Scene2();
 	//makeSponzaScene2();
 
+	//makeAlphaTest();
+testSceneTree();
+
+//makeTestScene();
 	MiroWindow miro(&argc, argv);
 	miro.mainLoop();
 

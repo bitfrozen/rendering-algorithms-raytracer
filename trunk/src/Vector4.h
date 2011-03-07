@@ -46,7 +46,7 @@ public:
     void set(float a) {x = y = z = w = a;}
     void set(float a, float b, float c) {x = a; y = b; z = c;}
     void set(float a, float b, float c, float d) {x = a; y = b; z = c; w = d;}
-    void set(const Vector4 a) {x = a.x; y = a.y; z = a.z; w = a.w;}
+    void set(const Vector4& a) {x = a.x; y = a.y; z = a.z; w = a.w;}
     
 
     //! Access operator.        
