@@ -43,6 +43,8 @@ public:
 	bool m_sampleEnv;
 	float m_translucency;
 
+	bool m_disperse;
+
 	__forceinline static float fresnel(const float n1, const float n2, const float cosThetaI) 
 	{
 #ifndef USE_SCHLICK

@@ -279,26 +279,63 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		else
 		{
 			if (localRefractAmt*Ts > 0.0f)
-			{
-				float snellsQ  = inIOR / outIOR;
-				float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
-				Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+			{  
 				doEnv          = true;
 
-				if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
-				{		
-					ray.r_IOR.push(outIOR);
-					Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
-					HitInfo newHit;
-					newHit.t = MIRO_TMAX;
-					if (scene.trace(threadID, newHit, tRay, epsilon))
-					{
-						Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
-						Lt                += m_ks*refraction;
-						doEnv              = false;
+				if (m_disperse) {
+					//I'll start with rgb
+					//if (ray.bounces_flags | IS_REFRACT_RAY) {
+					for (int i = 0; i < 3; i++) {
+						//0 = r, 1 = g, 2 = b
+						//for now hardcode the colors
+						float partIOR = (i == 0)? 1.6045f : (i == 1)? 1.6157f : 1.6203f;
+						//outIOR depends on wavelength
+						float snellsQ  = inIOR / partIOR;
+						float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
+						Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+
+						if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+						{		
+							ray.r_IOR.push(outIOR);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
+							Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+							HitInfo newHit;
+							newHit.t = MIRO_TMAX;
+							if (scene.trace(threadID, newHit, tRay, epsilon))
+							{
+								Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);
+								Vector3 mask(0.0f);
+								mask[i] = 1.0f;
+								refraction = refraction*mask;
+								Lt                += m_ks*refraction;
+								doEnv              = false;
+							}
+							ray.r_IOR.pop();
+						}
 					}
-					ray.r_IOR.pop();
+
+
+				} else {
+
+					float snellsQ  = inIOR / outIOR;
+					float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
+					Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+
+					if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+					{		
+						ray.r_IOR.push(outIOR);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
+						Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
+						HitInfo newHit;
+						newHit.t = MIRO_TMAX;
+						if (scene.trace(threadID, newHit, tRay, epsilon))
+						{
+							Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);				
+							Lt                += m_ks*refraction;
+							doEnv              = false;
+						}
+						ray.r_IOR.pop();
+					}
 				}
+
 				if (doEnv)
 				{
 					Lt += m_ks * getEnvironmentColor(rVec, scene);
@@ -472,3 +509,4 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	_Ld = addps(_Ld, _m_ka);
 	return Vector3(Ld[0], Ld[1], Ld[2]);
 }*/
+

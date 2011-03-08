@@ -9,7 +9,7 @@
 
 //#define NO_SSE
 #define USE_BINS
-//#define USE_QBVH
+#define USE_QBVH
 #define USE_TRI_PACKETS
 //#define USE_SCHLICK // Don't use this, it turns out to be slower than the full fresnel calculation...
 
