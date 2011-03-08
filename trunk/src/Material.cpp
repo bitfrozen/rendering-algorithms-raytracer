@@ -3,7 +3,7 @@
 
 Material::Material() : m_envExposure(1.0f), m_envMap(NULL), m_colorMap(NULL), 
 	m_normalMap(NULL), m_reflectMap(NULL), m_refractMap(NULL), m_specularMap(NULL),
-	m_alphaMap(NULL), m_sampleEnv(true), m_translucency(0.0f)
+	m_alphaMap(NULL), m_sampleEnv(true), m_translucency(0.0f), m_disperse(false)
 {
 }
 

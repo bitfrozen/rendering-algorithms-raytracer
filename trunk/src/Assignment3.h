@@ -16,6 +16,8 @@ void makeAlphaTest();
 
 void testSceneTree();
 
+void testDispersion();
+
 
 
 void
@@ -96,9 +98,80 @@ makeAlphaTest()
     g_scene->preCalc();
 }
 
+void
+testDispersion()
+{
+    g_camera = (Camera*)_aligned_malloc(sizeof(Camera), 16);
+    g_scene = new Scene;
+    g_image = new Image;
+
+    g_image->resize(256, 256);
+
+	g_scene->m_pathTrace = true;
+	g_scene->m_numPaths = 20;
+	g_scene->m_maxBounces = 20;
+	g_scene->m_minSubdivs = 1;
+	g_scene->m_maxSubdivs = 4;
+	g_scene->setNoise(0.01f);
+    
+    // set up the camera
+    g_scene->setBGColor(Vector3(0.0f));
+    g_camera->setEye(Vector3(0, 3, 6));
+    g_camera->setLookAt(Vector3(0, 0, 0));
+    g_camera->setUp(Vector3(0, 1, 0));
+    g_camera->setFOV(45);
+	g_camera->m_aperture = 0.001f;
+	g_camera->m_focusPlane = 4.0f;
+
+    // create and place a point light source
+    /*PointLight * light = new PointLight;
+    light->setPosition(Vector3(0, 10, 0));
+    light->setColor(Vector3(1, 1, 1));
+    light->setPower(700);
+    g_scene->addLight(light);
+*/
+	PointLight * light2 = new PointLight;
+    light2->setPosition(Vector3(-10, -10, -10));
+    light2->setColor(Vector3(1, 1, 1));
+    light2->setPower(4000);
+    g_scene->addLight(light2);
+
+
+	Blinn* mat = new Blinn(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.3,0.3,0.3));
+	mat->setSpecExp(30.0f);
+	mat->setIor(1.56f);
+	mat->setReflectAmt(0.0f);
+	mat->setRefractAmt(1.0f);
+	mat->m_disperse = false;
+
+    
+	Matrix4x4 xform;
+	xform = translate(0, 0, 0);
+	TriangleMesh* mesh = new TriangleMesh;
+    mesh->load("Models/sphere2.obj", xform);
+    makeMeshObjs(mesh, mat);
+
+	xform = translate(-4,0,0);
+	TriangleMesh* mesh2 = new TriangleMesh;
+	mesh2->load("Models/sphere2.obj", xform);
+	makeMeshObjs(mesh2, mat);
+    
+    
+	//make a raw image from hdr file
+	RawImage* hdrImage = new RawImage();
+	hdrImage->loadImage("Images/Topanga_Forest_B_3k.hdr");
+	Texture* hdrTex = new Texture(hdrImage);
+	g_scene->setEnvMap(hdrTex);
+	g_scene->setEnvExposure(1.0f);
+	g_scene->setSampleEnv(true);
+    
+    // let objects do pre-calculations if needed
+    g_scene->preCalc();
+}
+
 void testSceneTree() {
 
-	g_camera = new Camera;
+	g_camera = (Camera*)_aligned_malloc(sizeof(Camera), 16);
 	g_scene = new Scene;
 	g_image = new Image;
 
