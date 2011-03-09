@@ -23,27 +23,27 @@ Scene::Scene() {
   genRands();
 }
 
-int Scene::randsIdx = 0;		// Current index into random number array
-float Scene::rands[1000000];	// Array of random numbers
+int Scene::randsIdx[32] = {0};		// Current index into random number array
+float Scene::rands[2097152];	// Array of random numbers
 MTRand_int32 Scene::drand(clock());
 
-void Scene::genRands()			// Run the random number generator. This way we don't run into
+void Scene::genRands(int threadID)			// Run the random number generator. This way we don't run into
 {								// threading problems...
 	#pragma omp critical
-	for (int i = 0; i < 1000000; i++)
+	for (int i = 65536*threadID; i < 65536*threadID+65536; i++)
 	{
 		rands[i] = ((float)drand()+0.5) * IntRecip;
 	}
 }
 
-float Scene::getRand()
+float Scene::getRand(int threadID)
 {
-	if (randsIdx >= 990000)
+	if (randsIdx[threadID] >= 65536)
 	{
-		randsIdx = 0;
-		genRands();
+		randsIdx[threadID] = 0;
+		genRands(threadID);
 	}
-	return rands[randsIdx++];
+	return rands[threadID*65536+(randsIdx[threadID]++)];
 }
 
 void Scene::openGL(Camera *cam)
@@ -78,9 +78,9 @@ Scene::preCalc()
     m_bvh.build(&m_objects);
 }
 
-unsigned long int Ray::counter[256] = {0};
-unsigned long int Ray::rayTriangleIntersections[256] = {0};
-unsigned long int BVH::rayBoxIntersections[256] = {0};
+unsigned long int Ray::counter[2048] = {0};
+unsigned long int Ray::rayTriangleIntersections[2048] = {0};
+unsigned long int BVH::rayBoxIntersections[2048] = {0};
 
 void
 Scene::raytraceImage(Camera *cam, Image *img)
@@ -92,8 +92,6 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	int remain_vert			= img->height() % bucket_size;
 	int num_vert_buckets	= img->height() / bucket_size + (remain_vert > 0);
 
-	static HitInfo hitInfo;
-	static Ray ray(1);
 	int totalBuckets = num_horiz_buckets*num_vert_buckets;
 	bool* doneBuckets = new bool[totalBuckets];
 	int shownBuckets = 0;
@@ -110,12 +108,14 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	bool abort = false;
 	FlushConsoleInputBuffer(handle);
 
-#pragma omp parallel private(hitInfo, ray) shared (doneBuckets, bucketDone)
-	{
+#pragma omp parallel shared (doneBuckets, bucketDone)
+	{		
 		unsigned int threadID = omp_get_thread_num();
 		Ray::counter[threadID] = 0;
 		Ray::rayTriangleIntersections[threadID] = 0;
-		BVH::rayBoxIntersections[threadID] = 0;
+		BVH::rayBoxIntersections[128*threadID] = 0;
+		Ray ray(threadID);
+		HitInfo hitInfo;
 
 		num_threads = omp_get_num_threads();
 		if (num_threads > 1)
@@ -201,9 +201,9 @@ Scene::raytraceImage(Camera *cam, Image *img)
 	int counter = 0, rayBoxIntersections = 0, rayTriangleIntersections = 0;
 	for (int i = 1; i <= num_threads; i++)
 	{
-		counter                  += Ray::counter[i];
-		rayBoxIntersections      += BVH::rayBoxIntersections[i];
-		rayTriangleIntersections += Ray::rayTriangleIntersections[i];
+		counter                  += Ray::counter[i*128];
+		rayBoxIntersections      += BVH::rayBoxIntersections[i*128];
+		rayTriangleIntersections += Ray::rayTriangleIntersections[i*128];
 	}
 
 	clock_t end = clock();
@@ -217,6 +217,8 @@ Scene::raytraceImage(Camera *cam, Image *img)
 
 Vector3 Scene::sampleScene(const unsigned int threadID, Ray &ray, HitInfo &hitInfo)
 {
+	_mm_prefetch((char *)&ray, _MM_HINT_T0);
+	_mm_prefetch((char *)&ray.dz4, _MM_HINT_T0);
 	Vector3 result = 0;
 
 	hitInfo.t = MIRO_TMAX;

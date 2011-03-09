@@ -142,17 +142,27 @@ void RawImage::loadTGA(char* filename) {
 
 	//convert from a char array to a float array
 	//Gamma correct loaded data
+	unsigned char *flipArray = new unsigned char[total];
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width*mode; j++)
+		{
+			flipArray[(height-i-1)*width*mode+j] = imageArray[i*width*mode+j];
+		}
+	}
+
 	m_rawData = new float[total];
 	for (int i = total-1; i >= 0; i--) {
-		m_rawData[i] = float(Image::gamma_to_linear[imageArray[i]]) / 32768.f;//((float) imageArray[i])/255;
+		m_rawData[i] = float(Image::gamma_to_linear[flipArray[i]]) / 32768.f;//((float) imageArray[i])/255;
 	}
 	if (mode == 4)
 	{
 		for (int i = 3; i < total; i+=4) {
-			m_rawData[i] = float(imageArray[i]) / 255.f;//((float) imageArray[i])/255;
+			m_rawData[i] = float(flipArray[i]) / 255.f;//((float) imageArray[i])/255;
 		}
 	}
 	delete[] imageArray;
+	delete[] flipArray;
 
 	if (mode == 1) { //grayscale
 		m_imageType = GRAYSCALE;

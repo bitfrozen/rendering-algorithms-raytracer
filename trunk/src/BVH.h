@@ -98,9 +98,10 @@ public:
 	bool flagsIsValid[4];
 	bool flagsIsLeaf[4];
 	u_int axisFlags;
+	mutable int boxHit;
 	static unsigned int nodeCount, leafCount, maxDepth;
 
-	const void intersect(HitInfo &result, const Ray& ray, __m128 &hit, const float tMin = epsilon) const;
+	const void intersect(HitInfo &result, const Ray& ray, const float tMin = epsilon) const;
 	void build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, bool reset = false);
 	BVH_Node::TriCache4* buildTriBundle(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, int nodeNum);
 	AABB getAABB();
@@ -112,6 +113,8 @@ public:
 class BVH
 {
 public:
+	__declspec(align(128)) static unsigned long int rayBoxIntersections[2048];
+
 	BVH() {
 		m_baseNode = (BVH_Node*)_aligned_malloc(sizeof(BVH_Node), 16);
 #ifdef USE_QBVH
@@ -142,7 +145,6 @@ public:
 	}
 
 	const bool intersect(const unsigned int threadID, HitInfo &result, const Ray& ray, const float tMin = epsilon) const;
-	static unsigned long int rayBoxIntersections[256];
 protected:
     Objects* m_objects;
 	BVH_Node* m_baseNode;

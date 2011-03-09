@@ -90,7 +90,7 @@ const Vector3 DomeLight::sampleLight(const unsigned int threadID, const Vector3 
 
 	do
 	{
-		e1 = Scene::getRand(); e2 = Scene::getRand();
+		e1 = Scene::getRand(threadID); e2 = Scene::getRand(threadID);
 
 		fu = uDistrib->sample(e1, &pdfs[0]);
 		int u = ((int)fu == uDistrib->count) ? (int)fu-1 : (int)fu;

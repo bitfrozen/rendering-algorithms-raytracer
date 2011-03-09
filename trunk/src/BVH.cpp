@@ -388,7 +388,7 @@ void QBVH_Node::build(BVH_Node* node, BVH_Node::TriCache4* cacheAlloc, bool rese
 	}
 }
 
-const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, __m128 &hit, float tMin) const
+const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, float tMin) const
 {	
 	const __m128 t0vX = mulps(subps(bbMinX4, ray.ox4), ray.idx4);
 	const __m128 t1vX = mulps(subps(bbMaxX4, ray.ox4), ray.idx4);
@@ -410,7 +410,7 @@ const void QBVH_Node::intersect(HitInfo& result, const Ray& ray, __m128 &hit, fl
 	const __m128 interval_min = maxps(t0, setSSE(tMin));
 	const __m128 interval_max = minps(t1, setSSE(result.t));
 
-	hit = cmpleqps(interval_min, interval_max);
+	boxHit = movemaskps(cmpleqps(interval_min, interval_max));
 }
 
 AABB QBVH_Node::getAABB()
@@ -771,7 +771,7 @@ void BVH_Node::partitionSweepBin(Object** objs, AABB* preCalcAABB, Vector3* cent
 		{
 			if (binIds[i] >= binPart)
 			{
-				while (binIds[revIdx] >= binPart) {revIdx--;}
+				while (binIds[revIdx] >= binPart && revIdx >= 0) {revIdx--;}
 				if (revIdx <= i)
 				{
 					partPt = i-1;
@@ -1127,13 +1127,10 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 	else
 #ifdef USE_QBVH
 	{
-		union {u_int boxHit[4]; __m128 _boxHit;};
-		_mm_prefetch((char *)m_baseQNode, _MM_HINT_T0);
-		_mm_prefetch((char *)&ray, _MM_HINT_T0);
-		_mm_prefetch((char *)&ray.dz4, _MM_HINT_T0);
+		_mm_prefetch((char *)m_baseQNode, _MM_HINT_NTA);
 		bool hit = false;
 		int stackIndex = 1;
-	    QBVH_Node* BVH_Stack[256];
+		QBVH_Node* BVH_Stack[256];
 
 		// Push children on "stack"
 		BVH_Stack[0] = m_baseQNode;
@@ -1141,11 +1138,9 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 		bool isFirst = true;
 		while (--stackIndex >= 0)
 		{
-			if (!BVH_Stack[stackIndex]) continue;
 			// Intersect box bundle
-			BVH::rayBoxIntersections[threadID]++;
-			_boxHit = setZero;
-			BVH_Stack[stackIndex]->intersect(minHit, ray, _boxHit, tMin);
+			BVH::rayBoxIntersections[128*threadID]++;
+			BVH_Stack[stackIndex]->intersect(minHit, ray, tMin);
 
 			bool leafsHit = false;
 			int childHit = 0;
@@ -1153,7 +1148,7 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 
 			for (int i = 0; i < NODE_SIZE; i++)
 			{
-				if (boxHit[i])
+				if (BVH_Stack[stackIndex]->boxHit & (1<<i))
 				{
 					if (BVH_Stack[stackIndex]->flagsIsLeaf[i])
 					{
@@ -1171,13 +1166,13 @@ const bool BVH::intersect(const unsigned int threadID, HitInfo &minHit, const Ra
 					}
 				}
 			}
-			_mm_prefetch((char *)BVH_Stack[stackIndex+3], _MM_HINT_T0);
+			_mm_prefetch((char *)BVH_Stack[stackIndex+childHit-1], _MM_HINT_NTA);
 
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < childHit; i++)
 			{
 				BVH_Stack[stackIndex+i] = tempStack[i];
 			}
-			stackIndex += 4;
+			stackIndex += childHit;
 		}
 		return hit;
 	}
@@ -1303,7 +1298,7 @@ const bool BVH_Node::intersect(HitInfo &result, const Ray& ray, const float tMin
 const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin, BVH_Node::TriCache4* triCache)
 {
 //#pragma omp atomic
-	Ray::rayTriangleIntersections[threadID]++;
+	Ray::rayTriangleIntersections[128*threadID]++;
 
 	bool proxyIntersect = false;
 
@@ -1319,7 +1314,7 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 					// Intersect proxy
 					if (triCache->tris[i]->intersect(threadID, result, r, tMin)) proxyIntersect = true;
 				}
-				else // Don't really need this yet... if (triCache->tris[i]->m_objectType == MB_OBJECT)
+				else if (triCache->tris[i]->m_objectType == MB_OBJECT)
 				{
 					// get geometry for motion blurred geom
 					const MBObject* o = static_cast<MBObject*>(triCache->tris[i]);

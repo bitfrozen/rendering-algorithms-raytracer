@@ -119,7 +119,7 @@ TriangleMesh::loadObj(FILE* fp, const Matrix4x4& ctm)
     }
     fseek(fp, 0, 0);
 
-    m_normals = (Vector3*)_aligned_malloc(sizeof(Vector3)*(max(nv,nf)), 16);
+    m_normals = (Vector3*)_aligned_malloc(sizeof(Vector3)*3*nv, 16);
     m_vertices = (Vector3*)_aligned_malloc(sizeof(Vector3)*(nv), 16);
 
     if (nt)

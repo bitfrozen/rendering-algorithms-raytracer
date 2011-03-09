@@ -11,7 +11,7 @@ Material::~Material()
 {
 }
 
-void Material::getCosineDistributedSamples(const Vector3 &N, Vector3 &out)
+void Material::getCosineDistributedSamples(const int threadID, const Vector3 &N, Vector3 &out)
 {
 	ALIGN_SSE float sqrte2recip;
 	ALIGN_SSE float sqrte2;
@@ -19,8 +19,8 @@ void Material::getCosineDistributedSamples(const Vector3 &N, Vector3 &out)
 	ALIGN_SSE float sqrt1_e2;
 
 	//make random ray based on the cosine distribution
-	const float e1 = Scene::getRand();
-	float e2 = Scene::getRand();
+	const float e1 = Scene::getRand(threadID);
+	float e2 = Scene::getRand(threadID);
 	e2 = (e2 > 0.99) ? 0.99 : e2;
 
 	Vector3 u = cross( ((fabs(N.x) > 0.1) ? Vector3(0,1,0) : Vector3(1,0,0)), N).normalize();

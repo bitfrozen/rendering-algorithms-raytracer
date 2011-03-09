@@ -25,7 +25,8 @@ Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 	m_lightEmitted = 0.0f;
 	m_Le = Vector3(0.0f);
 	m_refractAmt = refractAmt;
-	m_translucency = 1.0f;
+	m_translucency = 0.0f;
+	m_disperse = false;
 }
 
 Blinn::~Blinn()
@@ -52,7 +53,7 @@ const Vector3 Blinn::calculatePathTracing(const unsigned int threadID, const Ray
 
 	if (giBounces < scene.m_maxBounces-1) 
 	{
-		getCosineDistributedSamples(theNormal, randD);
+		getCosineDistributedSamples(threadID, theNormal, randD);
 
 		randRay.set(threadID, P, randD, ray.time, ray.r_IOR(), bounces, giBounces+1, IS_PRIMARY_RAY);
 		newHit.t = MIRO_TMAX;
@@ -178,7 +179,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	Vector3 randD;																// If we have glossy reflections, randomize the reflection vector.
 	if (m_specGloss < 1.0)
 	{
-		getCosineDistributedSamples(theNormal, randD);
+		getCosineDistributedSamples(threadID, theNormal, randD);
 		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();			// get the (randomized) reflection vector
 	}
 
@@ -202,7 +203,8 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		Ts = 1.0f-Rs;										// Energy conservation
 	}
 
-	float rrFloat = Scene::getRand();
+	_mm_prefetch((char *)ray.rayTriangleIntersections[128*threadID], _MM_HINT_NTA);
+	float rrFloat = Scene::getRand(threadID);
 	float rrWeight = (1.0f - Rs*localReflectAmt - Ts*localRefractAmt);
 	float rrWeightRecip = (rrWeight > 0.f) ? 1.f / rrWeight : 1.f;
 	float rrWeightRecipSpec = (1.f-rrWeight > 0.f) ? 1.f / (1.f-rrWeight) : 1.f;
@@ -249,12 +251,12 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	{
 		bool doEnv  = true;
 
-		rrFloat = Scene::getRand();
+		rrFloat = Scene::getRand(threadID);
 
 		// Russian Roulette sampling for reflection / refraction.
 		// This helps prevent ray number explosion
-		if (rrFloat < localReflectAmt*Rs)
-		{
+// 		if (rrFloat < localReflectAmt*Rs)
+// 		{
 			if (localReflectAmt*Rs > 0.0f && bounces < 3)
 			{
 				Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
@@ -275,9 +277,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 					int tmp = 0;
 				}
 			}
-		} 
-		else
-		{
+			Lr*=localReflectAmt*Rs;
+// 		} 
+// 		else
+// 		{
 			if (localRefractAmt*Ts > 0.0f)
 			{  
 				doEnv          = true;
@@ -338,10 +341,11 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 				if (doEnv)
 				{
-					Lt += m_ks * getEnvironmentColor(rVec, scene);
+					Lt += m_ks * getEnvironmentColor(tVec, scene);
 				}
+				Lt*=localRefractAmt*Ts;
 			}
-		}
+/*		}*/
 	}
 
 	Ld += m_ka;

@@ -27,6 +27,8 @@
 ALIGN_64 class Ray
 {
 public:
+	__declspec(align(128)) static unsigned long int counter[2048];
+	__declspec(align(128)) static unsigned long int rayTriangleIntersections[2048];
 	union {float  o[4]; __m128  _o;};	//!< Origin of ray
 	union {float  d[4]; __m128  _d;};	//!< Direction of ray
 	union {float id[4]; __m128 _id;};	// Reciprocal of direction, used for slabs test (AABB intersection)
@@ -35,12 +37,11 @@ public:
 	__m128  dx4,  dy4,  dz4;
 	__m128 idx4, idy4, idz4;
 #endif
-	static unsigned long int counter[256], rayTriangleIntersections[256];
 	unsigned int bounces_flags;
 	float time;
-	
+
 	struct IORList {
-		float _IORList[256];
+		float _IORList[12];
 		unsigned int IOR_idx;
 		IORList() {_IORList[0] = 1.0f; IOR_idx = 0;}
 		float operator()() {return _IORList[IOR_idx];}
@@ -70,7 +71,7 @@ public:
     Ray(const unsigned int threadID, const Vector3& o, const Vector3& d, const float t = 0.f, float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
     {
 		//#pragma omp atomic
-		counter[threadID]++;
+		counter[128*threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
@@ -103,7 +104,7 @@ public:
 	{
 		//#pragma omp atomic
 		r_IOR = IOR;
-		counter[threadID]++;
+		counter[128*threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;
@@ -134,7 +135,7 @@ public:
 	__forceinline void set(const unsigned int threadID, const Vector3& o, const Vector3& d, const float t = 0.f, const float IOR = 1.001f, unsigned int bounces = 0, unsigned int giBounces = 0, unsigned int flags = IS_PRIMARY_RAY)
 	{
 		//#pragma omp atomic
-		counter[threadID]++;
+		counter[128*threadID]++;
 
 		this->o[0] = o.x; this->o[1] = o.y; this->o[2] = o.z; this->o[3] = 1.0f;
 		this->d[0] = d.x; this->d[1] = d.y; this->d[2] = d.z; this->d[3] = 0.0f;

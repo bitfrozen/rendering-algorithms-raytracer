@@ -138,8 +138,8 @@ const Ray Camera::eyeRayRandom(const unsigned int threadID, const int x, const i
     // -----------------------------------
     //add a randomness so that the ray will be sent somewhere inside the pixel,
 	// and not necessarily through the center of the pixel
-	const float urand = Scene::getRand();
-	const float vrand = Scene::getRand();
+	const float urand = Scene::getRand(threadID);
+	const float vrand = Scene::getRand(threadID);
 
     const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth); 
     const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight); 
@@ -174,8 +174,8 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 	// -----------------------------------
 	// We get a sample evenly distributed in the quadrant defined by
 	// minXOffset, maxXOffset, minYOffset and maxYOffset
-	float urand = Scene::getRand();
-	float vrand = Scene::getRand();
+	float urand = Scene::getRand(threadID);
+	float vrand = Scene::getRand(threadID);
 
 	float xOffset = (maxXOffset-minXOffset) * urand + minXOffset;
 	float yOffset = (maxYOffset-minYOffset) * vrand + minYOffset;
@@ -184,7 +184,7 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 	const float imPlaneVPos = bottom + (top - bottom) * ( ((float)y + yOffset) / (float)imageHeight );
 
 	// Get a random point in time in the interval
-	float trand = Scene::getRand()*m_shutterSpeed;
+	float trand = getTimeSample();
 
 	if (m_aperture < epsilon)
 	{
@@ -197,8 +197,8 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 		// Rejection-sample a disc
 		do 
 		{
-			urand = 1.0 - 2*Scene::getRand();
-			vrand = 1.0 - 2*Scene::getRand();
+			urand = 1.0 - 2*Scene::getRand(threadID);
+			vrand = 1.0 - 2*Scene::getRand(threadID);
 		} while (urand*urand + vrand*vrand > 1.0f);
 
 		const Vector3 origin = m_aperture * (urand*uDir + vrand*vDir) + m_eye;
