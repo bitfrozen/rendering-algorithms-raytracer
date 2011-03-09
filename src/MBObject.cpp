@@ -25,7 +25,7 @@ const bool MBObject::intersect(const unsigned int threadID, HitInfo &result, con
 	float t = min(1.f, max(0.f, r.time));
 	
 	//#pragma omp atomic
-	Ray::rayTriangleIntersections[threadID]++;
+	Ray::rayTriangleIntersections[128*threadID]++;
 
 	bool hit = false;
 	ALIGN_SSE float newT;

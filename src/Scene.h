@@ -63,11 +63,11 @@ public:
 	int m_maxSubdivs;
 	int m_maxBounces;
 
-	static int randsIdx;
-	static float rands[1000000];
+	static int randsIdx[32];
+	static float rands[2097152];
 	static MTRand_int32 drand;
-	static void genRands();
-	static float getRand();
+	static void genRands(const int threadID = 0);
+	static float getRand(const int threadID = 0);
 
 protected:
     Objects m_objects;

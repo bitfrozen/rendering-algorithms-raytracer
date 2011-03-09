@@ -52,7 +52,7 @@ const bool use_Bins			= true;
 const bool use_Bins			= false;
 #endif
 
-const int bucket_size		= 16;
+const int bucket_size		= 32;
 const float epsilon			= 0.001f; 
 const float PI				= 3.1415926f;
 const float PI2				= PI * PI;

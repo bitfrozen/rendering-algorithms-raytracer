@@ -75,7 +75,7 @@ const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, 
 	Vector3 newRayD = m_Matrix->m_inverse * ray._d;
 	HitInfo newHit;
 	newHit.t = result.t;
-	Ray newRay = Ray(threadID, newRayO, newRayD, ray.time, ray.r_IOR, 0, 0, ray.bounces_flags);
+	__declspec(align(128)) Ray newRay = Ray(threadID, newRayO, newRayD, ray.time, ray.r_IOR, 0, 0, ray.bounces_flags);
 
 	bool hit = m_BVH->intersect(threadID, newHit, newRay, tMin);
 
@@ -92,7 +92,7 @@ const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, 
 
 void ProxyObject::renderGL()
 {
-	for (int i = 0; i < m_objects->size(); i+=5000)
+	for (int i = 0; i < m_objects->size(); i+=m_displayNum)
 	{
 		Vector3 v0, v1, v2;
 		TriangleMesh::TupleI3 ti3 = (*m_objects)[i]->m_mesh->m_vertexIndices[(*m_objects)[i]->m_index];// [m_index];
@@ -133,6 +133,27 @@ void ProxyObject::setupProxy(TriangleMesh* mesh, Material* mat, Objects* m, BVH*
 		t[i].setMaterial(mat);
 		m->push_back(&t[i]);
 		i--;
+	}
+
+	b->build(m);
+}
+
+void ProxyObject::setupMultiProxy(TriangleMesh* mesh[], int numObjs, Material* mat[], Objects* m, BVH* b)
+{
+	for (int j = 0; j < numObjs; j++)
+	{
+		int localNum = mesh[j]->m_numTris;
+		Object* t = new Object[localNum];
+
+		int i = localNum-1;
+		while (i >= 0)
+		{
+			t[i].setMesh(mesh[j]);
+			t[i].setIndex(i);
+			t[i].setMaterial(mat[j]);
+			m->push_back(&t[i]);
+			i--;
+		}
 	}
 
 	b->build(m);

@@ -76,6 +76,9 @@ public:
 	inline void translate(float x, float y, float z);
 	inline void scale(float x, float y, float z);
 	inline void rotate(float angle, float x, float y, float z);
+	inline Matrix4x4& rotateX(float a);
+	inline Matrix4x4& rotateY(float a);
+	inline Matrix4x4& rotateZ(float a);
 };
 
 inline std::ostream &
@@ -756,6 +759,72 @@ inline void Matrix4x4::scale(float x, float y, float z)
 	m11 *= x;
 	m22 *= y;
 	m33 *= z;
+}
+
+inline Matrix4x4& Matrix4x4::rotateX(float a)
+{
+	float th = a*(PI/180.);
+	m11 = 1;
+	m12 = 0;
+	m13 = 0;
+	m14 = 0;
+	m21 = 0;
+	m22 = (float)cos(th);
+	m23 = (float)sin(th);
+	m24 = 0;
+	m31 = 0;
+	m32 = (float)-sin(th);
+	m33 = (float)cos(th);
+	m34 = 0;
+	m41 = 0;
+	m42 = 0;
+	m43 = 0;
+	m44 = 1;
+	return *this;
+}
+
+inline Matrix4x4& Matrix4x4::rotateY(float a)
+{
+	float th = a*(PI/180.);
+	m11 = (float)cos(th);
+	m12 = 0;
+	m13 = (float)-sin(th);
+	m14 = 0;
+	m21 = 0;
+	m22 = 1;
+	m23 = 0;
+	m24 = 0;
+	m31 = (float)sin(th);
+	m32 = 0;
+	m33 = (float)cos(th);
+	m34 = 0;
+	m41 = 0;
+	m42 = 0;
+	m43 = 0;
+	m44 = 1;
+	return *this;
+}
+
+inline Matrix4x4& Matrix4x4::rotateZ(float a)
+{
+	float th = a*(PI/180.);
+	m11 = (float)cos(th);
+	m12 = (float)sin(th);
+	m13 = 0;
+	m14 = 0;
+	m21 = (float)-sin(th);
+	m22 = (float)cos(th);
+	m23 = 0;
+	m24 = 0;
+	m31 = 0;
+	m32 = 0;
+	m33 = 1;
+	m34 = 0;
+	m41 = 0;
+	m42 = 0;
+	m43 = 0;
+	m44 = 1;
+	return *this;
 }
 
 // angle is in degrees

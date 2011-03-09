@@ -69,7 +69,7 @@ public:
 #endif
 	}
 
-	static void getCosineDistributedSamples(const Vector3 &N, Vector3 &out);
+	static void getCosineDistributedSamples(const int threadID, const Vector3 &N, Vector3 &out);
 protected:
 	float m_refractAmt;				// Refraction amount. This weights the refraction amount prescribed by the fresnel approximation.
 };

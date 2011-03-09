@@ -53,8 +53,8 @@ const Vector3 RectangleLight::sampleLight(const unsigned int threadID, const Vec
 	do
 	{
 		// Get a random vector into the light
-		e1 = Scene::getRand();
-		e2 = Scene::getRand();
+		e1 = Scene::getRand(threadID);
+		e2 = Scene::getRand(threadID);
 		e2 = (e2 > 0.99) ? 0.99 : e2;
 		randDir = ((m_v1 + e1*(m_v2-m_v1) + e2*(m_v3-m_v1)) - from);
 
