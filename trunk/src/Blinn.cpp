@@ -186,9 +186,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	float outIOR[3];									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)){
-		outIOR[0] = 1.4f;//1.6045;
+		outIOR[0] = 1.55f;//1.6045;
 		outIOR[1] = 1.6157;
-		outIOR[2] = 1.85f;//1.6203;
+		outIOR[2] = 1.66f;//1.6203;
 	}
 	else
 	{
@@ -202,7 +202,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			outIOR[0] = m_ior;
 		}
 	}
-
 
 	// Calculate reflectance and transmission coefficients
 	float Rs = 0; float Ts = 0;
@@ -294,11 +293,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 			{  
 				doEnv          = true;
 				Vector3 tVec;
-				if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)) {
+				if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)) 
+				{
 					for (int i = 0; i < 3; i++) {
 						//0 = r, 1 = g, 2 = b
-						//for now hardcode the colors
-						//outIOR depends on wavelength
 						float snellsQ  = inIOR / outIOR[i];
 						float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
 						tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
@@ -314,16 +312,16 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 								Vector3 refraction = newHit.obj->m_material->shade(threadID, tRay, newHit, scene);
 								Vector3 mask(0.0f);
 								mask[i] = 1.0f;
-								refraction = refraction*mask;
+								refraction         = refraction*mask;
 								Lt                += m_ks*refraction;
 								doEnv              = false;
 							}
 							ray.r_IOR.pop();
 						}
 					}
-
-
-				} else {
+				} 
+				else 
+				{
 					//no dispersion
 					float snellsQ  = inIOR / outIOR[0];
 					float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));

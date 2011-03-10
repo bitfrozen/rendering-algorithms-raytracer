@@ -43,7 +43,7 @@ public:
 
 	inline void setShutterSpeed(float f) {m_shutterSpeed = f;}
 	inline float shutterSpeed()			 {return m_shutterSpeed;}
-	const inline float getTimeSample() const		 {return 1.0-Scene::getRand()*m_shutterSpeed;}
+	const inline float getTimeSample() const		 {float r = Scene::getRand(); return 1.f-r*r*r*m_shutterSpeed;}
 
     inline float fov() const                {return m_fov;}
     inline const Vector3 & viewDir() const  {return m_viewDir;}
