@@ -1305,12 +1305,10 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 	// Hijack this call if we are doing instance or motion blurred object intersection
 	if (triCache->doubleTake)
 	{
-		int count = 0;
 		for (int i = 0; i < 4; i++)
 		{
 			if (triCache->checkOut[i])
 			{
-				count++;
 				if (triCache->tris[i]->m_objectType == PROXY_OBJECT)
 				{
 					// Intersect proxy
@@ -1338,7 +1336,6 @@ const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r
 				}
 			}
 		}
-		if (count == 4) return proxyIntersect;
 	}
 
 	bool shadow = r.bounces_flags & IS_SHADOW_RAY;

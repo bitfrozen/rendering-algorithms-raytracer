@@ -25,7 +25,7 @@ Scene::Scene() {
 
 int Scene::randsIdx[32] = {0};		// Current index into random number array
 float Scene::rands[2097152];	// Array of random numbers
-MTRand_int32 Scene::drand(clock());
+MTRand_int32 Scene::drand(3163513);
 
 void Scene::genRands(int threadID)			// Run the random number generator. This way we don't run into
 {								// threading problems...

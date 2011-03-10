@@ -186,9 +186,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	float outIOR[3];									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)){
-		outIOR[0] = 1.55f;//1.6045;
+		outIOR[0] = 1.60;
 		outIOR[1] = 1.6157;
-		outIOR[2] = 1.66f;//1.6203;
+		outIOR[2] = 1.625;
 	}
 	else
 	{
@@ -265,7 +265,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		// This helps prevent ray number explosion
  		if (rrFloat < localReflectAmt*Rs)
  		{
-			if (localReflectAmt*Rs > 0.0f && bounces < 3)
+			if (localReflectAmt*Rs > 0.0f && bounces < 5)
 			{
 				Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
 				HitInfo newHit;
@@ -301,7 +301,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 						float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
 						tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 
-						if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+						if (bounces < 5)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 						{		
 							ray.r_IOR.push(outIOR[i]);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
 							Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
@@ -327,7 +327,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 					float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
 					tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 
-					if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
+					if (bounces < 5)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 					{		
 						ray.r_IOR.push(outIOR[0]);
 						Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
