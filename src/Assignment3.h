@@ -105,7 +105,7 @@ testDispersion()
     g_scene = new Scene;
     g_image = new Image;
 
-    g_image->resize(512, 512);
+    g_image->resize(256, 256);
 
 	g_scene->m_pathTrace = true;
 	g_scene->m_numPaths = 20;
@@ -165,14 +165,14 @@ testDispersion()
 
 	Blinn* mat = new Blinn(Vector3(0.0f, 0.5f, 0.5f), Vector3(0.0,0.0,0.0));
 	mat->setSpecExp(30.0f);
-	mat->setIor(1.56f);
+	mat->setIor(1.608f);
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
 	mat->m_disperse = false;
 
 	Blinn* mat2 = new Blinn(Vector3(0.0f, 0.5f, 0.5f), Vector3(0.0,0.0,0.0));
 	mat2->setSpecExp(30.0f);
-	mat2->setIor(1.56f);
+	mat2->setIor(1.608f);
 	mat2->setReflectAmt(1.0f);
 	mat2->setRefractAmt(1.0f);
 	mat2->m_disperse = true;
@@ -182,7 +182,7 @@ testDispersion()
 	xform = translate(0, 0, 0);
 	TriangleMesh* mesh = new TriangleMesh;
     mesh->load("Models/sphere2.obj", xform);
-    makeMeshObjs(mesh, mat);
+    makeMeshObjs(mesh, mat2);
 
 	/*xform = translate(-4,0,0);
 	TriangleMesh* mesh2 = new TriangleMesh;

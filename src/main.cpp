@@ -356,6 +356,7 @@ void makeFinalScene()
 	mat->setIor(1.56f);
 	mat->setReflectAmt(1.0f);
 	mat->setRefractAmt(1.0f);
+	mat->m_disperse = true;
 	mat->setReflectGloss(1.f);
 
 	RawImage* grassImg = new RawImage();
