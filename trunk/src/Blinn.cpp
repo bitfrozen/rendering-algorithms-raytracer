@@ -183,23 +183,32 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		rVec = (m_specGloss*rVec + (1-m_specGloss)*randD).normalized();			// get the (randomized) reflection vector
 	}
 
-	float outIOR;									// outIOR is the IOR of the medium the ray will go into.
+	float outIOR[3];									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
-	if (flip)										// If this is true, then we've hit a back-facing polygon:
-	{												// we're going out of the current material.
-		ray.r_IOR.pop();							// Pop the back of the IORHistory so we get the IOR right.
-		outIOR = ray.r_IOR();
+	if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)){
+		outIOR[0] = 1.4f;//1.6045;
+		outIOR[1] = 1.6157;
+		outIOR[2] = 1.85f;//1.6203;
 	}
-	else											// Normal. We're going (if possible) into a new material,
-	{												// record its IOR in the ray's IORHistory
-		outIOR = m_ior;
+	else
+	{
+		if (flip)										// If this is true, then we've hit a back-facing polygon:
+		{												// we're going out of the current material.
+			ray.r_IOR.pop();							// Pop the back of the IORHistory so we get the IOR right.
+			outIOR[0] = ray.r_IOR();
+		}
+		else											// Normal. We're going (if possible) into a new material,
+		{												// record its IOR in the ray's IORHistory
+			outIOR[0] = m_ior;
+		}
 	}
+
 
 	// Calculate reflectance and transmission coefficients
 	float Rs = 0; float Ts = 0;
 	if (m_reflectAmt > 0.0 || m_refractAmt > 0.0)
 	{
-		Rs = fresnel(inIOR, outIOR, vDotN);					// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
+		Rs = fresnel(inIOR, outIOR[0], vDotN);					// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
 		Ts = 1.0f-Rs;										// Energy conservation
 	}
 
@@ -255,8 +264,8 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 		// Russian Roulette sampling for reflection / refraction.
 		// This helps prevent ray number explosion
-// 		if (rrFloat < localReflectAmt*Rs)
-// 		{
+ 		if (rrFloat < localReflectAmt*Rs)
+ 		{
 			if (localReflectAmt*Rs > 0.0f && bounces < 3)
 			{
 				Ray rRay = Ray(threadID, P, rVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFLECT_RAY);
@@ -277,29 +286,26 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 					int tmp = 0;
 				}
 			}
-			Lr*=localReflectAmt*Rs;
-// 		} 
-// 		else
-// 		{
+//			Lr*=localReflectAmt*Rs;
+ 		} 
+ 		else
+ 		{
 			if (localRefractAmt*Ts > 0.0f)
 			{  
 				doEnv          = true;
-
-				if (m_disperse) {
-					//I'll start with rgb
-					//if (ray.bounces_flags | IS_REFRACT_RAY) {
+				Vector3 tVec;
+				if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)) {
 					for (int i = 0; i < 3; i++) {
 						//0 = r, 1 = g, 2 = b
 						//for now hardcode the colors
-						float partIOR = (i == 0)? 1.6045f : (i == 1)? 1.6157f : 1.6203f;
 						//outIOR depends on wavelength
-						float snellsQ  = inIOR / partIOR;
+						float snellsQ  = inIOR / outIOR[i];
 						float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
-						Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+						tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 
 						if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 						{		
-							ray.r_IOR.push(outIOR);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
+							ray.r_IOR.push(outIOR[i]);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
 							Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
 							HitInfo newHit;
 							newHit.t = MIRO_TMAX;
@@ -318,14 +324,14 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 
 
 				} else {
-
-					float snellsQ  = inIOR / outIOR;
+					//no dispersion
+					float snellsQ  = inIOR / outIOR[0];
 					float sqrtPart = max(0.0f, sqrtf(1.0f - (snellsQ*snellsQ) * (1.0f-vDotN*vDotN)));
-					Vector3 tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
+					tVec   = (snellsQ*rayD + theNormal*(snellsQ*vDotN - sqrtPart)).normalized();	// Get the refraction ray direction. http://www.bramz.net/data/writings/reflection_transmission.pdf
 
 					if (bounces < 3)																		// Do two bounces of refraction rays (2 bounces have already been used by reflection).
 					{		
-						ray.r_IOR.push(outIOR);//shot out 3+ rays, dont split up if IS_REFLECT_RAY is set
+						ray.r_IOR.push(outIOR[0]);
 						Ray tRay = Ray(threadID, P, tVec, ray.time, ray.r_IOR, bounces+1, giBounces, IS_REFRACT_RAY);			// Make a new refraction ray.
 						HitInfo newHit;
 						newHit.t = MIRO_TMAX;
@@ -343,9 +349,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 				{
 					Lt += m_ks * getEnvironmentColor(tVec, scene);
 				}
-				Lt*=localRefractAmt*Ts;
+//				Lt*=localRefractAmt*Ts;
 			}
-/*		}*/
+		}
 	}
 
 	Ld += m_ka;
