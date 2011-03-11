@@ -17,11 +17,14 @@ Blinn::Blinn(const Vector3 & kd, const Vector3 & ka,
 			 float ior, float specExp, float specAmt,
 			 float reflectAmt, float refractAmt, float specGloss,
 			 float emittedPower, const Vector3& emittedColor) :
-    m_kd(kd), m_ka(ka), m_ks(ks), m_kt(kt), m_ior(ior), 
+    m_kd(kd), m_ka(ka), m_ks(ks), m_kt(kt),
 	m_specExp(specExp), m_specAmt(specAmt),
 	m_reflectAmt(reflectAmt), m_specGloss(specGloss),
 	m_lightEmitted(emittedPower), m_Le(emittedColor)
 {	
+	m_ior[0] = ior;
+	m_ior[1] = ior;
+	m_ior[2] = ior;
 	m_lightEmitted = 0.0f;
 	m_Le = Vector3(0.0f);
 	m_refractAmt = refractAmt;
@@ -186,9 +189,9 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	float outIOR[3];									// outIOR is the IOR of the medium the ray will go into.
 	float inIOR = ray.r_IOR();						// inIOR is the IOR of the medium the ray is currently in.
 	if (m_disperse && !(ray.bounces_flags & IS_REFRACT_RAY)){
-		outIOR[0] = 1.60;
-		outIOR[1] = 1.6157;
-		outIOR[2] = 1.625;
+		outIOR[0] = m_ior[0];
+		outIOR[1] = m_ior[1];
+		outIOR[2] = m_ior[2];
 	}
 	else
 	{
@@ -199,7 +202,7 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 		}
 		else											// Normal. We're going (if possible) into a new material,
 		{												// record its IOR in the ray's IORHistory
-			outIOR[0] = m_ior;
+			outIOR[0] = m_ior[1];
 		}
 	}
 

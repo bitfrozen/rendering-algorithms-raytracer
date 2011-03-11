@@ -26,7 +26,7 @@ public:
     const Vector3 & ka() const {return m_ka;}
 	const Vector3 & ks() const {return m_ks;}
 	const Vector3 & kt() const {return m_kt;}
-	const float ior() const {return m_ior;}
+	const float ior(const int i = 0) const {return m_ior[i];}
 	const float specExp() const {return m_specExp;}
 	const float specAmt() const {return m_specAmt;}
 	const float reflectAmt() const {return m_reflectAmt;}
@@ -35,7 +35,7 @@ public:
     void setKa(const Vector3 & ka) {m_ka = ka;}
 	void setKs(const Vector3 & ks) {m_ks = ks;}
 	void setKt(const Vector3 & kt) {m_kt = kt;}
-	void setIor(const float ior) {m_ior = ior;}
+	void setIor(const float ior, const int i = 0) {m_ior[i] = ior;}
 	void setSpecExp(const float specExp) {m_specExp = specExp;}
 	void setSpecAmt(const float specAmt) {m_specAmt = specAmt;}
 	void setReflectAmt(const float reflectAmt) {m_reflectAmt = reflectAmt;}
@@ -56,7 +56,7 @@ protected:
     Vector3 m_ka;			// Ambient Color
 	Vector3 m_ks;			// Specular / Reflection Color
 	Vector3 m_kt;			// Transmittance (Refraction) Color
-	float m_ior;			// Index of Refraction
+	float m_ior[3];			// Index of Refraction
 	float m_specExp;		// Specular exponent
 	float m_specAmt;		// Specular component weight (only for "hilights")
 	float m_reflectAmt;		// Reflection amount. 1.0 -> 100% reflectve. Weighted using fresnel approximation.
