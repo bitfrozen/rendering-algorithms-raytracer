@@ -113,43 +113,9 @@ const Ray Camera::eyeRay(const unsigned int threadID, const int x, const int y, 
     return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
 }
 
-const Ray Camera::eyeRayRandom(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const
-{
-    // first compute the camera coordinate system 
-    // ------------------------------------------
-
-    // wDir = e - (e+m_viewDir) = -m_vView
-    const Vector3 wDir = Vector3(-m_viewDir).normalize(); 
-    const Vector3 uDir = cross(m_up, wDir).normalize(); 
-    const Vector3 vDir = cross(wDir, uDir);    
-
-    // next find the corners of the image plane in camera space
-    // --------------------------------------------------------
-
-    const float aspectRatio = (float)imageWidth/(float)imageHeight; 
-
-    const float top     = tan(m_fov*HalfDegToRad); 
-    const float right   = aspectRatio*top; 
-
-    const float bottom  = -top; 
-    const float left    = -right; 
-
-    // transform x and y into camera space 
-    // -----------------------------------
-    //add a randomness so that the ray will be sent somewhere inside the pixel,
-	// and not necessarily through the center of the pixel
-	const float urand = Scene::getRand(threadID);
-	const float vrand = Scene::getRand(threadID);
-
-    const float imPlaneUPos = left   + (right - left)*(((float)x+urand)/(float)imageWidth); 
-    const float imPlaneVPos = bottom + (top - bottom)*(((float)y+vrand)/(float)imageHeight); 
-
-    return Ray(threadID, m_eye, (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalize());
-}
-
 const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const int y, 
-	                                const float minXOffset, const float maxXOffset, const float minYOffset, const float maxYOffset, 
-									const int imageWidth, const int imageHeight) const
+	                             const float minXOffset, const float maxXOffset, const float minYOffset, const float maxYOffset, 
+								 const int imageWidth, const int imageHeight) const
 {
 	// first compute the camera coordinate system 
 	// ------------------------------------------
@@ -194,7 +160,7 @@ const Ray Camera::eyeRayAdaptive(const unsigned int threadID, const int x, const
 	{
 		const Vector3 focalPoint = (imPlaneUPos*uDir + imPlaneVPos*vDir - wDir).normalized() * m_focusPlane + m_eye;
 
-		// Rejection-sample a disc
+		// Rejection-sample a disc for DOF
 		do 
 		{
 			urand = 1.0 - 2*Scene::getRand(threadID);

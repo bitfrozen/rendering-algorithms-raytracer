@@ -11,6 +11,8 @@ ProxyObject::ProxyObject(Objects* m, BVH* b, Matrix4x4& t)
 	m_objectType = PROXY_OBJECT;
 }
 
+// Get the AABB for a Proxy object by transforming the objects AABB by it's matrix
+// We need to generate a new AABB since the one from the object might not be axis-aligned any more
 void ProxyObject::getAABB(AABB* outBox)
 {
 	AABB tmpBox = m_BVH->getAABB();
@@ -69,6 +71,8 @@ AABB ProxyObject::getAABB()
 	return newBox;
 }
 
+// Intersect a Proxy object. We generate a new ray that is a copy of the original ray but transformed
+// into object space. Then we traverse the proxy's BVH.
 const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, const Ray& ray, const float tMin)
 {
 	Vector3 newRayO = m_Matrix->m_inverse.multiplyAndDivideByW(ray._o);
@@ -90,6 +94,7 @@ const bool ProxyObject::intersect(const unsigned int threadID, HitInfo &result, 
 	return hit;
 }
 
+// Render the proxy object to the screen. We only display every nth polygon to maximize performance (n = m_displayNum)
 void ProxyObject::renderGL()
 {
 	for (int i = 0; i < m_objects->size(); i+=m_displayNum)
@@ -108,6 +113,7 @@ void ProxyObject::renderGL()
 	}	
 }
 
+// Precalculate geometry for the Proxy. It merely calls the preCalc routine for the geometry.
 void ProxyObject::preCalc()
 {
 	if ((*m_objects)[0]->m_mesh->doPreCalc)
@@ -120,6 +126,8 @@ void ProxyObject::preCalc()
 	}
 }
 
+// Setup a proxy object by incorporating the geometry into an Objects container and
+// building the BVH for the object.
 void ProxyObject::setupProxy(TriangleMesh* mesh, Material* mat, Objects* m, BVH* b)
 {
 	int numObjs = mesh->m_numTris;
@@ -134,10 +142,10 @@ void ProxyObject::setupProxy(TriangleMesh* mesh, Material* mat, Objects* m, BVH*
 		m->push_back(&t[i]);
 		i--;
 	}
-
 	b->build(m);
 }
 
+// Setup a proxy object consisting of multiple TriangleMesh objects.
 void ProxyObject::setupMultiProxy(TriangleMesh* mesh[], int numObjs, Material* mat[], Objects* m, BVH* b)
 {
 	for (int j = 0; j < numObjs; j++)
@@ -155,6 +163,5 @@ void ProxyObject::setupMultiProxy(TriangleMesh* mesh[], int numObjs, Material* m
 			i--;
 		}
 	}
-
 	b->build(m);
 }

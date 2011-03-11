@@ -43,7 +43,7 @@ public:
 
 	inline void setShutterSpeed(float f) {m_shutterSpeed = f;}
 	inline float shutterSpeed()			 {return m_shutterSpeed;}
-	const inline float getTimeSample() const		 {float r = Scene::getRand(); return 1.f-r*r*r*m_shutterSpeed;}
+	const inline float getTimeSample() const		 {float r = Scene::getRand(); return 1.f-r*r*r*m_shutterSpeed;} // Return a time sample that is weighted towards the end of the interval
 
     inline float fov() const                {return m_fov;}
     inline const Vector3 & viewDir() const  {return m_viewDir;}
@@ -52,7 +52,6 @@ public:
     inline const Vector3 & eye() const      {return m_eye;}
 
     const Ray eyeRay(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const;
-	const Ray eyeRayRandom(const unsigned int threadID, const int x, const int y, const int imageWidth, const int imageHeight) const;
 	const Ray eyeRayAdaptive(const unsigned int threadID, const int x, const int y,
 		                     const float minXOffset, const float maxXOffset, const float minYOffset, const float maxYOffset,
 							 const int imageWidth, const int imageHeight) const;

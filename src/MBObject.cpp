@@ -14,12 +14,15 @@ MBObject::~MBObject()
 {
 }
 
+// Precalc the geometry for both time instances
 void MBObject::preCalc()
 {
 	m_mesh->preCalc();
 	m_mesh_t2->preCalc();
 }
 
+// Intersect the triangle. We linearly interpolate between the two triangle instances based on the time sample stored
+// in the Ray.
 const bool MBObject::intersect(const unsigned int threadID, HitInfo &result, const Ray& r, const float tMin)
 {
 	float t = min(1.f, max(0.f, r.time));
@@ -58,6 +61,8 @@ const bool MBObject::intersect(const unsigned int threadID, HitInfo &result, con
 				storess(mulss(dett, inv_det), &newT);
 				if (newT >= tMin && newT < result.t)
 				{
+					// Check to see if the material has an alpha map and if it's transparent, don't register a hit.
+					// More akin to a clip map.
 					if (m_material->m_alphaMap)
 					{
 						ALIGN_SSE float a;
