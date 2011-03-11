@@ -1,0 +1,182 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+    <head> 
+        <link rel="stylesheet" href="http://graphics.ucsd.edu/twiki/pub/TWiki/RedDotPlugin/style.css" type="text/css" media="all" /> 
+        <title>CSE 168 Final Project&nbsp;-&nbsp;Bullet</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-15" /> 
+        <meta http-equiv="Content-Style-Type" content="text/css" /> 
+        <link rel="stylesheet" href="http://graphics.ucsd.edu/twiki/pub/TWiki/NatSkin/KubrickStyle.css"  type="text/css" media="all" /> 
+        <link rel="stylesheet" href="http://graphics.ucsd.edu/twiki/pub/TWiki/NatSkin/KubrickThin.css"  type="text/css" media="all" /> 
+ 
+    </head> 
+    <body class="natBody"> 
+        <table class="natPageBox" cellpadding="0" cellspacing="0" border="0" width="100%"> 
+            <tr><td class="natBoxBorderTopLeft"> </td><td class="natBoxBorderTopRight"> </td></tr> 
+            <tr> 
+                <td class="natBoxBorderLeft"> 
+	                <div class="natBodyContents"> 
+		                <table class="natLayoutTable" cellpadding="0" cellspacing="0" border="0" width="100%">
+		                    <tr><td class="natMiddle natMiddleRight natMainRight natMiddleLeft natMainLeft  natMain" valign="top"> 
+	                            <div class="natMainContents">
+	                            <p />
+	                                <h1><a name="CSE168_Winter_2011"></a> CSE168 Final Project, Winter 2011 </h1> 
+	                                <h2> Title: Bullet through Glass  </h2> 
+	                                <h3> Alejandro Guzman and Jorge Schwarzhaupt </h3> 
+                                    <p /> 
+                                    <!--table of contents -->
+                                    <ul> 
+                                        <li> <a href="#intro" class="twikiLink">Introduction</a>  </li> 
+                                        <li> <a href="#model" class="twikiLink">The Model</a>  </li> 
+                                        <li> <a href="#instancing" class="twikiLink">Instancing</a>  </li> 
+                                        <li> <a href="#depth" class="twikiLink">Depth of Field</a>  </li> 
+                                        <li> <a href="#motion" class="twikiLink">Motion Blur</a>  </li>
+                                        <li> <a href="#dispersion" class="twikiLink">Dispersion</a>  </li>
+                                        <li> <a href="#translucency" class="twikiLink">Translucency</a>  </li> 
+                                        <li> <a href="#final" class="twikiLink">Final Image</a>  </li> 
+                                    </ul> 
+                                    <!-- end table of contents -->
+
+                                    <!-- Introduction -->
+                                    <h2> <a name="intro"> Introduction: Bullet through Glass </a> </h2> 
+                                    For our final project we modeled a glass pane being destroyed by a large bullet in an outdoor scene.
+                                    The scene was inspired by high speed photography of shattering glass. See the following link for some neat high speed photography pictures
+                                    <p /> 
+                                    
+                                    
+                                    <!-- The Model -->
+                                    <h2><a name="Contents"></a> Model </h2> 
+                                    The glass pane was created using a simulation in 3ds Max. We took 2 glass models for two different time steps in order to implement motion blur.
+                                    Each shattered glass model consisted of 86,914 triangles. 
+                                    We found various trees, grass, and flower models from freely available sources online. Each tree body model consisted of 75,000 to 165,000 triangles.
+                                    The each tree leaves model consisted of 22,000 to 128,000 triangles. 
+                                    Each flower model was about 35,000 triangles.
+                                    The sky is stored as a Lat-Long HDR environment map in the scene.  
+
+                                    <p /> 
+                                    
+                                    
+                                    <!-- Instancing -->
+                                    <h2> <a name="instancing"> Instancing </a> </h2> 
+                                    It was necessary to implement instancing since we had a large amount of repeated geometry in the scene. <br />
+                                    <br />
+                                    <div align="center"> 
+                                        <a href="Images/gallery/MillionBunnies.jpg">
+                                            <img src="Images/thumbs/MillionBunnies.jpg" alt="MillionBunnies.jpg" /> 
+                                        </a>
+                                        <br />
+                                        A scene containing 1 million bunnies rendered using instancing. The scene contains 65.5 billion triangles and was rendered in 4.5 seconds on an i7 quad core processor.
+                                    </div> 
+                                    <p /> 
+                                    
+                                    
+                                    <!-- Depth of Field -->
+                                    <h2> <a name="depth"> Depth of Field </a> </h2> 
+                                    We implement depth of field to make scene look more realistic. Using depth of field we are able to make focus on the objects of interest.
+                                    and keep the other objects out of focus depending on their distance to the focal point.
+                                    
+                                    <div align="center"> 
+                                        <a href="Images/gallery/Cornell_No_DOF.jpg">
+                                            <img src="Images/thumbs/Cornell_No_DOF.jpg" alt="Cornell_No_DOF.jpg" /> 
+                                        </a>
+                                        <a href="Images/gallery/Cornell_DOF.jpg">
+                                            <img src="Images/thumbs/Cornell_DOF.jpg" alt="Cornell_DOF.jpg" /> 
+                                        </a>
+                                        <br />
+                                        The depth of field effect in the cornell box. No depth of field in the left image. The right image has depth of field, focusing in on the mirror sphere.
+                                    </div> 
+                                    
+                                    <p /> 
+                                    
+                                    
+                                    <!-- Motion Blur -->
+                                    <h2> <a name="motion"> Motion Blur </a> </h2>
+                                    We implemented motion blur to show how some objects in our scene are moving at high speeds.
+                                    Motion blur is implemented by using two models of the same geometry in different time frames and rendering both geometries.
+                                    We then interpolate between the resulting color values. <br />
+                                    <br />
+                                    <div align="center"> 
+                                        <a href="Images/gallery/MB_small.jpg">
+                                            <img src="Images/thumbs/MB_small.jpg" alt="MB_small.jpg" /> 
+                                        </a>
+                                        <a href="Images/gallery/MB_med.jpg">
+                                            <img src="Images/thumbs/MB_med.jpg" alt="MB_med.jpg" /> 
+                                        </a>
+                                        <a href="Images/gallery/MB_large.jpg">
+                                            <img src="Images/thumbs/MB_large.jpg" alt="MB_large.jpg" /> 
+                                        </a>
+                                        <br />
+                                        The motion blur effect simulating a bullet at increasing speeds.
+                                    </div> 
+                                    <p />
+                                    
+                                    
+                                    <!-- Dispersion -->
+                                    <h2> <a name="dispersion"> Dispersion </a> </h2> 
+                                    In real life, the index of refraction of a light in a glass is dependent on the wavelength of light. 
+                                    We implemented dispersion in our glass by splitting the incoming rays into R G and B rays, each with their own index of refraction. <br />
+                                    <br />
+                                    <div align="center"> 
+                                        <a href="Images/gallery/despersion.jpg">
+                                            <img src="Images/thumbs/despersion.jpg" alt="dispersion.jpg" /> 
+                                        </a>
+                                        <br />
+                                        Dispersion in a glass sphere.
+                                    </div> 
+                                    <p />
+                                    
+                                    
+                                    <!-- Translucency -->
+                                    <h2> <a name="translucency"> Translucency </a> </h2>
+                                    Leaves, grass, and plants are not opaque objects. We wanted to simulate the effect of light being seen through the object.
+                                    We implemented translucency by sampling the light on both sides of geometry and multiplying by a thickness and translucency factor. <br />
+                                    <br />
+                                    <div align="center"> 
+                                        <a href="Images/gallery/tree_no_translucency.jpg">
+                                            <img src="Images/thumbs/tree_no_translucency.jpg" alt="tree_no_translucency.jpg" /> 
+                                        </a>
+                                        <br />
+                                        Tree leaves with no translucency
+                                        <p />
+                                        <a href="Images/gallery/tree_translucency.jpg">
+                                            <img src="Images/thumbs/tree_translucency.jpg" alt="tree_translucency.jpg" /> 
+                                        </a>
+                                        <br />
+                                        Tree leaves with translucency
+                                    </div>
+                                    <p />
+                                    
+                                    
+                                    <!-- Final Image -->
+                                    <h2> <a name="final"> Final Image </a> </h2> 
+                                    The final image took a total of 20 minutes to render on an i7 quadcore desktop.
+                                    
+                                    <br />
+                                    <div align="center"> 
+                                        <a href="Images/gallery/Final_Image_HD.jpg">
+                                            <img src="Images/thumbs/Final_Image_HD.jpg" alt="Final_Image_HD.jpg" /> 
+                                        </a>
+                                        <br />
+                                        The Final Image
+                                    </div> 
+                                    <p />
+                                    
+                                    
+                                </div> 
+	                            </td>
+	                        </tr>
+		                </table> 
+		            <div class="natBottomBar natBottomBarLeft natBottomBarRight natBottomBarBoth"> 
+	                    <div class="natBottomBarContents"> 
+		                </div> 
+	                </div> 
+                </td> 
+                <td class="natBoxBorderRight"> </td> 
+            </tr> 
+            <tr>
+                <td class="natBoxBorderBottomLeft"> </td>
+                <td class="natBoxBorderBottomRight"> </td>
+            </tr> 
+        </table> 
+    </body> 
+</html> 
