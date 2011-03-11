@@ -63,8 +63,6 @@ protected:
 	float m_lightEmitted;	// power of light emitted
 	Vector3 m_Le;			// color of the emitted light
 	float m_specGloss;		// "Glossiness" for reflection -> 1.0 = perfect mirror, 0.0 = perfect diffuse;
-
-	Vector3 shadeSSE(const Ray& ray, const HitInfo& hit, const Scene& scene) const;
 };
 
 #endif // CSE168_LAMBERT_H_INCLUDED

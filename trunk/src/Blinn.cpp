@@ -111,28 +111,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	int giBounces = GET_GI_BOUNCES(ray.bounces_flags);
 	Vector3 translucency(0.0f);
 
-	// Doing this during triangle intersection now
-	/*if (m_alphaMap)
-	{
-		alpha = m_alphaMap->getLookupAlpha(u, v);
-		if (alpha < 0.5f)
-		{
-			Ray newRay = Ray(threadID, (P + epsilon*rayD), rayD, ray.time, ray.r_IOR, bounces, giBounces, IS_REFLECT_RAY);
-			HitInfo newHit;
-			newHit.t = MIRO_TMAX;
-			Vector3 next = 0;
-			if (scene.trace(threadID, newHit, newRay, epsilon))
-			{
-				next  = newHit.obj->m_material->shade(threadID, newRay, newHit, scene);
-			}	
-			else
-			{
-				next = getEnvironmentColor(rayD, scene);
-			}
-			return next;
-		}
-	}*/
-
 	if (m_colorMap) 
 	{
 		Vector4 texCol = m_colorMap->getLookup(u, v);
@@ -210,11 +188,10 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 	float Rs = 0; float Ts = 0;
 	if (m_reflectAmt > 0.0 || m_refractAmt > 0.0)
 	{
-		Rs = fresnel(inIOR, outIOR[0], vDotN);					// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
+		Rs = fresnel(inIOR, outIOR[0], vDotN);				// Compute Fresnel's equations http://www.bramz.net/data/writings/reflection_transmission.pdf
 		Ts = 1.0f-Rs;										// Energy conservation
 	}
 
-	_mm_prefetch((char *)ray.rayTriangleIntersections[128*threadID], _MM_HINT_NTA);
 	float rrFloat = Scene::getRand(threadID);
 	float rrWeight = (1.0f - Rs*localReflectAmt - Ts*localRefractAmt);
 	float rrWeightRecip = (rrWeight > 0.f) ? 1.f / rrWeight : 1.f;
@@ -288,7 +265,6 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 					int tmp = 0;
 				}
 			}
-//			Lr*=localReflectAmt*Rs;
  		} 
  		else
  		{
@@ -350,174 +326,11 @@ const Vector3 Blinn::shade(const unsigned int threadID, const Ray& ray, const Hi
 				{
 					Lt += m_ks * getEnvironmentColor(tVec, scene);
 				}
-//				Lt*=localRefractAmt*Ts;
 			}
 		}
 	}
 
 	Ld += m_ka;
 
-	//if (alpha >= 1.f-epsilon)
-	//{
 	return (Ld + Ls + translucency)*rrWeightRecip + (Lr + Lt)*rrWeightRecipSpec + m_Le; // Make sure we keep energy constant
-	//}
-	/*else
-	{
-		Ray newRay = Ray(threadID, (P + epsilon*rayD), rayD, ray.time, ray.r_IOR, bounces+1, giBounces+1, IS_REFLECT_RAY);
-		HitInfo newHit;
-		newHit.t = MIRO_TMAX;
-		Vector3 next = 0;
-		if (scene.trace(threadID, newHit, newRay, epsilon))
-		{
-			next  = newHit.obj->m_material->shade(threadID, newRay, newHit, scene);
-		}	
-		else
-		{
-			next = getEnvironmentColor(rayD, scene);
-		}
-		return alpha*((Ld + Ls) + (Lr + Lt) + m_Le) + (1.f-alpha)*next;
-	}*/
 }
-
-/*Vector3 Blinn::shadeSSE(const Ray& ray, const HitInfo& hit, const Scene& scene) const
-{
-	union {float Ld[4];		__m128 _Ld; };
-	union {float Lr[4];		__m128 _Lr; };
-	union {float Lt[4];		__m128 _Lt; };
-	union {float Ls[4];		__m128 _Ls; };
-	union {float rayD[4];	__m128 _rayD; };
-	union {float hitN[4];	__m128 _hitN; };
-	union {float geoN[4];	__m128 _geoN; };
-	union {float P[4];		__m128 _P; };
-	union {float hitT[4];	__m128 _hitT; };
-	union {};
-	float u, v;
-
-	const __m128 _zero			= setZero;
-	const __m128 _neg			= setSSE(-1);
-	const __m128 _neg0			= loadps(SSE_invertVec0);
-	ALIGN_SSE Vector3 tmp1		= m_ks;
-	ALIGN_SSE Vector3 tmp2		= m_kd;
-	ALIGN_SSE Vector3 tmp3		= m_kt;
-	ALIGN_SSE Vector3 tmp4		= m_ka;
-	const __m128 _m_ks			= loadps(&tmp1.x);
-	const __m128 _m_kd			= loadps(&tmp2.x);
-	const __m128 _m_kt			= loadps(&tmp3.x);
-	const __m128 _m_ka			= loadps(&tmp4.x);
-	const __m128 _m_ior			= setSSE(m_ior);
-	const __m128 _m_specExp		= setSSE(m_specExp);
-	const __m128 _m_specAmt		= setSSE(m_specAmt);
-	const __m128 _m_reflectAmt	= setSSE(m_reflectAmt);
-	const __m128 _m_refractAmt	= setSSE(m_refractAmt);
-	_Ld = setZero;
-	_Lr = setZero;
-	_Lt = setZero;
-	_Ls = setZero;
-	_hitT = setSSE(hit.t);
-
-	TriangleMesh::TupleI3 ti3;								// Get pointer and index for the mesh
-	TriangleMesh* theMesh = hit.tri->m_mesh;
-	u_int meshIndex = hit.tri->m_index;
-
-	ti3 = theMesh->m_vertexIndices[meshIndex];				// Get the geometric normal
-	Vector3 geoNVec = cross(theMesh->m_vertices[ti3.y] - theMesh->m_vertices[ti3.x], theMesh->m_vertices[ti3.z] - theMesh->m_vertices[ti3.x]);
-	for (int i = 0; i < 3; i++)
-	{
-		geoN[i] = geoNVec[i];
-	}
-	geoN[3] = 0.;
-	_geoN = mulps(_geoN, fastrsqrtps(dotps(_geoN, _geoN, 0xFF)));
-
-	ti3 = theMesh->m_normalIndices[meshIndex];				// Get the interpolated normal
-	float a = hit.a; float b = hit.b; float c = 1.0f-a-b; 
-	Vector3 nVec = Vector3((theMesh->m_normals[ti3.x]*c+theMesh->m_normals[ti3.y]*a+theMesh->m_normals[ti3.z]*b));
-	for (int i = 0; i < 3; i++)
-	{
-		hitN[i] = nVec[i];
-	}
-	hitN[3] = 0.;
-	_hitN = mulps(_hitN, fastrsqrtps(dotps(_hitN, _hitN, 0xFF)));
-
-	if (theMesh->m_texCoordIndices)							// If possible, get the interpolated u, v coordinates
-	{
-		ti3 = theMesh->m_texCoordIndices[meshIndex];
-		u = theMesh->m_texCoords[ti3.x].x*c+theMesh->m_texCoords[ti3.y].x*a+theMesh->m_texCoords[ti3.z].x*b;
-		v = theMesh->m_texCoords[ti3.x].y*c+theMesh->m_texCoords[ti3.y].y*a+theMesh->m_texCoords[ti3.z].y*b;
-	}
-	else
-	{
-		u = a;
-		v = b;
-	}
-
-	_rayD = loadps(&ray.dx);
-	const __m128 _viewDir = mulps(_rayD, _neg0);
-
-	_P = addps(loadps(&ray.ox), mulps(_hitT, _rayD));		// Hit position
-
-	bool flip = false;
-	__m128 _vDotN		= dotps(_viewDir, _hitN, 0xFF);						// Find if the interpolated normal points back while
-	__m128 _vDotGeoN	= dotps(_viewDir, _geoN, 0xFF);						// geometric normal is fine.
-	bool nEqGeoN		= movemaskps(_vDotN) == movemaskps(_vDotGeoN);		// True if both signs are equal
-	__m128 _normal		= nEqGeoN ? _hitN : _geoN;							// Use geometric normal if interpolated one points away
-	_vDotN				= nEqGeoN ? _vDotN : _vDotGeoN;						// from object
-
-	if (cmplessss_i(_vDotN, _zero))
-	{
-		flip = true;
-		_vDotN = mulps(_vDotN, _neg);
-		_normal = mulps(_normal, _neg);
-	}
-
-	const __m128 _rVec = addps(_rayD, mulps(setSSE(2), mulps(_vDotN, _normal)));			// get the reflection vector
-
-	const Lights *lightlist = scene.lights();
-
-	// loop over all of the lights
-	Lights::const_iterator lightIter;
-	for (lightIter = lightlist->begin(); lightIter != lightlist->end(); lightIter++)
-	{
-		PointLight* pLight = *lightIter;
-
-		union {float lDir[4]; __m128 _lDir; };
-		ALIGN_SSE Vector3 lPos		= pLight->position();
-		ALIGN_SSE Vector3 lColor	= pLight->color();
-		ALIGN_SSE float	lWattage	= pLight->wattage();
-		const __m128 _lPos			= loadps(&lPos.x);
-		const __m128 _lColor		= loadps(&lColor.x);
-		const __m128 _lWattage		= setSSE(lWattage);
-		_lDir						= subps(_lPos, _P);
-
-		// the inverse-squared falloff
-		union {float distance[4]; __m128 _distance; };
-		__m128 _falloff				= dotps(_lDir, _lDir, 0xFF);		// Distance to light, squared
-		__m128 _distanceReciprocal	= fastrsqrtps(_falloff);			// Reciprocal of the distance
-		_distance					= recipps(_distanceReciprocal);		// The distance
-		_falloff					= recipps(_falloff);				// Reciprocal of the falloff
-
-		// normalize the light direction
-		_lDir = mulps(_lDir, _distanceReciprocal);
-
-		__m128 _E;
-		__m128 _nDotL = dotps(_normal, _lDir, 0xFF);
-		if (!movemaskps(_nDotL))							// Check to see greater than 0 (we check sign bit)
-		{
-			_E = mulps(_nDotL, mulps(_lColor, mulps(_lWattage, mulps(setSSE(0.25), mulps(_falloff, setSSE(piRecip))))));		// Light irradiance
-			Ray sRay = Ray(Vector3(P[0],P[1],P[2]), Vector3(lDir[0], lDir[1], lDir[2]), 1.0f, 0, IS_SHADOW_RAY);								// Create shadow ray
-			HitInfo newHit;
-			newHit.t = distance[0];
-
-			if (!scene.trace(newHit, sRay, 0.001))								// Check for shadows
-			{
-				ALIGN_SSE float rDotL;
-				storess(dotps(_rVec, _lDir, 0xFF), &rDotL);
-				ALIGN_SSE float specPow = pow(rDotL, m_specExp);
-				_Ls = addps(_Ls, mulps(_m_ks, mulps(_m_specAmt, setSSE(specPow))));			// Calculate specular component
-				_Ld = addps(_Ld, mulps(_E, addps(_m_kd, _Ls)));								// Total = Light*(Diffuse+Spec)
-			}
-		}						
-	}
-	_Ld = addps(_Ld, _m_ka);
-	return Vector3(Ld[0], Ld[1], Ld[2]);
-}*/
-

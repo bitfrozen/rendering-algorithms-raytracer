@@ -41,7 +41,7 @@ struct Distribution1D {
 	int count;
 };
 
-// Implements a direct sampled arbitrary parallelogram light
+// Implements a direct sampled arbitrary Dome light
 class DomeLight : public Light
 {
 public:

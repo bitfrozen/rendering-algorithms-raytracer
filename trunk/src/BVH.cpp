@@ -1297,7 +1297,6 @@ const bool BVH_Node::intersect(HitInfo &result, const Ray& ray, const float tMin
 #ifdef USE_TRI_PACKETS
 const bool intersect4(const unsigned int threadID, HitInfo& result, const Ray& r, const float tMin, BVH_Node::TriCache4* triCache)
 {
-//#pragma omp atomic
 	Ray::rayTriangleIntersections[128*threadID]++;
 
 	bool proxyIntersect = false;

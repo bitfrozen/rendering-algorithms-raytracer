@@ -26,7 +26,8 @@
                                     <p /> 
                                     <!--table of contents -->
                                     <ul> 
-                                        <li> <a href="#intro" class="twikiLink">Introduction</a>  </li> 
+                                        <li> <a href="#intro" class="twikiLink">Introduction</a>  </li>
+					<li> <a href="#raytracer" class="twikiLink">Our Raytracer</a>  </li> 
                                         <li> <a href="#model" class="twikiLink">The Model</a>  </li> 
                                         <li> <a href="#instancing" class="twikiLink">Instancing</a>  </li> 
                                         <li> <a href="#depth" class="twikiLink">Depth of Field</a>  </li> 
@@ -41,6 +42,11 @@
                                     <h2> <a name="intro"> Introduction: Bullet through Glass </a> </h2> 
                                     For our final project we modeled a glass pane being destroyed by a large bullet in an outdoor scene.
                                     The scene was inspired by high speed photography of shattering glass. See the following link for some neat high speed photography pictures
+                                    <p />
+
+ 				    <!-- Our Raytracer -->
+                                    <h2><a name="Contents"></a> Our Raytracer </h2> 
+                                    Our Raytracer was implemented through the Winter 2011 CSE 168 class, and used the Miro basecode as it's basis. One thing we wanted to do was optimize the raytracer for speed in a variety of ways. The first of these was the implementation of Multithreading via OpenMP. Next, we implemented a SAH based Bounding Volume Hierarchy, followed by a binned version of the same BVH that sped up the building time for the acceleration structure tremendously. In order to further speed up our rendering, we implemented SSE versions of several critical functions, notably single-ray single-triangle intersection and single-ray single-AABB intersection. Our next speedup came from implementing single-ray quad-triangle SSE intersection, in which a ray is intersected against four triangles simultaneously. This required us to pre-process all of the scene geometry into an SSE friend Structure-of-Arrays data-structure. Our final speedup came from implementing a QBVH, that is, a BVH with a branching factor of 4, which allowed us to use SSE to simultaneously intersect a ray against four BVH nodes. Furthermore, each QBVH node is able to supplant 7 regular 2-BVH nodes, resulting in significant memory consumption savings. In addition to these changes, we modified parts of the Vector and Matrix classes to use SSE for their operations, again netting a nice speedup.
                                     <p /> 
                                     
                                     
@@ -48,17 +54,17 @@
                                     <h2><a name="Contents"></a> Model </h2> 
                                     The glass pane was created using a simulation in 3ds Max. We took 2 glass models for two different time steps in order to implement motion blur.
                                     Each shattered glass model consisted of 86,914 triangles. 
-                                    We found various trees, grass, and flower models from freely available sources online. Each tree body model consisted of 75,000 to 165,000 triangles.
-                                    The each tree leaves model consisted of 22,000 to 128,000 triangles. 
-                                    Each flower model was about 35,000 triangles.
-                                    The sky is stored as a Lat-Long HDR environment map in the scene.  
+                                    We found various tree, grass, and flower models from freely available sources online. Each tree body model consisted of 75,000 to 165,000 triangles.
+                                    The tree leaves models consisted of 22,000 to 128,000 triangles. Each flower model was about 35,000 triangles. 
+                                    The sky is stored as a Lat-Long HDR environment map in the scene. There are two environment maps: 
+                                    one is a synthetic HDR created using V-Ray for 3DSMax's sky system, used for illumination, and the other is an HDR photo, used for reflections and as background.
 
                                     <p /> 
                                     
                                     
                                     <!-- Instancing -->
                                     <h2> <a name="instancing"> Instancing </a> </h2> 
-                                    It was necessary to implement instancing since we had a large amount of repeated geometry in the scene. <br />
+                                    It was necessary to implement instancing since we had large amounts of repeated geometry in the scene. This was implemented by creating a new ProxyObject class, derived from the main Object class, that stores it's own acceleration structure – it's basically a self-contained “scene within a scene”. When a ray traverses the main scene and hits an acceleration structure node that contains a ProxyObject, the object handles transforming the ray into local object space, traversing the local structure, and intersecting the local geometry. <br />
                                     <br />
                                     <div align="center"> 
                                         <a href="Images/gallery/MillionBunnies.jpg">
@@ -72,9 +78,7 @@
                                     
                                     <!-- Depth of Field -->
                                     <h2> <a name="depth"> Depth of Field </a> </h2> 
-                                    We implement depth of field to make scene look more realistic. Using depth of field we are able to make focus on the objects of interest.
-                                    and keep the other objects out of focus depending on their distance to the focal point.
-                                    
+                                    We implemented depth of field to make our scene look more realistic. Using depth of field we are able to  focus on the objects of interest, while keeping the other objects out of focus depending on their distance to the focal point. 
                                     <div align="center"> 
                                         <a href="Images/gallery/Cornell_No_DOF.jpg">
                                             <img src="Images/thumbs/Cornell_No_DOF.jpg" alt="Cornell_No_DOF.jpg" /> 
@@ -83,7 +87,7 @@
                                             <img src="Images/thumbs/Cornell_DOF.jpg" alt="Cornell_DOF.jpg" /> 
                                         </a>
                                         <br />
-                                        The depth of field effect in the cornell box. No depth of field in the left image. The right image has depth of field, focusing in on the mirror sphere.
+                                        The depth of field effect in the Cornell Box. No depth of field in the left image. The right image has depth of field, focusing in on the mirror sphere.
                                     </div> 
                                     
                                     <p /> 
@@ -91,9 +95,7 @@
                                     
                                     <!-- Motion Blur -->
                                     <h2> <a name="motion"> Motion Blur </a> </h2>
-                                    We implemented motion blur to show how some objects in our scene are moving at high speeds.
-                                    Motion blur is implemented by using two models of the same geometry in different time frames and rendering both geometries.
-                                    We then interpolate between the resulting color values. <br />
+                                    We implemented motion blur to show how some objects in our scene are moving at high speeds. Motion blur is implemented by using two models of the same geometry in different time frames. The acceleration structure, a Bounding Volume Hierarchy, stores a bounding box that covers the object's complete range of motion. Rays are assigned a random time sample during creation, and when they hit a BVH node that holds a motion blurred object, pass this time to the intersection routine. This routine generates the true geometry on-the-fly by linearly interpolating between the geometries for the initial and final time-step. <br />
                                     <br />
                                     <div align="center"> 
                                         <a href="Images/gallery/MB_small.jpg">
@@ -113,8 +115,7 @@
                                     
                                     <!-- Dispersion -->
                                     <h2> <a name="dispersion"> Dispersion </a> </h2> 
-                                    In real life, the index of refraction of a light in a glass is dependent on the wavelength of light. 
-                                    We implemented dispersion in our glass by splitting the incoming rays into R G and B rays, each with their own index of refraction. <br />
+                                    In real life, the index of refraction of glass is dependent on the wavelength of light. We implemented dispersion in our glass by splitting the incoming rays into R, G and B rays, each with their own index of refraction.  <br />
                                     <br />
                                     <div align="center"> 
                                         <a href="Images/gallery/despersion.jpg">
@@ -131,13 +132,7 @@
                                     Leaves, grass, and plants are not opaque objects. We wanted to simulate the effect of light being seen through the object.
                                     We implemented translucency by sampling the light on both sides of geometry and multiplying by a thickness and translucency factor. <br />
                                     <br />
-                                    <div align="center"> 
-                                        <a href="Images/gallery/tree_no_translucency.jpg">
-                                            <img src="Images/thumbs/tree_no_translucency.jpg" alt="tree_no_translucency.jpg" /> 
-                                        </a>
-                                        <br />
-                                        Tree leaves with no translucency
-                                        <p />
+                                    <div align="center">                                      
                                         <a href="Images/gallery/tree_translucency.jpg">
                                             <img src="Images/thumbs/tree_translucency.jpg" alt="tree_translucency.jpg" /> 
                                         </a>

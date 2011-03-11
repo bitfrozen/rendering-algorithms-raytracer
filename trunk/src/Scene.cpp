@@ -184,6 +184,7 @@ Scene::raytraceImage(Camera *cam, Image *img)
 					shownBuckets++;
 					printf("Rendering Progress: %.3f%%\r", (float)shownBuckets/float(totalBuckets)*100.0f);
 					fflush(stdout);
+					// This is to trap Esc from the console while rendering, to enable aborting the rendering process.
 					PeekConsoleInput(handle, &buffer, 1, &events);
 					if (events > 0)
 					{
@@ -246,6 +247,8 @@ int getSum(const int n)
 	return (int)(n*(n+1)*(2*n+1)*0.16666667f);
 }
 
+// Adaptively sample the scene. We use a simple absolute difference error metric to see if we sample at a higher level or not.
+// We always sample at least once.
 Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Image *img, Ray &ray, HitInfo &hitInfo, int x, int y)
 {
 	ray = cam->eyeRayAdaptive(threadID, x, y, 0.5f, 0.5f, 0.5f, 0.5f, img->width(), img->height());
@@ -257,6 +260,7 @@ Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Ima
 	{		
 		Vector3 curResult = 0;
 
+		// Accumulate samples for the current subdivision level
 		for (int i = 0; i < curLevel; i++)
 		{
 			for (int j = 0; j < curLevel; j++)
@@ -269,6 +273,7 @@ Vector3 Scene::adaptiveSampleScene(const unsigned int threadID, Camera *cam, Ima
 		float numSamplesPre = getSum(curLevel-1);
 		float numSamplesNow = curLevel*curLevel;
 
+		// Calculate the sample error in gamma corrected space (this does perceptual error estimation)
 		Vector3 newResult = (shadeResult*numSamplesPre + curResult) * (1.0f / (numSamplesPre + numSamplesNow));
 		Vector3 newResultGamma = Vector3(Image::linear_to_gammaF[int(((newResult.x > 1.f) ? 1.f : newResult.x) * 32767.f)],
 										 Image::linear_to_gammaF[int(((newResult.y > 1.f) ? 1.f : newResult.y) * 32767.f)],
